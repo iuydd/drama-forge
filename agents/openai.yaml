@@ -1,0 +1,4 @@
+interface:
+  display_name: "爆剧引擎 / DramaForge"
+  short_description: "从点子到成片的全自动 AI 短剧制作 / Autonomous AI short-drama production"
+  default_prompt: "使用 $drama-forge 从这个点子全自动做一部短剧，中途不要问我，做完汇报。"

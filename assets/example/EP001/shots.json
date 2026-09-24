@@ -1,0 +1,76 @@
+{
+  "schema": "short-drama-autopilot/shots/v1",
+  "episode": "EP001",
+  "notes": ["示例集，只用于自测和示范字段；三个人物镜 + 一个手部插入镜。"],
+  "scenes": [
+    {"id": "EP001-SC001", "axis": "遥坐桌角面朝画左；三上坐主位面朝画右", "plates": ["IMG-PLATE-MEETING"]},
+    {"id": "EP001-SC002", "axis": "同 SC001", "plates": ["IMG-PLATE-MEETING"]}
+  ],
+  "locks": [{"id": "LOCK-BLAZER", "phrase": "charcoal grey blazer", "subject": "遥", "shots": "all"}],
+  "shots": [
+    {
+      "id": "EP001-S01", "scene": "EP001-SC001", "title": "名字可以删", "kind": "person",
+      "duty": "反击：观众先于三上知道客户只认原作者，遥用一句话把承认权亮出来。",
+      "script_anchor": ["遥放下笔。", "名前は消していいです。承認は、あなたがどうぞ。"],
+      "subject": "遥", "facing": "left", "framing": "中近景，会议室桌角，遥一人，面朝画左的主位",
+      "keyframe": "遥坐在长桌桌角面朝画左，手里的笔刚放到桌面上，手边一杯没动的咖啡，脸上平静，视线抬向画左。",
+      "frame_prompt": "Medium close-up of a slim Japanese woman about 28 in a charcoal grey blazer over a white shirt, seated at the corner of a long meeting table facing screen left, her pen just set down on the table, an untouched cup of coffee beside her hand, calm face, eyes lifted toward screen left. Only one person in the frame. Picture 1 sets only the location and the lighting; do not copy any person from it. Picture 2 sets only the person's identity: keep exactly her face, hairline, skin and build. The scene is set in a corporate meeting room in Tokyo in daylight, the window side behind her. Style: candid 35mm film still, available light, film grain, no text, no logos.",
+      "frame_profile": "qwen21", "frame_refs": ["IMG-PLATE-MEETING", "IMG-HARUKA"],
+      "motion": "她的手离开笔；约 0.5 秒开口说台词，说到「あなたが」时下巴微抬；说完保持看着画左，不笑。",
+      "video_prompt": "integrated_multimodal_description: [Shot 1] Single continuous take, no cuts, starting exactly from the opening frame. Handheld camera with small natural breathing sway, real-time speed, realistic human behaviour with blinking and breathing. No subtitles, captions or on-screen text at any time. Her hand leaves the pen. At about half a second the woman (S1), on-screen, with a young woman's calm, clear voice, says in Japanese, evenly: <d>[Japanese] 名前は消していいです。承認は、あなたがどうぞ。</d> On 「あなたが」 her chin lifts slightly; after the line she keeps looking toward screen left, not smiling.\noverall_soundscape: quiet meeting room, the faint fan of a projector, a distant office phone.\nnon_diegetic_music: N/A",
+      "seconds": 6,
+      "dialogue": [{"speaker": "遥", "text": "名前は消していいです。承認は、あなたがどうぞ。", "lang": "ja", "at": 0.5}],
+      "end_state": "遥看着画左，手离开笔，不笑。", "sound": "会议室安静，投影仪风扇。",
+      "overlay": [{"kind": "panel", "text": "本日は、ご本人の承認が必要です。"}],
+      "visual_deps": ["人物「遥」", "地点「会议室」"], "continuity": ["笔在桌上", "咖啡没动"]
+    },
+    {
+      "id": "EP001-S02", "scene": "EP001-SC001", "title": "划掉署名的手", "kind": "hands",
+      "duty": "受气的瞬间；不露三上的脸。",
+      "script_anchor": ["三上课长拿起红笔，在署名栏上划掉「小野田」三个字。"],
+      "framing": "手部插入镜，俯拍桌面",
+      "keyframe": "俯拍长桌桌面，一只戴金色腕表的手握着红色记号笔，笔尖压在方案首页署名栏的位置，署名栏只有模糊的图形，不可读。",
+      "frame_prompt": "Insert shot, high angle tight on a long meeting table: a man's hand with a gold wristwatch holds a red marker, its tip pressed onto the signature box of a proposal cover page; the page shows only blurred grey shapes, nothing readable. Flat daylight from the left. Style: candid 35mm film still, film grain, no text, no logos.",
+      "frame_profile": "qwen21", "frame_refs": ["IMG-PLATE-MEETING"],
+      "motion": "红笔在署名栏上狠狠划一道，然后被扔到桌上滚了半圈。",
+      "video_prompt": "integrated_multimodal_description: [Shot 1] Single continuous take, starting exactly from the opening frame. The red marker drags one hard stroke across the signature box, then the hand tosses the marker onto the table where it rolls half a turn and stops. No on-screen text at any time.\noverall_soundscape: the squeak of a marker on paper, a plastic pen clattering on a wooden table.\nnon_diegetic_music: N/A",
+      "seconds": 4,
+      "dialogue": [],
+      "end_state": "红笔停在桌上，署名栏被划掉。", "sound": "记号笔划纸声、笔落桌声。",
+      "visual_deps": ["道具「红笔与方案」"], "continuity": ["署名被划掉", "红笔在桌上"]
+    },
+    {
+      "id": "EP001-S03", "scene": "EP001-SC001", "title": "三上押注", "kind": "person",
+      "duty": "反派的可执行手段和押注：他以为删掉名字就完了；观众已经知道客户只认原作者。",
+      "script_anchor": ["外注が署名？笑わせるな。", "君がいなくても、回るよ。"],
+      "subject": "三上", "facing": "right", "framing": "中近景，主位，三上一人，面朝画右",
+      "keyframe": "三上坐在长桌主位面朝画右，身体后靠，一侧嘴角挑起，下巴微扬，投影幕在他身后，构图偏右、脑后画左留出空位。",
+      "frame_prompt": "Medium close-up of a slightly heavy Japanese man about 45 in a dark navy suit, seated at the head of a long meeting table facing screen right, leaning back, one corner of his mouth lifted, chin slightly raised, a projection screen out of focus behind him, framed off-center to the right with clear empty space on screen left behind his head. Only one person in the frame. Picture 1 sets only the location and the lighting; do not copy any person from it. Picture 2 sets only the person's identity: keep exactly his face, hairline, skin and build. The scene is set in a corporate meeting room in Tokyo in daylight, the projector wall behind him. Style: candid 35mm film still, film grain, no text, no logos.",
+      "frame_profile": "qwen21", "frame_refs": ["IMG-PLATE-MEETING", "IMG-MIKAMI"],
+      "motion": "约 0.5 秒开口嘲讽，笑出声；约 3.2 秒再说第二句，说到「回るよ」时手一摊；说完笑容不变。",
+      "video_prompt": "integrated_multimodal_description: [Shot 1] Single continuous take, starting exactly from the opening frame. Handheld camera with small natural sway, real-time speed, realistic human behaviour. No subtitles, captions or on-screen text at any time. At about half a second the man (S2), on-screen, with a smooth condescending voice, says in Japanese, mocking: <d>[Japanese] 外注が署名？笑わせるな。</d> He laughs once. At about three seconds he adds, easily: <d>[Japanese] 君がいなくても、回るよ。</d> On 「回るよ」 one hand opens outward in a small shrug; after the line the grin stays.\noverall_soundscape: quiet meeting room, the faint fan of a projector, his short laugh.\nnon_diegetic_music: N/A",
+      "seconds": 6,
+      "dialogue": [{"speaker": "三上", "text": "外注が署名？笑わせるな。", "lang": "ja", "at": 0.5},
+                   {"speaker": "三上", "text": "君がいなくても、回るよ。", "lang": "ja", "at": 3.2}],
+      "end_state": "三上摊着手笑。", "sound": "会议室安静，他的笑声。",
+      "overlay": [{"kind": "stamp", "side": "L", "phrase": "回るよ"}],
+      "visual_deps": ["人物「三上」", "地点「会议室」"], "continuity": ["红笔已扔在桌上"]
+    },
+    {
+      "id": "EP001-S04", "scene": "EP001-SC002", "title": "承认费去哪了", "kind": "person",
+      "duty": "兑现后打开新问题：从抢功进入扣钱。",
+      "script_anchor": ["遥拿起咖啡，喝了一口。", "承認料、先週お振込みでしたよね。"],
+      "subject": "遥", "facing": "left", "framing": "近景，桌角，遥一人，面朝画左",
+      "keyframe": "遥坐在桌角面朝画左，右手端起咖啡杯刚喝了一口，杯子还在嘴边下方，眼睛看着画左，神情平静。",
+      "frame_prompt": "Close-up of a slim Japanese woman about 28 in a charcoal grey blazer over a white shirt, seated at the corner of a long meeting table facing screen left, a coffee cup in her right hand just lowered from her lips, eyes on screen left, calm. Only one person in the frame. Picture 1 sets only the location and the lighting; do not copy any person from it. Picture 2 sets only the person's identity: keep exactly her face, hairline, skin and build. The scene is set in a corporate meeting room in Tokyo in daylight, the window side behind her. Style: candid 35mm film still, film grain, no text, no logos.",
+      "frame_profile": "qwen21", "frame_refs": ["IMG-PLATE-MEETING", "IMG-HARUKA"],
+      "motion": "她把杯子放回桌上；约 0.6 秒开口，语气像随口一问；说完看着画左等答案。",
+      "video_prompt": "integrated_multimodal_description: [Shot 1] Single continuous take, starting exactly from the opening frame. Handheld camera with small natural sway, real-time speed, realistic human behaviour with blinking and breathing. No subtitles, captions or on-screen text at any time. She sets the cup down on the table. At about half a second the woman (S1), on-screen, with a young woman's calm, clear voice, says in Japanese, as if in passing: <d>[Japanese] 承認料、先週お振込みでしたよね。</d> After the line she keeps her eyes on screen left, waiting.\noverall_soundscape: quiet meeting room, a cup set down on wood, the faint fan of a projector.\nnon_diegetic_music: N/A",
+      "seconds": 6,
+      "dialogue": [{"speaker": "遥", "text": "承認料、先週お振込みでしたよね。", "lang": "ja", "at": 0.6}],
+      "end_state": "遥看着画左等答案，杯子在桌上。", "sound": "杯子放桌声。",
+      "overlay": [{"kind": "text", "text": "承認料：先週入金済み"}],
+      "visual_deps": ["人物「遥」", "地点「会议室」"], "continuity": ["咖啡杯在桌上"]
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "schema": "short-drama-autopilot/refs/v1",
+  "refs": {
+    "IMG-EXAMPLE": {
+      "kind": "identity",
+      "name": "示例人物 全身身份参考（填完后删掉这一条）",
+      "subject": "示例人物",
+      "controls": "脸、发型、体形",
+      "not_controls": "服装、姿势、表情、背景",
+      "profile": "krea2_turbo",
+      "res": "2K",
+      "refs": [],
+      "prompt": "Photorealistic full-body photo of one person standing against a plain light grey studio wall, facing the camera, gentle neutral expression, ... Real unglamorous skin, soft even light, no text, no logo."
+    }
+  }
+}
