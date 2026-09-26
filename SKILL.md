@@ -88,7 +88,10 @@ python3 "$S/project_tool.py" next <项目目录>                               #
 
 1. `project_tool.py status` 看全貌，`next` 定位阶段；读 `项目开发/决策记录.md` 和上一集的 `[连续性]`（三回锚：本批任务、上一批结束状态、当前规则）。
 2. 做当前阶段，跑门，修 error；warn 逐条判断后豁免或修。
-3. C、E 阶段派 **reviewer 子代理**（没参与写作、继承当前会话模型）：按 [review-checklists.md](references/review-checklists.md) 引用证据写 `审查/<EP>-审查.md`（骨架 `assets/templates/审查.md`；分级、结论 PASS/REVISE/BLOCKED 的判定与输出格式见其 §0），每条问题带位置、证据、影响、最小修复，末尾 `keep:` 清单；写完跑 `review_md_check.py 审查/<EP>-审查.md`。writer 改完对 keep 清单做字面比对。同一 Major 两轮没过：按 reviewer 的修订建议直接改并记未决，不停。
+
+> **派子代理一律用隔离方式**：不用 Agent 工具，改跑 `scripts/isolated_agent.sh <项目目录> <任务文件>`（Bash 后台运行）。子代理只拿到本 SKILL.md 和任务书，看不到主会话上下文、CLAUDE.md、其他 skill 和 MCP，所以任务书要自带：要读写的文件路径、阶段、验收标准、需要的前情事实。
+
+3. C、E 阶段派 **reviewer 子代理**（没参与写作、同级模型）：按 [review-checklists.md](references/review-checklists.md) 引用证据写 `审查/<EP>-审查.md`（骨架 `assets/templates/审查.md`；分级、结论 PASS/REVISE/BLOCKED 的判定与输出格式见其 §0），每条问题带位置、证据、影响、最小修复，末尾 `keep:` 清单；写完跑 `review_md_check.py 审查/<EP>-审查.md`。writer 改完对 keep 清单做字面比对。同一 Major 两轮没过：按 reviewer 的修订建议直接改并记未决，不停。
 4. 生产阶段用少量样片覆盖身份、接触、长对白等实际风险；先预演粗剪再批量视频。重拍先诊断、受授权预算限制；take 用尽仍缺关键情节时暂停正式成片并改分镜，不能自动 weak 放行。
 5. 每集出成片后：每秒抽一帧拼网格用看图工具目检（镜序、人物、叠字位置、前 3 秒 AI 标识），整片跑一遍 ASR 核对全集台词（edit-and-delivery §7），再跑 `final_qa.py` 并写成片终验 `审查/<EP>-成片终验.md`（§7b，结论 PASS 或列已知问题待用户确认）；汇报时声音结论按三项写，未听审就说未听审；`project_tool.py status`，把决策、未决、weak 镜写进决策记录；按已授权的 Git 交付策略同步，汇报成片路径；授权范围内继续下一集。
 6. 全部集完成后汇报：每集时长、镜数、重拍次数、weak/drop 镜、未决项、决策记录摘要。
