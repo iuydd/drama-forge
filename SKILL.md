@@ -58,6 +58,7 @@ python3 "$S/project_tool.py" next <项目目录>                               #
 10. **交付节奏**：同时做几部剧时，先把每部剧的 EP001 都出成片，再做各剧的后续集。项目是 git 仓库时先只读检查分支、工作区和远端；仅在用户已授权同步、且目标分支明确时执行 pull/commit/push，不默认推送主分支。回复里给出成片路径；不在只存在于临时目录（scratchpad）里的文件上积累进度——mark 清单、审查意见一律写进项目 `审查/`。
 11. **生产纸面纪律**：H3 模型与尺寸只读取本项目已确认的 `profiles`，不得沿用技能历史档位；**每一张起始帧都要用当前环境的看图工具看过、通过目检才提交视频**；H3 不生成画外人声，要有画外声就拍说话人的在镜单人镜，或另生成音源镜用 `audio_from` 垫音；改剧本/分镜后只重拍受影响的镜头，重拍后重新 mark、重剪该集。
 11b. **实拍错误表必读**：生产（F–J）开工前读 [production-and-review.md](references/production-and-review.md) 的「实拍踩过的错」E1–E12（改提示词后已排队的图不会更新、设定改了要 grep 旧词、过肩双人会画两次主角、三人同框第三人会跑到前景、状态细节要在两段提示词各写一句、audio_from 默认 phone、静音段 ASR 幻听、队列跑完要自动接手、断网要对账不重投……）。新发现的错误照同样格式追加进这张表：错在哪、以后怎么做。用 fal 通道见 [providers.md](references/providers.md) §7b。
+11c. **对话看得见对象、同场链式出帧**：台词镜里被说话的人必须入画（两人同框或听者背影在前景），不拍单人对着画外说话；同场连续镜头的起始帧用上一镜视频出点帧作 Picture 1。见 [storyboard-keyframes.md](references/storyboard-keyframes.md) §1、错误表 E33。
 12. **新角色与真人素材**：用户给新角色素材（照片、文档，可能放在 iCloud Drive `~/Library/Mobile Documents/com~apple~CloudDocs/` 或指定文件夹）时，按 [visual-assets.md](references/visual-assets.md) §11 接入：角色设计岗逐张看素材定名字、外形、服装锁、音色；导演岗定出场位置；编剧与 reviewer 分开改剧本；门全过（含 G28）。真人素材的角色形象保持正面尊重，不写殴打受伤、恶意羞辱，去掉能认出真实学校、姓名的标识。
 
 ## 项目与契约
