@@ -58,6 +58,11 @@
 - **只画常规干净状态**：伤、血、湿身、战损是镜头状态或变体，不进基础卡；以后会消失的饰品不上身份图（G18 警告）。
 - **身份锚点来自这个角色自己**：同一批身份图并排读，逐字重复且和角色无关的句子（`perfect proportions, long slender legs`）是模板残留，删掉或改成该角色的真实锚点（G20 查相似度）。
 - **排除项只写这张最可能出的错**：`no second outfit, no extra accessories, no props in hand`；不写一长串 "no bad anatomy, no blur" 套话。
+- **服装句内部按"形制 → 面料 → 收边与配饰 → 使用痕迹"排序**。第一项必须是这个时代能读出身份的具体款式名（圆领袍、直裰、双排扣大衣、护士服），不能只写"长袍""外套"这类通用轮廓；越靠后的内容越容易在翻译或截断时丢失。形制按项目的时代基准写（visual-assets §1）。（取自 shuohao-skills）
+- **"便装""朝服""正装"这类场合标签不写进身份图提示词**，直接写形制本身（"盘领窄袖、金织盘龙补、翼善冠"）。场合标签不提供画面信息，还会把身份图绑定到某个场合上；身份图画人物的常态造型，临时换上的礼服、夜行衣、丧服按造型变体处理（visual-assets §3b）。（取自 shuohao-skills）
+- **长期使用痕迹最多写一处，并且说得出是谁、因为什么造成的**（职业、处境、原著依据），说不出来由就不写。磨白、墨迹、补丁叠加三处，"侯府世子"会画成抄书匠。局部细节不等于整体身份：袖口磨白不代表整件衣服粗旧，素簪不代表侍女；整体形制、面料、剪裁负责表达身份，局部痕迹只表达习惯，两者分开写。自检：遮住人物名字只读服装句，读出来的身份和视觉设定一致吗？不一致就改服装句，不改设定。（取自 shuohao-skills）
+- **面部写这个人自己的特征，不写渲染质量**：骨相、脸型、五官比例、发际线走向；眉眼可以写成左右略不对称；有年龄的角色，皱纹沿表情肌走（法令纹、鱼尾纹、抬头纹），不是随机刻线。"可见毛孔、次表面散射"只在写实画风里写。排除项只禁"假"和"错"、不禁画风：从 `identical faces across characters, doll-like oversized eyes, over-smoothed skin, perfectly symmetrical face, lifeless eyes without catchlight, helmet-like hair without loose strands, mannequin pose` 里挑这张最可能出的一两项，不写 `photorealistic / anime / 3d render` 这类画风词。（取自 shuohao-skills）
+- **中性站姿写 `arms relaxed at the sides`，不写 `hands clasped in front`**：双手交叠在腰前读作"等候吩咐"，会把人物画成仆从（storyboard-keyframes §8c）。（取自 shuohao-skills）
 
 ```text
 Photorealistic full-body character reference of one Japanese woman in her late twenties, about 160 cm tall, slim build, adult proportions about seven and a half heads tall. Narrow oval face, a small natural break at the tail of her right eyebrow, shoulder-length black hair in a low ponytail. Base outfit only: a charcoal grey blazer over a white shirt, dark straight trousers, black flat shoes. She stands facing the camera, arms relaxed at her sides, calm neutral expression, eyes clearly visible. Soft even studio light, plain light grey background. One person only, nothing in her hands, no jewellery, no second outfit, no text, no logo.
@@ -86,12 +91,13 @@ Keep the same person from Picture 1: same face, hairline, skin tone, build and o
 
 变体是否成立由 visual-assets §2 决定，这里只管写法。每条变体条目必须答得出：基础版本是哪条（`refs` 指向它）、哪些身份事实不变、变化在哪里（位置、范围、程度）、从哪一场生效到哪一场。
 
-- **图生图派生，不重新生成**：`refs: ["IMG-<NAME>"]`；第一句保留句，然后只写差异（visual-assets §3）。
+- **图生图派生，不重新生成**：`refs: ["IMG-<NAME>"]`；第一句保留句，然后只写差异（visual-assets §3）。年龄段变体例外，见本节末条。
 - **动词纪律**：只用 `change only / replace / remove / add` 指向具体对象，不用 `transform / turn into / make it look like / convert into`——整体改写类动词容易把人整个换掉（V03 查）。
 - **差异要有边界**：`the right sleeve is soaked dark from the elbow down, the shoulder stays dry` 比 `wet clothes` 可控；不要把"雨后"扩成全身滴水、新伤或换装。
 - **差异写在最显眼处**：保留句之后马上写差异，不要复制整段基础描述再把变化藏在末尾。
 - **一张只画一个状态**：完好/损坏、白天/夜晚、两套造型不画进同一张；确需前后对照时单独做对照板，不作身份参考挂进起始帧。
 - 瞬时表情、一次抬手、单镜姿势归分镜，不建变体图。
+- **年龄段变体是例外，不写 `same face`**：幼年、少年、老年版本套用上面的保留句，会得到一张缩小或加了皱纹的成人脸。只保留跨年龄不变的东西（肤色、痣和疤这类永久特征、眼型的大致特征、没变的发色），另外写这个年龄段的脸型和五官比例（幼童脸圆、眼睛占比大；老人颧骨突出、眼窝深）、身高和体态（"身高只到成人的腰""背微驼"）。可以挂成人身份图做参考，但分工句写明它只管"肤色和永久特征"：`Use Picture 1 only for skin tone and permanent marks; this is the same person at about eight years old, with a child's round face…`。年龄段版本单独出头肩图，和成人头肩图并排目检：要读得出是同一个人，又不能看成同龄人。（取自 dramaclaw）
 
 ```text
 Keep the same person from Picture 1: same face, hairline, skin tone, build and hairstyle. Change only the outfit: add a worn orange raincoat over the same charcoal grey blazer, hood down, zipped halfway. The raincoat's right shoulder is darkened by rain down to the elbow; everything else stays dry. Same full-body front pose, same soft even studio light, same plain light grey background. One person only, no text.
@@ -105,7 +111,7 @@ Keep the same person from Picture 1: same face, hairline, skin tone, build and h
 2. 相机站在哪、看向哪（平面图锚点）、机位高度；
 3. 入口与路线：门、走廊、楼梯的位置和方向（楼梯往上还是往下写死）；
 4. 一到三个强锚点及其两两关系、视线终点；有栅栏、门、玻璃、崖沿时写两侧各是什么；次要装饰概括带过；
-5. 对辨认结构有用的墙、地、顶材质和主次色；
+5. 对辨认结构有用的墙、地、顶材质和主次色，以及这个地点的保养水平（日常使用 / 持续维护，visual-assets §4）；
 6. 当前状态：时段、天气、实际灯具开关（跨镜持续的状态才进底板）；
 7. `No people.` 与 `No readable text anywhere.`
 
@@ -233,6 +239,7 @@ Keep the same person from Picture 1: same face, hairline, skin tone, build and h
 | 文字 | 承载面与政策相容吗 | §6 的呈现方式 |
 | 经济性 | 有没有重复参考图已承载的内容、堆质量词 | 可删的句子 |
 | 越权 | 有没有新造身份、剧情或连续性事实 | 来源与冲突句 |
+| 身份污染 | 服装句形制在不在句首、使用痕迹是否超过一处、站姿和脸有没有默认成"侍立""对称娃娃脸" | 遮住名字读服装句得出的身份；§3.1 的面部与排除项 |
 | 自足 | 去掉元信息后正文读得懂吗 | 正文不含 ID、路径、流程话术 |
 
 修订要求必须可执行（"补回安全门相对检修台的位置"），不能只写"加强细节""不够电影感"。
