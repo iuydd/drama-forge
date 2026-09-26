@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""按 shots.json 串行生产：参考图 → 起始帧 → 视频。已有产物自动跳过，中断后重跑即可。
+"""按 shots.json 生产：参考图 → 起始帧 → 视频（h3studio 按服务端槽位并发，fal/kling 默认逐镜）。已有产物自动跳过，中断后重跑即可。
 
   produce.py refs   <项目> [IMG-ID ...] [--retake]
   produce.py frames <项目> <EP> [SID ...] [--retake]
@@ -16,7 +16,7 @@
 
 - 每个镜头的起始帧/视频都带 take 编号（F_<sid>_t1.png、V_<sid>_t1.mp4）；--retake 在已有 take 之后新开一个，种子随 take 变化。
 - --asr：生成后记录逐字差异并选择待审候选；识别差异需听审，不按分数自动花费重拍。
-- 一次只有一个任务在飞；STOP 文件 / DEADLINE 到点就停；token 只从 H3_STUDIO_TOKEN 读。
+- h3studio 同时在飞的任务不超过槽位数；STOP 文件 / DEADLINE 到点就停；token 只从 H3_STUDIO_TOKEN 读。
 """
 from __future__ import annotations
 
@@ -280,13 +280,73 @@ def produce_videos(project: Project, ep: str, sids: list[str] | None = None, ret
     return done
 
 
+def _jobs(project: Project, kind: str, requested: int | None) -> int:
+    """并发镜数。h3studio（{kind}_provider 没写）：默认用服务端槽位数 capacity.slots_total，--jobs 只能调小；
+    fal / kling：默认 1，--jobs N 要用户单独授权（SKILL 硬约束 2）。"""
+    if project.get(f"{kind}_provider") in ("fal", "kling"):
+        return max(1, requested or 1)
+    slots = _client(project).slots()
+    return max(1, min(requested or slots, slots))
+
+
+def _parallel(jobs: int, first: list[str], later: list[str], fn) -> None:
+    """先并发跑 first，全部完成再并发跑 later（派生图要等母图）。某镜出错：已在飞的跑完，再把第一个错误抛出。"""
+    from concurrent.futures import ThreadPoolExecutor
+    for batch in (first, later):
+        if not batch:
+            continue
+        with ThreadPoolExecutor(max_workers=jobs) as ex:
+            futs = [ex.submit(fn, x) for x in batch]
+        errs = [f.exception() for f in futs if f.exception()]
+        if errs:
+            raise errs[0]
+
+
+def _refs_parallel(pr: Project, ids: list[str] | None, retake: bool, jobs: int) -> None:
+    refs = pr.load_refs()
+    ids = ids or list(refs)
+    if jobs <= 1:
+        produce_refs(pr, ids, retake)
+        return
+    todo = [r for r in ids if r in refs and (retake or not pr.ref_png(r).exists())]
+    _preflight(pr, None, "refs", todo)
+    later = [r for r in todo if set(refs[r].get("refs") or []) & set(todo)]
+    _parallel(jobs, [r for r in todo if r not in later], later, lambda r: produce_refs(pr, [r], retake))
+
+
+def _frames_parallel(pr: Project, ep: str, sids: list[str] | None, retake: bool, jobs: int) -> None:
+    if jobs <= 1:
+        produce_frames(pr, ep, sids, retake)
+        return
+    shots = [sh for sh in pr.load_shots(ep).get("shots") or [] if not sids or sh["id"] in sids]
+    ids = [sh["id"] for sh in shots]
+    _preflight(pr, ep, "frames", ids)
+    later = [sh["id"] for sh in shots if sh.get("frame_parent") in ids]   # 同机位派生镜等父镜出完
+    _parallel(jobs, [x for x in ids if x not in later], later, lambda sid: produce_frames(pr, ep, [sid], retake))
+
+
+def _videos_parallel(pr: Project, ep: str, sids: list[str] | None, retake: bool, asr: bool, jobs: int) -> None:
+    if jobs <= 1:
+        produce_videos(pr, ep, sids, retake, asr)
+        return
+    ids = sids or [sh["id"] for sh in pr.load_shots(ep).get("shots") or []]
+    _preflight(pr, ep, "videos", ids)   # 整批预检（金丝雀按整批判断，不按单线程判断）
+    # 每镜一个线程：提交经账本锁逐条记账，等待与下载并行；ASR 放到全部完成后串行跑
+    _parallel(jobs, ids, [], lambda sid: produce_videos(pr, ep, [sid], retake, False))
+    if asr:
+        import review_tool  # 全部生成完再串行跑 ASR（等同 review_tool.py asr）
+        review_tool.main(["asr", str(pr.root), ep, *ids])
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
+    jobs_help = "并发镜数：h3studio 默认等于服务端槽位数（/api/status capacity.slots_total），只能调小；fal/kling 默认 1，大于 1 要用户授权"
     r = sub.add_parser("refs")
     r.add_argument("project")
     r.add_argument("ids", nargs="*")
     r.add_argument("--retake", action="store_true")
+    r.add_argument("--jobs", type=int, default=None, help=jobs_help)
     for name in ("frames", "videos", "all"):
         s = sub.add_parser(name)
         s.add_argument("project")
@@ -294,43 +354,21 @@ def main(argv=None) -> int:
         s.add_argument("sids", nargs="*")
         s.add_argument("--retake", action="store_true")
         s.add_argument("--asr", action="store_true")
-        s.add_argument("--jobs", type=int, default=1, help="videos：并行镜头数（只对 fal 等云端队列通道；H3 本地单卡保持 1）")
+        s.add_argument("--jobs", type=int, default=None, help=jobs_help)
     a = ap.parse_args(argv)
     pr = Project(a.project)
     try:
         if a.cmd == "refs":
-            produce_refs(pr, a.ids or None, a.retake)
+            _refs_parallel(pr, a.ids or None, a.retake, _jobs(pr, "ref", a.jobs))
         elif a.cmd == "frames":
-            if a.jobs > 1:
-                if pr.get("frame_provider") not in ("fal", "kling"):
-                    raise SystemExit("--jobs >1 只用于 fal 等云端队列通道；本地 H3 单卡必须串行")
-                from concurrent.futures import ThreadPoolExecutor
-                ids = a.sids or [sh["id"] for sh in pr.load_shots(a.episode).get("shots") or []]
-                _preflight(pr, a.episode, "frames", ids)
-                with ThreadPoolExecutor(max_workers=a.jobs) as ex:
-                    list(ex.map(lambda sid: produce_frames(pr, a.episode, [sid], a.retake), ids))
-            else:
-                produce_frames(pr, a.episode, a.sids or None, a.retake)
+            _frames_parallel(pr, a.episode, a.sids or None, a.retake, _jobs(pr, "frame", a.jobs))
         elif a.cmd == "videos":
-            if a.jobs > 1:
-                if pr.get("video_provider") not in ("fal", "kling"):
-                    raise SystemExit("--jobs >1 只用于 fal 等云端队列通道；本地 H3 单卡必须串行")
-                from concurrent.futures import ThreadPoolExecutor
-                ids = a.sids or [sh["id"] for sh in pr.load_shots(a.episode).get("shots") or []]
-                _preflight(pr, a.episode, "videos", ids)   # 整批预检（金丝雀按整批判断，不按单线程判断）
-                # 每镜一个线程：提交经账本锁逐条记账，等待与下载并行；ASR 放到全部完成后串行跑
-                with ThreadPoolExecutor(max_workers=a.jobs) as ex:
-                    list(ex.map(lambda sid: produce_videos(pr, a.episode, [sid], a.retake, False), ids))
-                if a.asr:
-                    import review_tool  # 全部生成完再串行跑 ASR（等同 review_tool.py asr）
-                    review_tool.main(["asr", str(pr.root), a.episode, *ids])
-            else:
-                produce_videos(pr, a.episode, a.sids or None, a.retake, a.asr)
+            _videos_parallel(pr, a.episode, a.sids or None, a.retake, a.asr, _jobs(pr, "video", a.jobs))
         elif a.cmd == "all":
             data = pr.load_shots(a.episode)
             used = sorted({x for sh in data.get("shots") or [] for x in sh.get("frame_refs") or []})
-            produce_refs(pr, used)
-            produce_frames(pr, a.episode, a.sids or None)
+            _refs_parallel(pr, used, False, _jobs(pr, "ref", a.jobs))
+            _frames_parallel(pr, a.episode, a.sids or None, False, _jobs(pr, "frame", a.jobs))
             probs = pr.animatic_problems(a.episode)
             if probs:   # 阶段 G2 静帧预演没放行（首行、指纹、必拍表任一项不符）不提交视频
                 print(f"起始帧已齐；先逐张目检起始帧（review_tool.py mark --frame-take N --evidence …），再跑 review_tool.py animatic {a.project} {a.episode}，"

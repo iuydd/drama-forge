@@ -12,6 +12,7 @@ import subprocess
 import sys
 import tempfile
 import threading
+import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
 
@@ -79,8 +80,12 @@ def pass_reviews(pr, ep: str = "EP001") -> None:
 
 # ---- 假中转 --------------------------------------------------------------------
 class Mock:
+    def running(self) -> int:
+        return sum(1 for j in self.jobs.values() if time.time() < j.get("t", 0) + self.job_delay)
+
     def __init__(self, tmp: Path, media: bool = True):
         from PIL import Image
+        self.slots, self.job_delay, self.max_running = None, 0.0, 0   # 槽位模拟：slots 设了就在 status 里报 capacity
         buf = io.BytesIO()
         Image.new("RGB", (64, 36), (30, 60, 120)).save(buf, "PNG")
         self.png = buf.getvalue()
@@ -123,6 +128,10 @@ def make_handler(mock: Mock):
                 return self._json({"error": "unauthorized"}, 401)
             p = self.path
             if p == "/api/status":
+                if mock.slots:
+                    busy = mock.running()
+                    return self._json({"running": busy, "queued": 0, "capacity": {"slots_total": mock.slots, "slots_busy": busy,
+                                                                                  "slots_free": mock.slots - busy, "queued": 0}})
                 return self._json({"running": 0, "queued": 0})
             if p == "/api/config":
                 return self._json({"profiles": {"image": ["qwen21", "krea2_turbo"], "video": ["base50_sol"]}})
@@ -133,7 +142,7 @@ def make_handler(mock: Mock):
                 if not job:
                     return self._json({"error": "no such job"}, 404)
                 if len(parts) == 4:
-                    return self._json({"id": jid, "status": "done"})
+                    return self._json({"id": jid, "status": "done" if time.time() >= job["t"] + mock.job_delay else "running"})
                 if parts[4] == "image":
                     return self._bytes(mock.png, "image/png")
                 if parts[4] == "video":
@@ -153,7 +162,8 @@ def make_handler(mock: Mock):
             if kind == "video":
                 require(payload.get("image_mode") == "keyframe" and len(payload["images"]) == 1, "视频必须 keyframe + 一张起始帧")
             jid = f"{kind}-{mock.n}"
-            mock.jobs[jid] = {"kind": kind, "payload": payload}
+            mock.jobs[jid] = {"kind": kind, "payload": payload, "t": time.time()}
+            mock.max_running = max(mock.max_running, mock.running())
             return self._json({"id": jid})
 
     return H
@@ -592,6 +602,23 @@ def main() -> int:
     require(mock.n == n_before + 1 and len(job["payload"]["images"]) == 1 + len(fp_sp["shots"][3].get("frame_refs") or []),
             f"frame_parent 多挂一张父帧：{len(job['payload']['images'])}")
     bp.write_text(good, encoding="utf-8")
+
+    # h3studio 按槽位并发：status 报 capacity 时同时在飞的任务不超过 slots_total，且确实并发
+    mock.slots, mock.job_delay, mock.max_running = 3, 0.6, 0
+    ids = [sh["id"] for sh in pr.load_shots("EP001")["shots"]]
+    require(produce._jobs(pr, "frame", None) == 3 and produce._jobs(pr, "frame", 2) == 2 and produce._jobs(pr, "frame", 99) == 3,
+            "h3studio 并发默认取槽位数，--jobs 只能调小")
+    n_before = mock.n
+    takes_before = {sid: pr.takes("EP001", sid, "frame") for sid in ids}
+    rv_before = pr.load_review("EP001")
+    produce._frames_parallel(pr, "EP001", None, True, 3)
+    require(mock.n - n_before == len(ids) and 2 <= mock.max_running <= 3, f"槽位并发：提交 {mock.n - n_before} 张，最多同时 {mock.max_running} 个")
+    for sid in ids:   # 还原：删掉这次新出的 take，review.json 恢复原样，别占后面测试的 take 预算
+        for t in set(pr.takes("EP001", sid, "frame")) - set(takes_before[sid]):
+            pr.frame_path("EP001", sid, t).unlink()
+    pr.save_review("EP001", rv_before)
+    mock.slots, mock.job_delay = None, 0.0
+    passed += 1
 
     if not args.no_media:
         # 阶段 G2 静帧预演：起始帧齐了但没写 预演.md 时 next 指向 G2；animatic 出预演片与接触表

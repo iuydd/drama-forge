@@ -83,7 +83,7 @@ take 从 1 起，只增不删；哪个 take 进成片由 `review.json` 决定，
 | I 审片 | 视频、接触表、听审 | 每 take assessment/edit/verdict、每镜 `must_show_check`、声音三项 | visual/audio/continuity 通过且指纹有效；`must_show_check` 全部 pass（unverified 和缺项在正式剪辑里等同 fail，脚本拦）；`asr_ok` / `listen_ok` / `sync_ok` 分开记，null 如实为"未验证"，`listen_ok` 只由真人签（quality-contract） | 必拍事实 fail → 重拍、改分镜或回剧本，不许以"台词能解释/观众数不出来"放行（production-and-review §5c） | 详见 [质量契约](quality-contract.md) |
 | J 剪辑 | review.json + shots.json | `成片/EPxxx.mp4`、`成片/EPxxx.overlays.json`、`剪辑单.md`、`审查/<EP>-final-qa.json`、`<EP>-final-qa.md`、`<EP>-成片终验.md` | 删镜/改剪点前做因果自检（edit-and-delivery §2d，G46 查承担镜仍在 cut_order）；时长在目标 ±30%；响度 −16 LUFS；`ai_label` 有值时前 3 秒可见 AI 生成标识，剪辑单记"AI 标识：有/无（理由）"；成片终验逐项验必拍事实、文字排版（数字专名不断行、不压脸眼、长文字分屏）、台词边界（入点不切进台词或语气词、字幕 = 成片可听内容）、切点、片尾无拖尾停帧、声音三项（edit-and-delivery §7b） | 超长 → 回 I 收紧取用；过短 → 记录、不硬凑；终验不过 → 排版类改叠加重出成片，台词边界类放宽剪点或回剧本，剧情事实类回生产 | `project_tool.py next` 不再指向该集阶段 J：它读 `final-qa.json` 的 `conclusion`（不读可手改的 md）且 `video_sha256` 等于当前交付文件、`成片终验.md` 首行 PASS；草剪产物一律 REVISE。REVISE 只在每条已知问题都有用户看过清单后点到编号的原话（决策记录 `拍板人: 用户`）时算交付，否则写"待确认"、汇报为未交付；剧情事实类缺陷不能靠用户确认放行 |
 
-写作阶段（A0–E）可以多集并行；生产阶段（F–H，含 G2）全项目串行，一次只有一个任务在飞。G2 不花生成的钱，只用已有起始帧和临时对白拼片。
+写作阶段（A0–E）可以多集并行；生产阶段（F–H，含 G2）按阶段顺序推进，阶段内的生成按 h3studio 槽位并发（`capacity.slots_total`）。G2 不花生成的钱，只用已有起始帧和临时对白拼片。
 
 ## 4. `shots.json` 字段
 
@@ -366,7 +366,7 @@ error 必须清零，`waive` 对 error 门无效；warn 逐条判断，豁免写
 ## 10. 硬约束
 
 1. token 只从环境变量 `H3_STUDIO_TOKEN` 读；不写进文件、日志、提交、回复。
-2. 串行：一次只提交一个生成任务；`/api/status` 空闲才提交；任何通道的 `--jobs N` 并行都要用户原话单独授权并发（规则要求；`produce.py` 只拒绝非 fal/kling 通道用 `--jobs`，不查授权）。
+2. 按槽位提交：h3studio 同时在飞不超过 `/api/status` 的 `capacity.slots_total`，有空槽才提交，`produce.py` 默认按槽位数并发、`--jobs` 只能调小；fal、kling 等云端通道默认逐镜，`--jobs N` 并行要用户原话单独授权并发（规则要求，脚本不查授权）。
 3. 接触关系与前后状态可读；双人镜、手部特写或有证据的省略按叙事选择；对话镜听者入画（SKILL 11c），多人镜人数写死 `exactly N`。
 4. 镜长按内容定：同一个人的连续戏合并成一个长镜头（上限 `shot_seconds.max`），对白长的镜按容量加长而不是加快语速；成片不低于节奏下限（`pace`）。
 5. 生成画面里不出任何字；字幕、面板、印章字全部后期叠加；手机屏幕背对镜头。

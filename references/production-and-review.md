@@ -23,7 +23,7 @@
 
 ## 1. 生产纪律
 
-1. **串行**：提交前查 `/api/status`，`running` 空且 `queued` 为 0 才提交；一次只有一个任务在飞。写作阶段可并行，生产阶段全项目串行。
+1. **按槽位提交**：提交前查 `/api/status`；带 `capacity` 时 `slots_free > 0` 且没排队才提交，同时在飞不超过 `slots_total`（h3studio 2026-09-26 为 9）；没有 `capacity` 的旧服务仍要 `running` 空且 `queued` 为 0。写作阶段可并行；生产阶段按阶段顺序推进，阶段内按槽位并发。
 2. **先入账再轮询**：POST 前写 `submission_intent`、返回任务号立刻写 `submitted` 到 `脚本/ids.log` 和 `脚本/jobs.jsonl`（含 profile、res/seconds、seed、prompt sha256；视频另记 `frame_sha256`、`source_prompt_sha256`），早于第一次轮询；收回写 `collected` 并记产物 `sha256`。审片批 ok/weak/mute 前脚本按这些字段核对 take 来源（没有收回记录、收回后文件被换、生成后改过 video_prompt 或所选起始帧，都拒绝批准）。
 3. **只重试 GET，POST 永不自动重发**；网络断开就等，不放弃已提交的任务。
 4. **先收回再重投**：提交前先查 `jobs.jsonl` 里同名（同镜同 take）有没有已提交未收回的任务；有就 collect，不重新 POST。进程被杀后重跑同一命令即可。

@@ -2,7 +2,8 @@
 """H3 Studio 自建中转的客户端：图片、视频、收回、状态。
 
 实战规则（来自已跑通的项目）：
-- 串行：提交前等 /api/status 空闲（running 为空或 0，且 queued 为 0）；一次只有一个任务在飞。
+- 按槽位提交：/api/status 带 capacity（h3studio 网关，多台机器各跑一个）时，有空槽（slots_free > 0）且没排队才提交，
+  最多同时 slots_total 个任务在飞（2026-09-26 为 9）；没有 capacity 的旧服务仍等整机空闲（running 为空或 0，且 queued 为 0）。
 - 只重试 GET（查询、下载），绝不重发 POST；网络断开时一直等，不放弃已提交的任务。
 - 每次提交立即把任务号写进 ids.log 和 jobs.jsonl；中断后用 collect 按任务号收回，不盲目重发。
 - 项目根目录有 STOP 文件就退出；环境变量 DEADLINE=YYYYmmddHHMM 到点退出。
@@ -230,12 +231,22 @@ class Client:
     def config(self) -> dict:
         return self.rget("/api/config").json()
 
+    def slots(self) -> int:
+        """服务端能同时跑几个任务（capacity.slots_total）；没报就是 1。"""
+        cap = self.status().get("capacity")
+        return int(cap.get("slots_total") or 1) if isinstance(cap, dict) else 1
+
     def wait_idle(self) -> None:
+        """等到能提交：有 capacity 就等空槽，没有就等整机空闲。"""
         while True:
             self.guard()
             st = self.status(before_submit=True)
             self.guard()
-            if st.get("running") in (None, 0) and st.get("queued") in (None, 0):
+            cap = st.get("capacity")
+            if isinstance(cap, dict) and cap.get("slots_total"):
+                if int(cap.get("slots_free") or 0) > 0 and not cap.get("queued") and not st.get("queued"):
+                    return
+            elif st.get("running") in (None, 0) and st.get("queued") in (None, 0):
                 return
             time.sleep(self.poll)
 
