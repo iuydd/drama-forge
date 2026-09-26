@@ -59,6 +59,7 @@
 - 用封口词：`exactly`、`only`、`each … once`、`throughout the entire clip`、`remains … until the end`、`clearly visible, in focus, not blocked`。
 - 情绪和比喻只写可观察的身体动作，不写 `his heart sinks`、`frozen in fear` 这类会被照字面画出来的词（§5）。
 - 同一个人全文用同一个称呼加一个区别外观，不用 he/she 连续指代。
+- **方向不用左右，用画面里的实物做参照**：写「朝洗手台迈步」「往门那边倒」「落在靠门那条画框边外」，不写 left/right——人物对着镜头时他的左就是画面右，模型和写的人都会读反（E36）。起始帧里人物朝哪写死一句（`her toes point toward the vanity and her heels toward the door`）。画面里确实没有可用的实物时才写 `screen-left`，而且同一句带上人物朝向。
 - 不用模糊词充当规格：适当、自然、合理、相应、若干、一些、appropriately、naturally、some、several、as needed，每处换成谁、哪侧、几个、到哪（方言固定头部句除外）。
 
 **四、排他句封口，点名否定只留给有证据的高风险项**。通用负面词会把名词召唤出来（`no extra people` 里的 people），所以用排他式的正面句封口：`the only object on the table is the sealed letter`、`these two people are the only people in the frame for the whole clip`。正面句写完后，最多再写两句点名否定；表中"写死什么"列给出的固定封口句（`no cuts, no transitions …`、台词唯一句、声音封闭句、无字句）和 §5 改写表里的 `not …` 限定语不计入这两句。每句必须指向本镜一个具体的人、物或运动轨迹，有证据（错误表条目、上一 take 的实际错误），并紧跟在对应的正面句后面，例如 `Xiao Lie has already left and is not in this shot`、`he does not fly outward; he drops straight down along the rock face`。没有对象的通用否定（`no bad hands, no deformation`）一律不写；§11"不罗列否定项"指的就是这种。
