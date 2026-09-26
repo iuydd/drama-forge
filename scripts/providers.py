@@ -485,7 +485,7 @@ class Runner:
     def __init__(self, root: Path, transport: Transport = urllib_transport, poll: float = 5.0,
                  get_wait: float = 10.0, timeout: float = 3600.0):
         self.root = Path(root).resolve()
-        self.client = Client(root=self.root)  # 只用它的账本、提交锁与 STOP/DEADLINE，不用它的中转 HTTP
+        self.client = Client(root=self.root, channel="providers")  # 只用它的账本、提交锁与 STOP/DEADLINE，不用它的中转 HTTP
         self.transport, self.poll, self.get_wait, self.timeout = transport, poll, get_wait, timeout
 
     def _base_token(self, provider: str) -> tuple[str, str]:

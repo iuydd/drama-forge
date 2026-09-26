@@ -30,7 +30,7 @@ from pathlib import Path
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from h3_client import Client, SubmissionUnknown  # noqa: E402
+from h3_client import Client, PendingElsewhere, SubmissionUnknown, rec_channel  # noqa: E402
 
 BASE = os.environ.get("KLING_API_BASE", "https://api-beijing.klingai.com").rstrip("/")
 PATH = "/v1/videos/image2video"
@@ -39,7 +39,7 @@ PATH = "/v1/videos/image2video"
 class KlingClient(Client):
     def __init__(self, model: str, root: Path | None = None, log_dir: Path | None = None, poll: float = 10.0,
                  sound: str = "off"):
-        super().__init__(api=BASE, token="", root=root, poll=poll, log_dir=log_dir)
+        super().__init__(api=BASE, token="", root=root, poll=poll, log_dir=log_dir, channel="kling")
         self.model = model
         self.sound = sound if sound in ("on", "off") else "off"
         key = os.environ.get("KLING_API_KEY")
@@ -74,6 +74,8 @@ class KlingClient(Client):
             if unknown:
                 raise SubmissionUnknown("先对账未决提交，再继续生产：" + ", ".join(r["request_id"] for r in unknown))
             pending = self.pending(name)
+            if pending and rec_channel(pending) != self.channel:
+                raise PendingElsewhere(rec_channel(pending), pending)
             if pending:
                 if pending.get("kind") != "video" or Path(pending["out"]).resolve() != out.resolve():
                     raise SubmissionUnknown("同名未收回任务与当前输入不同；先 collect 原任务，不重新提交")

@@ -48,6 +48,27 @@ class SubmissionUnknown(RuntimeError):
     """Submission may have been accepted; reconcile before sending anything else."""
 
 
+class PendingElsewhere(RuntimeError):
+    """同名任务已在另一个通道提交、还没收回：只能交回那个通道去 collect。"""
+
+    def __init__(self, channel: str, rec: dict):
+        super().__init__(f"{rec.get('name')} 在通道 {channel} 有未收回任务 {rec.get('job')}")
+        self.channel, self.rec = channel, rec
+
+
+DEFAULT_CHANNEL = "h3studio"
+
+
+def rec_channel(rec: dict) -> str:
+    """账本记录属于哪个通道；多通道之前写的旧记录一律算 h3studio。"""
+    return rec.get("channel") or DEFAULT_CHANNEL
+
+
+def is_local_api(api: str) -> bool:
+    from urllib.parse import urlparse
+    return (urlparse(api).hostname or "") in ("127.0.0.1", "localhost", "::1")
+
+
 class Stop(SystemExit):
     """STOP 文件或 DEADLINE 触发的正常退出。"""
 
@@ -58,7 +79,8 @@ def _now() -> str:
 
 class Client:
     def __init__(self, api: str | None = None, token: str | None = None, root: Path | None = None,
-                 poll: float = 3.0, log_dir: Path | None = None):
+                 poll: float = 3.0, log_dir: Path | None = None, channel: str = DEFAULT_CHANNEL):
+        self.channel = channel
         self.api = (api or os.environ.get("H3_API") or "").rstrip("/")
         self.token = token or os.environ.get("H3_STUDIO_TOKEN")
         self.root = Path(root or ".").resolve()
@@ -79,9 +101,10 @@ class Client:
 
     @contextmanager
     def submit_lock(self):
-        """空闲检查 + POST 用一把文件锁包住：同一台机器上两个提交者不会同时提交。"""
+        """空闲检查 + POST 用一把文件锁包住：同一台机器上两个提交者不会往同一通道同时提交。
+        锁按通道分：一个通道等空闲时不挡别的通道。"""
         self.log_dir.mkdir(parents=True, exist_ok=True)
-        lock_path = self.log_dir / ".submit.lock"
+        lock_path = self.log_dir / (".submit.lock" if self.channel == DEFAULT_CHANNEL else f".submit.{self.channel}.lock")
         f = open(lock_path, "a+")
         try:
             if fcntl:
@@ -100,6 +123,7 @@ class Client:
             raise SystemExit("子代理（DF_SUBAGENT=1）不提交生成任务（硬约束 9）：把要生成的内容交回主会话")
         if rec.get("status") in ("submission_intent", "submitted"):
             rec = {**rec, **{k: v for k, v in (getattr(self, "_submit_extra", None) or {}).items() if k not in rec}}
+            rec.setdefault("channel", self.channel)
         if rec.get("status") == "collected" and "sha256" not in rec:
             out = Path(str(rec.get("out") or ""))
             if out.is_file():
@@ -110,7 +134,8 @@ class Client:
             f.flush()
             os.fsync(f.fileno())
 
-    def unresolved(self) -> list[dict]:
+    def unresolved(self, all_channels: bool = False) -> list[dict]:
+        """未决提交（写了 intent 却没有 submitted/not_submitted）。默认只看本通道：别的通道正在提交不算本通道未决。"""
         intents = {}
         resolved = set()
         for rec in self.ledger():
@@ -119,7 +144,8 @@ class Client:
                 intents[rid] = rec
             elif rec.get("status") in ("submitted", "not_submitted") and rid:
                 resolved.add(rid)
-        return [rec for rid, rec in intents.items() if rid not in resolved]
+        return [rec for rid, rec in intents.items()
+                if rid not in resolved and (all_channels or rec_channel(rec) == self.channel)]
 
     def reconcile(self, request_id: str, *, job: str | None, not_submitted: bool,
                   evidence: str) -> None:
@@ -145,6 +171,8 @@ class Client:
             if unknown:
                 raise SubmissionUnknown("先对账未决提交，再继续生产：" + ", ".join(r["request_id"] for r in unknown))
             pending = self.pending(name)
+            if pending and rec_channel(pending) != self.channel:
+                raise PendingElsewhere(rec_channel(pending), pending)
             if pending:
                 if (pending.get("kind") != kind or Path(pending["out"]).resolve() != out.resolve()
                         or pending.get("fingerprint") not in (None, fingerprint)):
@@ -174,7 +202,7 @@ class Client:
     def require_token(self) -> None:
         if not self.api:
             raise SystemExit("缺 H3_API：设环境变量 H3_API，或在 drama.json 写 api_base")
-        if not self.token:
+        if not self.token and not is_local_api(self.api):  # 本机通道（comfy_studio.py）不要 token
             raise SystemExit("缺 H3_STUDIO_TOKEN（只从环境变量读，不要写进文件）")
 
     # ---- HTTP ----------------------------------------------------------------

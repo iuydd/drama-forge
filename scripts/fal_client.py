@@ -35,7 +35,7 @@ from pathlib import Path
 import requests
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from h3_client import Client, SubmissionUnknown  # noqa: E402
+from h3_client import Client, PendingElsewhere, SubmissionUnknown, rec_channel  # noqa: E402
 
 QUEUE = "https://queue.fal.run"
 UPSCALE_DEFAULT = {"endpoint": "fal-ai/bytedance-upscaler/upscale/video", "target_resolution": "1080p",
@@ -52,7 +52,7 @@ def upscale_config(project_cfg) -> dict | None:
 class FalClient(Client):
     def __init__(self, endpoint: str, root: Path | None = None, log_dir: Path | None = None, poll: float = 5.0,
                  upscale: dict | None = None):
-        super().__init__(api=QUEUE, token="", root=root, poll=poll, log_dir=log_dir)
+        super().__init__(api=QUEUE, token="", root=root, poll=poll, log_dir=log_dir, channel="fal")
         self.endpoint = endpoint.strip("/")
         self.upscale = upscale
         key = os.environ.get("FAL_KEY")
@@ -89,6 +89,8 @@ class FalClient(Client):
             if unknown:
                 raise SubmissionUnknown("先对账未决提交，再继续生产：" + ", ".join(r["request_id"] for r in unknown))
             pending = self.pending(name)
+            if pending and rec_channel(pending) != self.channel:
+                raise PendingElsewhere(rec_channel(pending), pending)
             if pending:
                 if pending.get("kind") != "video" or Path(pending["out"]).resolve() != out.resolve():
                     raise SubmissionUnknown("同名未收回任务与当前输入不同；先 collect 原任务，不重新提交")
@@ -228,6 +230,8 @@ class FalImageClient(FalClient):
             if unknown:
                 raise SubmissionUnknown("先对账未决提交，再继续生产：" + ", ".join(r["request_id"] for r in unknown))
             pending = self.pending(name)
+            if pending and rec_channel(pending) != self.channel:
+                raise PendingElsewhere(rec_channel(pending), pending)
             if pending:
                 if pending.get("kind") != "image" or Path(pending["out"]).resolve() != out.resolve():
                     raise SubmissionUnknown("同名未收回任务与当前输入不同；先 collect 原任务，不重新提交")
