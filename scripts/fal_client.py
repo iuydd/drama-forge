@@ -137,17 +137,20 @@ class FalImageClient(FalClient):
         self.require_token()
         self.guard()
         refs = list(refs or [])
-        if not refs:
-            raise ValueError("fal 图片编辑端点至少要 1 张参考图（起始帧挂底板或身份图）")
+        t2i = self.endpoint.endswith("text-to-image")
+        if not refs and not t2i:
+            raise ValueError("fal 图片编辑端点至少要 1 张参考图（起始帧挂底板或身份图）；无参考的参考图用文生图端点")
         if len(refs) > 3:
             raise ValueError(f"fal 图片编辑端点最多 3 张参考图，收到 {len(refs)}：分镜里删到 3 张")
         w, h = self.SIZES.get(aspect or "16:9", self.SIZES["16:9"]).get(res or "1K", (1344, 768))
         # 提示词里的 Picture N 改成该端点的记法 image N
         import re as _re
         text = _re.sub(r"\bPicture (\d)", r"image \1", prompt.strip())
-        body = {"prompt": text[:5000], "image_urls": [self._data_uri(p) for p in refs], "seed": int(seed),
+        body = {"prompt": text[:5000], "seed": int(seed),
                 "image_size": {"width": w, "height": h}, "enable_prompt_expansion": False,
                 "num_images": 1, "output_format": "png"}
+        if not t2i:
+            body["image_urls"] = [self._data_uri(p) for p in refs]
         name = name or out.stem
         fingerprint = hashlib.sha256(json.dumps({"prompt": body["prompt"], "seed": seed, "size": [w, h],
                                                  "refs": [hashlib.sha256(Path(p).read_bytes()).hexdigest() for p in refs],

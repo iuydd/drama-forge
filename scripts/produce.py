@@ -43,13 +43,25 @@ def _video_client(project: Project) -> Client:
     if project.get("video_provider") == "fal":
         from fal_client import FalClient
         return FalClient(project.sub("profiles")["video"], root=project.root, log_dir=project.scripts_dir)
+    if project.get("video_provider") == "kling":
+        from kling_client import KlingClient
+        return KlingClient(project.sub("profiles")["video"], root=project.root, log_dir=project.scripts_dir,
+                           sound=project.get("kling_sound") or "off")
+    return _client(project)
+
+
+def _ref_client(project: Project, has_refs: bool) -> Client:
+    """drama.json ref_provider=fal 时参考图走 fal：无参考 → profiles.ref（文生图端点），有参考（派生底板）→ profiles.frame（编辑端点）。"""
+    if project.get("ref_provider") == "fal":
+        from fal_client import FalImageClient
+        prof = project.sub("profiles")
+        return FalImageClient(prof["frame"] if has_refs else prof["ref"], root=project.root, log_dir=project.scripts_dir)
     return _client(project)
 
 
 def produce_refs(project: Project, ids: list[str] | None = None, retake: bool = False) -> list[str]:
     refs = project.load_refs()
     prof = project.sub("profiles")
-    c = _client(project)
     done = []
     for rid in ids or list(refs):
         r = refs.get(rid)
@@ -70,7 +82,9 @@ def produce_refs(project: Project, ids: list[str] | None = None, retake: bool = 
             if not p.exists():
                 raise SystemExit(f"{rid} 依赖的参考图 {p.name} 还没生成")
         seed = project.seed(rid, "ref", 1 + (2 if retake else 0))
-        jid, path = c.image(r["prompt"], out, profile=r.get("profile") or prof["ref"], res=r.get("res") or prof["ref_res"],
+        c = _ref_client(project, bool(ref_imgs))
+        rprof = (prof["frame"] if ref_imgs else prof["ref"]) if project.get("ref_provider") == "fal" else (r.get("profile") or prof["ref"])
+        jid, path = c.image(r["prompt"], out, profile=rprof, res=r.get("res") or prof["ref_res"],
                             seed=seed, refs=ref_imgs, aspect=r.get("aspect") or project.get("aspect"), name=rid)
         print("OK", rid, jid, path)
         done.append(rid)
@@ -158,7 +172,12 @@ def produce_videos(project: Project, ep: str, sids: list[str] | None = None, ret
                 print(sid, "take 用尽", takes)
                 break
             out = project.video_path(ep, sid, take)
-            jid, path = c.video(sh["video_prompt"], out, frame, seconds=float(sh["seconds"]),
+            extra = {}
+            if project.get("video_provider") == "kling":
+                # 可灵原生音频逐镜开关：镜头写 kling_sound 就用它；否则有在镜台词（不含 vo:true 的画外/心声）开，没有关
+                spoken = [d for d in sh.get("dialogue") or [] if not d.get("vo")]
+                extra["sound"] = sh.get("kling_sound") or ("on" if spoken else "off")
+            jid, path = c.video(sh["video_prompt"], out, frame, seconds=float(sh["seconds"]), **extra,
                                 profile=sh.get("video_profile") or prof["video"], res=prof["video_res"],
                                 seed=project.seed(sid, "video", take), aspect=project.get("aspect"), name=f"V_{sid}_t{take}")
             print("OK", sid, f"take{take}", jid, path)
@@ -201,7 +220,7 @@ def main(argv=None) -> int:
             produce_refs(pr, a.ids or None, a.retake)
         elif a.cmd == "frames":
             if a.jobs > 1:
-                if pr.get("frame_provider") != "fal":
+                if pr.get("frame_provider") not in ("fal", "kling"):
                     raise SystemExit("--jobs >1 只用于 fal 等云端队列通道；本地 H3 单卡必须串行")
                 from concurrent.futures import ThreadPoolExecutor
                 ids = a.sids or [sh["id"] for sh in pr.load_shots(a.episode).get("shots") or []]
@@ -211,7 +230,7 @@ def main(argv=None) -> int:
                 produce_frames(pr, a.episode, a.sids or None, a.retake)
         elif a.cmd == "videos":
             if a.jobs > 1:
-                if pr.get("video_provider") != "fal":
+                if pr.get("video_provider") not in ("fal", "kling"):
                     raise SystemExit("--jobs >1 只用于 fal 等云端队列通道；本地 H3 单卡必须串行")
                 from concurrent.futures import ThreadPoolExecutor
                 ids = a.sids or [sh["id"] for sh in pr.load_shots(a.episode).get("shots") or []]

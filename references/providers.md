@@ -136,6 +136,20 @@ job 的 `model` 写用户开通的 Endpoint/模型 ID，脚本不假设是 2.0 �
 - **起始帧也可走 fal**：`drama.json` 写 `"frame_provider": "fal"`、`profiles.frame` 写图片编辑端点（例 `alibaba/qwen-image-3/edit`，1K 约 0.04 美元/张）；最多 3 张参考图（按 `frame_refs` 顺序 = image 1/2/3，提示词里的 Picture N 自动改成 image N），`enable_prompt_expansion` 固定关；`produce.py frames … --jobs 16` 并行。参考图（身份图、底板）仍走 H3 中转。
 - 画质与本地 H3 同源、风格稳定；同样有约 0.5–2 秒的镜内切景和状态细节丢失，审片照 production-and-review 的 E1–E12 处理。
 
+## 7c. 可灵开放平台（kling-v3，2026-09-26 实测接通）
+
+用户指定可灵时：`drama.json` 写 `"video_provider": "kling"`，`profiles.video` 写模型名（例 `kling-v3`），`profiles.video_res` 写 `std`（720p）或 `pro`（1080p）；密钥只放环境变量 `KLING_API_KEY`（`Authorization: Bearer`），域名 `KLING_API_BASE` 默认北京站 `https://api-beijing.klingai.com`（新加坡站同一 key 报 `api key not found`）。`produce.py videos` 自动走 `scripts/kling_client.py`。
+
+- **型号要按账户实测**：模型名合法但资源包没开通时返回 `model is not supported`（例 `kling-3.0-turbo`），不要猜着换型号，报给用户选。`GET /account/costs?start_time=&end_time=`（毫秒）查资源包余额与并发。
+- **时长整数 3–15 秒**：镜头秒数向上取整、不足 3 取 3。
+- **原生音频逐镜开关**：请求字段 `sound` on/off。镜头写 `kling_sound` 就用它；没写时有在镜台词（`dialogue[]` 里不含 `"vo": true` 的项）开，否则关；心声、画外声标 `vo: true` 后期另配。
+- **起始帧**：原始 base64（不带 `data:` 前缀）放 `image`；结果从 `data.task_result.videos[0].url` 下载。
+- **并发**：试用包 5 并发，`produce.py videos … --jobs 5`。
+- **探测参数的坑**：1×1 像素图不会被同步拒绝，会建成任务再终态失败；只用会被同步校验拒绝的错误值（错误的 `mode`、`duration`、`sound` 会同步返回允许值列表）。
+- 中断收回：`kling_client.py collect --root <项目> --job <task_id> --out <路径>`。
+
+参考图也可走 fal：`"ref_provider": "fal"`，`profiles.ref` 写文生图端点（例 `alibaba/qwen-image-3/text-to-image`），有 `refs` 的派生底板自动改走 `profiles.frame` 的编辑端点。
+
 ## 8. `providers.py` 用法
 
 ```bash
