@@ -133,6 +133,7 @@ job 的 `model` 写用户开通的 Endpoint/模型 ID，脚本不假设是 2.0 �
 - **`prompt_expansion_mode` 固定 `disabled`**：默认 `balanced` 会改写提示词，逐字台词会被改。
 - **可以并行**：fal 是云端队列，`produce.py videos … --jobs 16` 每镜一个线程；提交仍经账本锁逐条记 intent→submitted，等待与下载并行。本地 H3 单卡**不许**用 `--jobs`（脚本会拒绝）。实测 29 条 768P 5 秒视频 81 秒出齐，约 0.02 美元/秒。
 - 起始帧 data URI 内联；结果从 `video.url` 的 CDN 地址下载（不带密钥）；中断用 `fal_client.py collect --root <项目> --job <request_id> --endpoint <端点> --out <路径>` 收回。
+- **起始帧也可走 fal**：`drama.json` 写 `"frame_provider": "fal"`、`profiles.frame` 写图片编辑端点（例 `alibaba/qwen-image-3/edit`，1K 约 0.04 美元/张）；最多 3 张参考图（按 `frame_refs` 顺序 = image 1/2/3，提示词里的 Picture N 自动改成 image N），`enable_prompt_expansion` 固定关；`produce.py frames … --jobs 16` 并行。参考图（身份图、底板）仍走 H3 中转。
 - 画质与本地 H3 同源、风格稳定；同样有约 0.5–2 秒的镜内切景和状态细节丢失，审片照 production-and-review 的 E1–E12 处理。
 
 ## 8. `providers.py` 用法
