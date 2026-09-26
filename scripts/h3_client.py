@@ -244,11 +244,14 @@ class Client:
             self.guard()
             cap = st.get("capacity")
             if isinstance(cap, dict) and cap.get("slots_total"):
-                if int(cap.get("slots_free") or 0) > 0 and not cap.get("queued") and not st.get("queued"):
+                # 已提交但还没开跑的任务（queued）也占槽：空槽数减去排队数仍 > 0 就提交，不等队列清空，
+                # 这样有 N 个空槽时 N 个提交在一两秒内全部发出（用户 2026-09-27：图片必须同时生成）
+                queued = int(cap.get("queued") or st.get("queued") or 0)
+                if int(cap.get("slots_free") or 0) - queued > 0:
                     return
             elif st.get("running") in (None, 0) and st.get("queued") in (None, 0):
                 return
-            time.sleep(self.poll)
+            time.sleep(min(self.poll, 1.0))
 
     # ---- 提交 ----------------------------------------------------------------
     @staticmethod
