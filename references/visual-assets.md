@@ -210,6 +210,7 @@ AI 生成的底板常见"建筑上不可能"的空间：门后面还有一扇门
 | 尺寸现实 | 护栏到膝盖、门比人矮、台阶一级半米高 | 护栏约 90–110 cm（到成人腰）、门约 2.1 m、台阶一级约 17 cm（§12） |
 | 同场拼得回平面图 | 正打里窗在人物左边，反打里窗也在左边 | 反打时窗换到另一侧；每块底板写明画左画右各是什么，和平面图对上 |
 | 危险方向 | 剧本说"身后是往下的台阶"，底板台阶往上 | 选机位让往下的台阶出现在人物身后（storyboard-keyframes §2） |
+| 隔断两侧 | 牢房栅栏后面又是一间牢房；该在栏外的人站进栏里 | 写死栅栏、门、玻璃、崖沿两侧各是什么（`behind the bars is the cell's stone back wall, not another cell`）；起始帧再写每人在哪一侧（storyboard-keyframes §6b 第 3 项） |
 
 底板提示词把平面图里的空间事实写成画面语句（写法层次见 image-prompts.md §3.5）：`seen from the west end of the corridor looking east: the corridor runs straight to a stairwell at the far end where the stairs go down to the floor below; windows along the right wall show the sports ground seen from the third floor; one door on the left wall opening into a classroom, with no second door behind it.`
 
@@ -288,14 +289,14 @@ AI 生成的底板常见"建筑上不可能"的空间：门后面还有一扇门
 "IMG-HARUKA": {"kind": "identity", "subject": "遥", "name": "遥 全身身份参考",
                "controls": "脸、低马尾、体形", "not_controls": "服装、姿势、表情、背景",
                "voice": "a young woman's calm, clear voice",
-               "profile": "krea2_turbo", "res": "2K", "refs": [],
+               "refs": [],   // 不写 profile / res：一律读 drama.json profiles（pipeline-contract §5）；另加 adversarial_preflight ≥3 条（G52）
                "prompt": "Photorealistic full-body photo of one slim Japanese woman about 28 standing against a plain light grey studio wall, facing the camera, calm neutral expression, shoulder-length black hair in a low ponytail, a charcoal grey blazer over a white shirt, dark trousers, flat shoes. Real unglamorous skin, soft even light, no text, no logo."}
 "IMG-PLATE-MEETING": {"kind": "plate", "location": "会议室", "prompt": "Photorealistic empty location plate, candid 35mm film still, daytime: a corporate meeting room, a long table running toward a projection screen at the far end, floor-to-ceiling windows with flat white daylight on the left, a plain white wall with a projector on the right. No people. No logos, no readable text anywhere. Realistic colors, subtle film grain."}
 ```
 
 提示词八段顺序：用途与主体 → 稳定锚点 → 版本差异 → 构图与尺度 → 材质色彩光 → 背景/空场 → 文字与功能 → 排除与保留。正文不带 JSON 键名、权重语法、模型控制词；审美词落到可观察的选择；不假精确（来源写二十多岁就不写 23 岁）。
 
-起始帧提示词的参考图分工句（2026-09-26 修订）：`Picture 1 is the real place where this happens, not a flat backdrop: the people stand inside this three-dimensional space, on its ground. Keep its layout exactly: where the solid ground is, where the edge and the drop are, where the stairs, walls, doors and landmarks stand. Every foot rests on solid ground that exists in Picture 1; nobody stands over empty space unless this description says they are falling. The camera position and framing follow this description; do not copy any person from it. Picture 2 sets only the person's identity: keep exactly her face, hairline, skin and build; her pose, expression, clothing, framing and action follow this description, not Picture 2.` `frame_refs` 的顺序就是 Picture 编号。
+起始帧提示词的参考图分工句（2026-09-26 修订）：`Picture 1 is the real place where this happens, not a flat backdrop: the people stand inside this three-dimensional space, on its ground. Keep its layout exactly: where the solid ground is, where the edge and the drop are, where the stairs, walls, doors and landmarks stand. Every foot rests on solid ground that exists in Picture 1; nobody stands over empty space unless this description says they are falling. The camera position and framing follow this description; do not copy any person from it. Picture 2 sets only the person's identity: keep exactly her face, hairline, skin and build; her pose, expression, clothing, framing and action follow this description, not Picture 2.` `frame_refs` 的顺序就是 Picture 编号。这句只用于底板作 Picture 1 的独立出帧；链式出帧（storyboard-keyframes §1）时 Picture 1 是上一镜末帧，用那里的链式分工句，底板排到后面，只写 `sets only the layout of the place`。两句不能同时出现：一句让模型别复制人，一句让它保留人。
 
 **禁止把底板写成背景**（as a soft out-of-focus background / as a background）：模型会把人当成贴在背景板前的一层，不管脚下有没有地，人会站在云上、站位在镜头间乱跳（错误表 E30）。底板一律写成「人物所在的真实三维空间」，并写明地面、边缘、落差、地标在哪；人物站的位置必须落在底板里真实存在的地面上，写人物位置前先看底板图那一侧是地还是空。
 
@@ -308,9 +309,9 @@ AI 生成的底板常见"建筑上不可能"的空间：门后面还有一扇门
 
 一张参考图只回答一个问题，用途九选一：身份 / 造型状态 / 地理 / 构图 / 尺度 / 效果 / 起始帧 / 结束帧 / 风格。每张写可以控制什么、不能控制什么（refs.json 的 `controls` / `not_controls`）；一张图承担两件事就拆成两条，不写"全参考"。资产参考图一般只用前六种，起始帧、结束帧属于镜头。身份和造型状态怎么分：本集之内会变的（换衣、受伤、弄湿、伪装）归造型状态图，不变的归身份图。参考图绑定前必须实际看过画面（文件名像某个角色不算），看过才知道里面有没有字、水印、多余的人（image-prompts.md §1）。起始帧只锁开场构图与姿态，不锁整镜。负面词擦不掉参考图已有的像素：参考图里有字、有水印、多一个人，就重出，不在提示词里写 "no watermark"。
 
-**参考图数量预算**：起始帧默认 2 张（底板 + 一个身份），双人接触镜 3 张（两个身份 + 底板），**不超过 3 张**。起始帧模型 qwen21（Qwen-Image-2.1）能收 10 张参考，那只是能力上限；职责重叠的参考会被平均，画面反而漂；Qwen 的多图编辑官方写明 1–3 张效果最好。双人接触镜里道具不再单独挂图，尺寸和材质写进正文。[官方]
+**参考图数量预算**：起始帧默认 2 张（底板 + 一个身份），双人接触镜 3 张（两个身份 + 底板），**不超过 3 张**。超出时按这个顺序取前三张，不临场自选：链式镜的 CHAIN 帧 > 露脸说话人的身份 > 底板 > 其他露脸人的身份（离镜头近的在前）；只露背、肩、后脑的人不挂身份图，靠 CHAIN 帧和正文外观句保持；放弃了哪张记进决策记录。起始帧模型 qwen21（Qwen-Image-2.1）能收 10 张参考，那只是能力上限；职责重叠的参考会被平均，画面反而漂；Qwen 的多图编辑官方写明 1–3 张效果最好。双人接触镜里道具不再单独挂图，尺寸和材质写进正文。[官方]
 
-**多人合成易出多余肢体**：多参考图合成常见多一只手臂、同一人出现两次，双人接触镜目检逐人数手臂和手、确认每人只出现一次。[社区]
+**多人合成易出多余肢体**：多参考图合成常见多一只手臂、同一人出现两次，多人镜目检逐人数手臂和手、确认每人只出现一次、人数等于提示词写的 `exactly N`。[社区]
 
 **身份漂移排查顺序**（按这个顺序一项项试，不跳步）：身份图本身清不清楚（脸够不够大，中近景以上该绑 `-FACE`）→ 删掉职责重叠的参考 → 调参考顺序（§7 A/B）→ 改分工句 → 最后才动风格句。[社区]
 

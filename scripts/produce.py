@@ -4,7 +4,15 @@
   produce.py refs   <项目> [IMG-ID ...] [--retake]
   produce.py frames <项目> <EP> [SID ...] [--retake]
   produce.py videos <项目> <EP> [SID ...] [--retake] [--asr]
-  produce.py all    <项目> <EP> [--asr]          起始帧之后若 审查/<EP>-预演.md 不存在或首行不是「结论：PASS」（阶段 G2）就停下，不提交视频
+  produce.py all    <项目> <EP> [--asr]          起始帧之后预演（阶段 G2）没放行就停下，不提交视频
+
+提交前的共用预检（frames / videos / all 都走，不满足就拒绝提交并说明怎么补）：
+- 子代理（环境变量 DF_SUBAGENT=1）不提交任何生成任务；
+- 该集 shots_tool.py check 的 error = 0；
+- 镜头级 frame_profile / video_profile、refs.json 里的 profile / res 与 drama.json profiles 不同 → 拒绝（档位由用户定，写进 profiles 或删掉镜头级值）；
+  drama.json 有 profiles 但没写 profiles_source（决策记录编号）→ warn；
+- 视频：预演放行（common.Project.animatic_problems 为空：首行 PASS、输入指纹未过期、必拍表填齐）；金丝雀例外——本次只提交一镜、
+  且本集别的镜都还没有视频；每个要提交的镜，所选起始帧有 review_tool.py mark --frame-take N --evidence 的目检记录且 sha 等于当前文件。
 
 - 每个镜头的起始帧/视频都带 take 编号（F_<sid>_t1.png、V_<sid>_t1.mp4）；--retake 在已有 take 之后新开一个，种子随 take 变化。
 - --asr：生成后记录逐字差异并选择待审候选；识别差异需听审，不按分数自动花费重拍。
@@ -20,6 +28,76 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import Project  # noqa: E402
 from h3_client import Client, Stop  # noqa: E402
+
+
+def _preflight(project: Project, ep: str | None, kind: str, sids: list[str] | None = None) -> None:
+    """共用提交预检（见模块说明）。不满足直接 SystemExit，错误信息写明补救命令。"""
+    import os
+    if os.environ.get("DF_SUBAGENT"):
+        raise SystemExit("子代理（DF_SUBAGENT=1）不提交生成任务（硬约束 9）：把要生成的内容交回主会话")
+    prof = project.sub("profiles")
+    if any(prof.get(k) for k in ("ref", "frame", "video")) and not project.cfg.get("profiles_source"):
+        print("[warn] drama.json 有 profiles 但没写 profiles_source（决策记录里用户指定档位那一行的编号，如 \"D-003\"）；"
+              "档位只能由用户定（SKILL 硬约束 1b）")
+    bad = []
+    def _adv_missing(items) -> bool:   # G52：提交前恶意执行预演 ≥3 条（格式错误由 shots_tool check 报 error）
+        return len([x for x in (items if isinstance(items, list) else []) if isinstance(x, dict) and str(x.get("worst") or "").strip()]) < 3
+    if kind == "refs":
+        refs_all = project.load_refs()
+        todo = [rid for rid in (sids or [r for r in refs_all if not project.ref_png(r).exists()]) if rid in refs_all]
+        adv = [rid for rid in todo if _adv_missing(refs_all[rid].get("adversarial_preflight"))]
+        if adv:
+            raise SystemExit("这些参考图没写恶意执行预演 adversarial_preflight（≥3 条 {worst, blocked_by}），不提交：" + "、".join(adv)
+                             + "（video-prompts-general §2b 第五部分；写完跑 shots_tool.py check-refs <项目> 看 G52）")
+        for rid, r in refs_all.items():
+            if r.get("profile") and r["profile"] not in (prof.get("ref"), prof.get("frame")):
+                bad.append(f"refs.json {rid}.profile={r['profile']}")
+            if r.get("res") and r["res"] != prof.get("ref_res"):
+                bad.append(f"refs.json {rid}.res={r['res']}")
+    if ep is None:
+        if bad:
+            raise SystemExit("镜头级/参考图级档位与 drama.json profiles 不同，需用户授权：写进 profiles（并记 profiles_source）或删掉这些值：" + "；".join(bad))
+        return
+    from shots_tool import check
+    errs = check(project, ep).errors()
+    if errs:
+        raise SystemExit(f"{ep} 的门还有 {len(errs)} 个 error（{errs[0]['code']} {errs[0].get('shot') or ''} {errs[0]['msg'][:60]}…），"
+                         f"先修再提交：python3 scripts/shots_tool.py check <项目> {ep}")
+    data = project.load_shots(ep)
+    shots = data.get("shots") or []
+    want = [sh for sh in shots if not sids or sh["id"] in sids]
+    for sh in want:
+        key = "frame_profile" if kind == "frames" else "video_profile"
+        if sh.get(key) and sh[key] != prof.get("frame" if kind == "frames" else "video"):
+            bad.append(f"{sh['id']}.{key}={sh[key]}")
+    if bad:
+        raise SystemExit("镜头级档位与 drama.json profiles 不同，需用户授权：写进 profiles（并记 profiles_source）或删掉镜头级值：" + "；".join(bad))
+    adv = [sh["id"] for sh in want if _adv_missing(sh.get("adversarial_preflight"))]
+    if adv:
+        raise SystemExit("这些镜没写恶意执行预演 adversarial_preflight（≥3 条 {worst, blocked_by}，blocked_by 引当前提示词原句或「验收：…」），不提交：" + "、".join(adv)
+                         + f"（video-prompts-general §2b 第五部分；写完跑 shots_tool.py check <项目> {ep} 看 G52）")
+    if kind != "videos":
+        return
+    have = {sh["id"] for sh in shots if project.takes(ep, sh["id"], "video")}
+    target = {sh["id"] for sh in want}
+    canary = len(target) == 1 and have <= target
+    probs = project.animatic_problems(ep)
+    if probs and not canary:
+        raise SystemExit(f"{ep} 阶段 G2 预演没放行，不提交视频（金丝雀只允许本集第一条视频、一次一镜）：\n- " + "\n- ".join(probs))
+    review = project.load_review(ep)
+    from review_quality import media_digest
+    unreviewed = []
+    for sh in want:
+        sid = sh["id"]
+        ft = project.chosen_take(ep, sid, "frame", review)
+        if not ft:
+            continue   # 没有起始帧的镜 produce_videos 自己会跳过
+        fr = ((review.get("shots") or {}).get(sid) or {}).get("frame_review") or {}
+        if fr.get("take") != ft or fr.get("sha256") != media_digest(project.frame_path(ep, sid, ft)):
+            unreviewed.append(f"{sid}（F_{sid}_t{ft}）")
+    if unreviewed:
+        raise SystemExit("这些镜的起始帧没有目检记录，或记录之后帧文件变了，不提交视频：" + "、".join(unreviewed)
+                         + f"\n看过原图后逐镜记录：python3 scripts/review_tool.py mark <项目> {ep} <SID> --frame-take N --evidence \"九项清单逐项：看到……\"")
 
 
 def _client(project: Project) -> Client:
@@ -60,6 +138,7 @@ def _ref_client(project: Project, has_refs: bool) -> Client:
 
 
 def produce_refs(project: Project, ids: list[str] | None = None, retake: bool = False) -> list[str]:
+    _preflight(project, None, "refs", ids if (ids and retake) else [r for r in (ids or project.load_refs()) if not project.ref_png(r).exists()])
     refs = project.load_refs()
     prof = project.sub("profiles")
     done = []
@@ -84,7 +163,7 @@ def produce_refs(project: Project, ids: list[str] | None = None, retake: bool = 
         seed = project.seed(rid, "ref", 1 + (2 if retake else 0))
         c = _ref_client(project, bool(ref_imgs))
         rprof = (prof["frame"] if ref_imgs else prof["ref"]) if project.get("ref_provider") == "fal" else (r.get("profile") or prof["ref"])
-        jid, path = c.image(r["prompt"], out, profile=rprof, res=r.get("res") or prof["ref_res"],
+        jid, path = c.image(r["prompt"], out, profile=rprof, res=r.get("res") or prof["ref_res"],   # 与 profiles 不同的值已被 _preflight 拒绝
                             seed=seed, refs=ref_imgs, aspect=r.get("aspect") or project.get("aspect"), name=rid)
         print("OK", rid, jid, path)
         done.append(rid)
@@ -92,6 +171,7 @@ def produce_refs(project: Project, ids: list[str] | None = None, retake: bool = 
 
 
 def produce_frames(project: Project, ep: str, sids: list[str] | None = None, retake: bool = False) -> list[str]:
+    _preflight(project, ep, "frames", sids)
     data = project.load_shots(ep)
     prof = project.sub("profiles")
     c = _frame_client(project)
@@ -140,6 +220,7 @@ def produce_frames(project: Project, ep: str, sids: list[str] | None = None, ret
 
 
 def produce_videos(project: Project, ep: str, sids: list[str] | None = None, retake: bool = False, asr: bool = False) -> list[str]:
+    _preflight(project, ep, "videos", sids)
     data = project.load_shots(ep)
     prof = project.sub("profiles")
     budget = project.sub("budget")
@@ -224,6 +305,7 @@ def main(argv=None) -> int:
                     raise SystemExit("--jobs >1 只用于 fal 等云端队列通道；本地 H3 单卡必须串行")
                 from concurrent.futures import ThreadPoolExecutor
                 ids = a.sids or [sh["id"] for sh in pr.load_shots(a.episode).get("shots") or []]
+                _preflight(pr, a.episode, "frames", ids)
                 with ThreadPoolExecutor(max_workers=a.jobs) as ex:
                     list(ex.map(lambda sid: produce_frames(pr, a.episode, [sid], a.retake), ids))
             else:
@@ -234,6 +316,7 @@ def main(argv=None) -> int:
                     raise SystemExit("--jobs >1 只用于 fal 等云端队列通道；本地 H3 单卡必须串行")
                 from concurrent.futures import ThreadPoolExecutor
                 ids = a.sids or [sh["id"] for sh in pr.load_shots(a.episode).get("shots") or []]
+                _preflight(pr, a.episode, "videos", ids)   # 整批预检（金丝雀按整批判断，不按单线程判断）
                 # 每镜一个线程：提交经账本锁逐条记账，等待与下载并行；ASR 放到全部完成后串行跑
                 with ThreadPoolExecutor(max_workers=a.jobs) as ex:
                     list(ex.map(lambda sid: produce_videos(pr, a.episode, [sid], a.retake, False), ids))
@@ -247,8 +330,10 @@ def main(argv=None) -> int:
             used = sorted({x for sh in data.get("shots") or [] for x in sh.get("frame_refs") or []})
             produce_refs(pr, used)
             produce_frames(pr, a.episode, a.sids or None)
-            if not pr.animatic_passed(a.episode):   # 阶段 G2 静帧预演没过（无文件或首行不是「结论：PASS」）不放行 H
-                print(f"起始帧已齐；先跑 review_tool.py animatic {a.project} {a.episode}，看预演写 审查/{a.episode}-预演.md（首行「结论：PASS」），再跑 videos")
+            probs = pr.animatic_problems(a.episode)
+            if probs:   # 阶段 G2 静帧预演没放行（首行、指纹、必拍表任一项不符）不提交视频
+                print(f"起始帧已齐；先逐张目检起始帧（review_tool.py mark --frame-take N --evidence …），再跑 review_tool.py animatic {a.project} {a.episode}，"
+                      f"看预演写 审查/{a.episode}-预演.md，放行后再跑 videos。未放行原因：\n- " + "\n- ".join(probs))
                 return 0
             produce_videos(pr, a.episode, a.sids or None, False, a.asr)
     except Stop as e:

@@ -89,6 +89,97 @@ def shot_digest(shot: dict) -> str:
                                      separators=(",", ":")).encode()).hexdigest()
 
 
+ANIMATIC_KEYS = ("scene", "kind", "subject", "seconds", "dialogue", "keyframe", "frame_prompt", "video_prompt", "video_body", "motion",
+                 "end_state", "must_show_ids", "audio_from", "planned_action_window", "action_window", "reaction_first",
+                 "explains_ability", "frame_refs", "frame_parent")
+
+
+def animatic_inputs_fp(project, ep: str, review: dict | None = None) -> str:
+    """预演输入指纹：cut_order + 每镜影响预演的字段 + must_show 事实 + 所选起始帧 take 与文件 sha。
+    只看输入、不依赖 TTS 时长，放行时可以便宜地重算（common.Project.animatic_problems）。"""
+    data = project.load_shots(ep)
+    shots = data.get("shots") or []
+    by = {s["id"]: s for s in shots}
+    order = data.get("cut_order") if data.get("cut_order") is not None else [s["id"] for s in shots]
+    review = review if review is not None else project.load_review(ep)
+    rows = []
+    for sid in order:
+        sh = by.get(sid) or {}
+        t = project.chosen_take(ep, sid, "frame", review)
+        p = project.frame_path(ep, sid, t) if t else None
+        rows.append([sid, {k: sh.get(k) for k in ANIMATIC_KEYS}, t, media_digest(p) if p and p.is_file() else None])
+    facts = [f for sc in data.get("scenes") or [] for f in sc.get("must_show") or []]
+    return hashlib.sha256(json.dumps([rows, facts], ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:16]
+
+
+def text_digest(text: str) -> str:
+    return hashlib.sha256(text.strip().encode()).hexdigest()
+
+
+def ledger(project) -> list[dict]:
+    p = project.scripts_dir / "jobs.jsonl"
+    out = []
+    if p.exists():
+        for line in p.read_text(encoding="utf-8").splitlines():
+            try:
+                out.append(json.loads(line))
+            except json.JSONDecodeError:
+                continue
+    return out
+
+
+def provenance_issues(project, ep: str, sid: str, take: int, shot: dict, review: dict | None = None, jobs: list | None = None) -> list[str]:
+    """视频 take 的来源：账本里要有收回它的 collected 记录（新记录带 sha256，须等于当前文件）；对应 submitted 记录的
+    提示词哈希须等于当前 video_prompt、起始帧 sha（新记录才有）须等于当前所选起始帧。旧账本缺字段的项不报，不卡历史项目。"""
+    path = project.video_path(ep, sid, take)
+    if not path.is_file():
+        return []
+    jobs = ledger(project) if jobs is None else jobs
+    # 按「EPxxx/视频/V_…mp4」尾部比对，纯字符串：项目搬过机器（账本里是旧绝对路径）也对得上，且不对账本路径做文件系统调用
+    # （/home/... 这类路径在 macOS 上会触发 autofs，逐条 resolve 会卡住）
+    want = Path(path).parts[-3:]
+    col = [r for r in jobs if r.get("status") == "collected" and r.get("out") and Path(str(r["out"])).parts[-3:] == want]
+    if not col:
+        return ["no_ledger_provenance（账本 脚本/jobs.jsonl 里没有收回这个文件的记录：不是本流水线生成的，可能是从别的镜/别的 take 复制来的）"]
+    rec = col[-1]
+    out = []
+    if rec.get("sha256") and rec["sha256"] != media_digest(path):
+        out.append("media_changed_since_collect（文件在收回后被替换过）")
+    sub = next((r for r in reversed(jobs) if r.get("status") == "submitted" and r.get("job") == rec.get("job")), None)
+    if sub:
+        cur = text_digest(shot.get("video_prompt") or "")
+        if sub.get("source_prompt_sha256"):
+            if sub["source_prompt_sha256"] != cur:
+                out.append("stale_prompt（生成后 video_prompt 改过：重拍，不能只重新 mark）")
+        elif sub.get("prompt_sha256") and not sub.get("provider") and len(str(sub["prompt_sha256"])) == 16 and sub["prompt_sha256"] != cur[:16]:
+            out.append("stale_prompt（生成后 video_prompt 改过：重拍，不能只重新 mark）")
+        if sub.get("frame_sha256"):
+            ft = project.chosen_take(ep, sid, "frame", review)
+            fp = project.frame_path(ep, sid, ft) if ft else None
+            if not fp or not fp.is_file() or media_digest(fp) != sub["frame_sha256"]:
+                out.append("stale_frame（生成这条视频用的起始帧不是当前所选起始帧：换帧后要重拍）")
+    return out
+
+
+def carried_must_show(data: dict, sid: str) -> list[str]:
+    return [f["id"] for f in must_show_facts(data) if sid in f["shots"]]
+
+
+def must_show_approval_issues(data: dict, sid: str, entry: dict, take, verdict) -> list[str]:
+    """ok/weak 的前提：本镜承担的每条 must_show 在这个 take 上核成 pass（unverified、缺项都按没核）；承担镜不许 weak。"""
+    if verdict not in ("ok", "weak"):
+        return []
+    carried = carried_must_show(data, sid)
+    state = must_show_state(entry, take)
+    out = []
+    todo = [m for m in carried if state.get(m) != "pass"]
+    if todo:
+        out.append(f"must_show_unverified {','.join(todo)}（承担镜要逐条核成 pass：mark --must-show {todo[0]}=pass|fail，unverified 在正式剪辑里等同 fail）")
+    if verdict == "weak" and carried:
+        out.append(f"weak_on_must_show_carrier（本镜承担 {','.join(carried)}，不能 weak：retake、改分镜或回剧本）")
+    return out
+
+
 def speech_diff(expected: str, heard: str, readings: dict | None = None,
                 critical_terms: list[str] | None = None) -> dict:
     """Report both missing and additional content, never infer correctness from similarity."""
@@ -131,6 +222,22 @@ def action_required(shot: dict) -> bool:
     return bool(shot.get("action_required") or shot.get("planned_action_window") or shot.get("action_window"))
 
 
+def spoken(shot: dict) -> list[dict]:
+    """镜内要开口的台词（vo:true 画外/心声不在本镜音轨里，audio_from 的镜用别镜声音）。"""
+    return [] if shot.get("audio_from") else [d for d in shot.get("dialogue") or [] if d.get("text") and not d.get("vo")]
+
+
+def asr_currency_issues(path: Path, shot: dict, rec: dict) -> list[str]:
+    """asr_ok=true 的前提：这个文件、这版镜头跑过 ASR（review_tool.py asr），且没判出语种疑似不符。"""
+    if not spoken(shot):
+        return []
+    if rec.get("asr_media_sha256") != media_digest(path) or rec.get("asr_shot_sha256") != shot_digest(shot):
+        return ["asr_not_run_on_current_take（asr_ok=true 但当前文件/当前镜头没跑过 ASR：python3 scripts/review_tool.py asr <项目> <EP> <SID>）"]
+    if "语种疑似不符" in ((rec.get("speech_diff") or {}).get("critical_changes") or []):
+        return ["asr_language_mismatch（ASR 判语种疑似不符：口音不像母语者，不合格，重拍）"]
+    return []
+
+
 def take_quality(path: Path, shot: dict, rec: dict, *, audio_only: bool = False) -> list[str]:
     assessment = rec.get("assessment") or {}
     if not path.is_file():
@@ -143,12 +250,18 @@ def take_quality(path: Path, shot: dict, rec: dict, *, audio_only: bool = False)
         if key == "audio":
             if audio["asr_ok"] is not True:
                 problems.append("audio_not_passed")
+            else:
+                problems.extend(asr_currency_issues(path, shot, rec))
             if audio["listen_ok"] is False:
                 problems.append("listen_failed")
             if audio["sync_ok"] is False:
                 problems.append("sync_failed")
         elif (assessment.get("checks") or {}).get(key) != "pass":
             problems.append(f"{key}_not_passed")
+    if not audio_only and spoken(shot) and assessment.get("speaker_face_ok") is not True:
+        # 纯视觉：本句说话人的嘴在动、其他人嘴不动（口型落错人是生成模型常见的"合字面最差成品"）
+        problems.append("speaker_face_not_verified（有台词的镜要看过是说话人本人在张嘴、别人闭嘴：mark --speaker-face-ok true --evidence …）"
+                        if assessment.get("speaker_face_ok") is None else "speaker_face_failed（口型落在别人脸上或多人同时张嘴：重拍）")
     if not str(assessment.get("evidence") or "").strip():
         problems.append("missing_evidence")
     if (audio_only or (shot.get("dialogue") and not shot.get("audio_from"))) and not valid_window(assessment.get("speech_window")):
@@ -168,6 +281,7 @@ def cut_issues(project, ep: str, data: dict, review: dict) -> list[str]:
     shots = {sh["id"]: sh for sh in data.get("shots") or []}
     order = data.get("cut_order") if data.get("cut_order") is not None else list(shots)
     problems = []
+    jobs = ledger(project)
     if not order or len(order) != len(set(order)):
         problems.append("cut_order is empty or duplicated")
     audio_sources = {item.get("shot") for sid in order if sid in shots for item in shots[sid].get("audio_from") or []}
@@ -202,9 +316,11 @@ def cut_issues(project, ep: str, data: dict, review: dict) -> list[str]:
             problems.append(f"{sid}: verdict is not bound to selected take")
         if entry.get("verdict") == "weak" and not assessment.get("acceptance_reason"):
             problems.append(f"{sid}: weak needs explicit acceptance of noncritical defect")
+        problems.extend(f"{sid}/t{take}: {p}" for p in provenance_issues(project, ep, sid, take, sh, review, jobs))
         failed_ms = must_show_failed(entry, take)
         if failed_ms:
             problems.append(f"{sid}: must_show fail {','.join(failed_ms)}（必须拍清楚的事实没拍出来：retake 或回剧本/分镜改，不能靠台词或延长镜头补）")
+        problems.extend(f"{sid}: {p}" for p in must_show_approval_issues(data, sid, entry, take, entry.get("verdict")))
         edit = rec.get("edit") or {}
         if not math.isfinite(float(edit.get("speed") or 1.0)) or not 0.5 <= float(edit.get("speed") or 1.0) <= 2:
             problems.append(f"{sid}: invalid speed")

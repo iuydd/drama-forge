@@ -4,11 +4,17 @@
   project_tool.py init <目录> --title T [--episodes 6] [--dialogue-lang ja] [--genre 智斗复仇] [--target-seconds 120] [--style "..."] [--style-preset live_modern] [--aspect 16:9]
   project_tool.py status <目录> [--json]
   project_tool.py next <目录>
+  project_tool.py fingerprint <目录> <EP>     打印 C/E 审查要写的 `剧本指纹：<12位>` / `分镜指纹：<12位>` 两行
+
+阶段完成的判定都走脚本门，不看"文件在不在"：C 审查 审查/<EP>-审查.md、E 审查 审查/<EP>-分镜审查.md 要过 review_md_check、
+结论 PASS、指纹等于当前剧本/分镜；G2 预演看 common.Project.animatic_problems；I 审片看 review_quality.cut_issues；
+J 看 审查/<EP>-final-qa.json（delivery=true、PASS、video_sha256 等于当前成片、不是草剪）加 审查/<EP>-成片终验.md 首行 PASS。
 """
 from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 import sys
 import time
@@ -50,12 +56,79 @@ def init(root: Path, title: str, episodes: int, dialogue_lang: str, genre: str, 
     return root
 
 
+def frame_reviewed(project: Project, ep: str, sid: str, rv: dict) -> bool:
+    from review_quality import media_digest
+    ft = project.chosen_take(ep, sid, "frame", rv)
+    fr = ((rv.get("shots") or {}).get(sid) or {}).get("frame_review") or {}
+    return bool(ft) and fr.get("take") == ft and fr.get("sha256") == media_digest(project.frame_path(ep, sid, ft))
+
+
+REVIEW_FILES = {"C": ("审查", "剧本"), "E": ("分镜审查", "分镜")}
+
+
+def review_problems(project: Project, ep: str, stage: str) -> list[str]:
+    """C/E 审查：审查/<EP>-审查.md（C）或 审查/<EP>-分镜审查.md（E）过 review_md_check、结论 PASS、指纹行等于当前输入。"""
+    from review_md_check import check_file
+    name, label = REVIEW_FILES[stage]
+    p = project.review_dir / f"{ep}-{name}.md"
+    fp = project.fingerprints(ep).get(label)
+    how = (f"派独立 reviewer（scripts/isolated_agent.sh <项目> <任务书> reviewer）按 review-checklists §{stage} 写 审查/{ep}-{name}.md，"
+           f"文件里写一行「{label}指纹：{fp}」（project_tool.py fingerprint <项目> {ep} 打印）")
+    if not p.exists():
+        return [f"没有 审查/{ep}-{name}.md：{how}"]
+    r = check_file(p)
+    out = [f"review_md_check {x['code']}：{x['msg']}" for x in r["issues"] if x["level"] == "error"]
+    if r["verdict"] != "PASS":
+        out.append(f"审查结论是 {r['verdict']}，不是 PASS：按问题清单改完再派 reviewer 复审")
+    text = p.read_text(encoding="utf-8")
+    if not re.search(rf"{label}指纹\s*[：:]\s*[0-9a-f]{{12}}", text):
+        out.append(f"审查/{ep}-{name}.md 缺「{label}指纹：{fp}」行（旧审查没有绑定输入）：reviewer 核对当前{label}后写上这一行；{label}改过就要重审")
+    return out
+
+
+def delivery_problems(project: Project, ep: str) -> list[str]:
+    """J 完成：final-qa.json 对交付文件跑过、PASS、sha 等于当前成片、不是草剪；成片终验.md 首行 PASS。"""
+    from review_quality import media_digest
+    jp = project.review_dir / f"{ep}-final-qa.json"
+    run = f"python3 scripts/final_qa.py <项目> {ep}"
+    out = []
+    try:
+        rep = json.loads(jp.read_text(encoding="utf-8")) if jp.exists() else None
+    except json.JSONDecodeError:
+        rep = {}
+    if rep is None:
+        out.append(f"没有 审查/{ep}-final-qa.json：跑 {run}")
+        rep = {"video_sha256": media_digest(project.final_path(ep)), "delivery": True, "conclusion": "PASS"}   # 下面只再查成片终验.md
+    elif not rep:
+        out.append(f"审查/{ep}-final-qa.json 损坏：重跑 {run}")
+        rep = {"video_sha256": media_digest(project.final_path(ep)), "delivery": True, "conclusion": "PASS"}
+    if rep.get("video_sha256") != media_digest(project.final_path(ep)):
+        out.append(f"final-qa 不是对当前成片跑的（成片重剪过或报告对的是别的文件）：重跑 {run}")
+    if rep.get("delivery") is False or rep.get("draft"):
+        out.append(f"final-qa 报告不是对交付文件跑的、或成片是草剪：用 cut.py 正式剪后重跑 {run}")
+    elif "delivery" not in rep:
+        out.append(f"final-qa 是旧版脚本写的（没有 delivery 字段）：重跑 {run}")
+    if rep.get("conclusion") != "PASS":
+        out.append(f"final-qa 结论 {rep.get('conclusion')}：按 审查/{ep}-final-qa.md 问题清单改完重剪重验")
+    fp = project.review_dir / f"{ep}-成片终验.md"
+    first = next((ln.strip() for ln in fp.read_text(encoding="utf-8").splitlines() if ln.strip()), "") if fp.exists() else ""
+    if not re.match(r"^结论\s*[：:]\s*PASS\b", first):
+        out.append(f"审查/{ep}-成片终验.md {'不存在' if not fp.exists() else '首行不是「结论：PASS」'}：按 assets/templates/成片终验.md 逐项看成片后填写"
+                   "（REVISE 交付要用户看过问题清单的原话确认，拿不到就是未交付）")
+    return out
+
+
 def status(project: Project) -> dict:
     from shots_tool import check
+    from review_quality import cut_issues
     out = {"title": project.title, "episodes": {}}
     dev = project.root / "项目开发"
-    out["系列简报"] = (dev / "系列简报.md").exists() and "【" not in (dev / "系列简报.md").read_text(encoding="utf-8")[:400]
-    out["情绪集纲"] = (dev / "情绪集纲.md").exists() and "EP001 |" in (dev / "情绪集纲.md").read_text(encoding="utf-8")
+    out["系列简报"] = (dev / "系列简报.md").exists() and "【" not in (dev / "系列简报.md").read_text(encoding="utf-8")   # 全文，不只前 400 字
+    beats = (dev / "情绪集纲.md").read_text(encoding="utf-8") if (dev / "情绪集纲.md").exists() else ""
+    rows = {m.group(1): m.group(0) for m in re.finditer(r"^\|?\s*(EP\d{3})\s*\|.*$", beats, re.M)}
+    out["情绪集纲"] = bool(rows) and "【" not in beats and all(len([c for c in rows.get(ep, "").split("|")[1:] if c.strip()]) >= 1
+                                                           for ep in project.episodes[:1])
+    out["情绪集纲缺行"] = [ep for ep in project.episodes if ep not in rows]
     refs = project.load_refs()
     out["参考图"] = {rid: project.ref_png(rid).exists() for rid in refs}
     for ep in project.episodes:
@@ -63,6 +136,8 @@ def status(project: Project) -> dict:
         e["剧本"] = project.script_path(ep).exists()
         e["视觉设定"] = project.visual_path(ep).exists()
         e["shots.json"] = project.shots_path(ep).exists()
+        e["C审查"] = review_problems(project, ep, "C") if e["剧本"] else None
+        e["E审查"] = review_problems(project, ep, "E") if e["shots.json"] else None
         if e["shots.json"] and e["剧本"]:
             F = check(project, ep)
             e["门"] = {"errors": len(F.errors()), "warns": len(F.warns())}
@@ -72,9 +147,16 @@ def status(project: Project) -> dict:
             e["起始帧"] = sum(1 for s in sids if project.takes(ep, s, "frame"))
             e["视频"] = sum(1 for s in sids if project.takes(ep, s, "video"))
             rv = project.load_review(ep)
-            e["审片"] = sum(1 for s in sids if ((rv.get("shots") or {}).get(s) or {}).get("verdict"))
-        e["预演"] = project.animatic_passed(ep)   # 文件在且首行「结论：PASS」
+            e["审片"] = sum(1 for s in sids if ((rv.get("shots") or {}).get(s) or {}).get("verdict") in ("ok", "weak", "mute")
+                           or (((rv.get("shots") or {}).get(s) or {}).get("verdict") == "drop" and ((rv.get("shots") or {}).get(s) or {}).get("note")))
+            e["审片问题"] = cut_issues(project, ep, data, rv) if e["视频"] else []
+            e["起始帧未目检"] = [s for s in sids if project.takes(ep, s, "frame") and not project.takes(ep, s, "video")
+                             and not frame_reviewed(project, ep, s, rv)]
+        e["预演问题"] = project.animatic_problems(ep) if e["shots.json"] else ["没有 shots.json"]
+        e["预演"] = not e["预演问题"]
         e["成片"] = project.final_path(ep).exists()
+        e["终验问题"] = delivery_problems(project, ep) if e["成片"] else None
+        e["终验"] = e["成片"] and not e["终验问题"]
         out["episodes"][ep] = e
     return out
 
@@ -123,6 +205,15 @@ def novelty_warns(text: str) -> list[str]:
 
 def next_step(project: Project) -> str:
     st = status(project)
+    notes = []
+    for ep, e in st["episodes"].items():
+        p = project.review_dir / f"{ep}-预演.md"
+        if e.get("预演") and p.exists() and "自检" in p.read_text(encoding="utf-8").splitlines()[0]:
+            notes.append(f"\n[warn] {ep} 预演结论标着自检：自检不算独立复核，汇报时照实写")
+    return _next_step(project, st) + "".join(notes)
+
+
+def _next_step(project: Project, st: dict) -> str:
     if not st["系列简报"]:
         return "阶段 A：写 项目开发/系列简报.md（先按 premise-novelty 出 ≥6 候选并打分选一，再写主爽点类型、四问、人物、能力规则、分集走向）"
     brief = (project.root / "项目开发" / "系列简报.md").read_text(encoding="utf-8")
@@ -132,30 +223,48 @@ def next_step(project: Project) -> str:
 
 def _next_after_brief(project: Project, st: dict) -> str:
     if not st["情绪集纲"]:
-        return "阶段 B：填 项目开发/情绪集纲.md（每集一行：受气/底牌/行动/反派失去/兑现/新问题/交接）"
+        return "阶段 B：填 项目开发/情绪集纲.md（每集一行：受气/底牌/行动/反派失去/兑现/新问题/交接；模板【】清掉）"
+    warn = f"\n[warn] 情绪集纲还没写到 {st['情绪集纲缺行'][0]} 起的集（写到哪集前先补那一行）" if st.get("情绪集纲缺行") else ""
+    return _next_eps(project, st) + warn
+
+
+def _next_eps(project: Project, st: dict) -> str:
     for ep, e in st["episodes"].items():
         if not e["剧本"]:
             return f"阶段 C：写 {ep}/剧本.md"
+        if e.get("C审查"):
+            return f"阶段 C：{ep} 剧本审查没放行：" + "；".join(e["C审查"][:3])
         if not e["视觉设定"]:
             return f"阶段 D：写 {ep}/视觉设定.md 并把新人物/地点写进 参考图/refs.json"
         if not e["shots.json"]:
             return f"阶段 E：写 {ep}/shots.json（分镜 + 冻结关键帧 + 起始帧提示词 + 视频提示词）"
         if e.get("门", {}).get("errors"):
             return f"阶段 E：修 {ep} 的门：python3 scripts/shots_tool.py check <项目> {ep}"
+        if e.get("E审查"):
+            return f"阶段 E：{ep} 分镜审查没放行：" + "；".join(e["E审查"][:3])
         missing_refs = [r for r, ok in st["参考图"].items() if not ok]
         if missing_refs:
             return f"阶段 F：生成参考图 {missing_refs}：python3 scripts/produce.py refs <项目>"
         if e.get("起始帧", 0) < e.get("镜数", 0):
             return f"阶段 G：生成 {ep} 起始帧并逐张目检：python3 scripts/produce.py frames <项目> {ep}"
-        if not e["预演"] and e.get("视频", 0) <= 1 and e.get("镜数", 0):   # 金丝雀一镜之外，视频提交前必过静帧预演
-            return f"阶段 G2：静帧预演 {ep}：python3 scripts/review_tool.py animatic <项目> {ep}，Read 接触表后写 审查/{ep}-预演.md，首行「结论：PASS」才放行（production-and-review §3b）"
+        if e.get("起始帧未目检"):
+            left = e["起始帧未目检"]
+            return (f"阶段 G：{ep} 还有 {len(left)} 镜起始帧没有目检记录（{'、'.join(left[:4])}{'…' if len(left) > 4 else ''}）：看原图后逐镜 "
+                    f"python3 scripts/review_tool.py mark <项目> {ep} <SID> --frame-take N --evidence \"九项清单逐项：看到……\"")
+        if not e["预演"] and e.get("视频", 0) < e.get("镜数", 0) and e.get("镜数", 0):   # 金丝雀一镜之外，视频提交前必过静帧预演
+            note = "；".join(e["预演问题"][:3])
+            return (f"阶段 G2：静帧预演 {ep} 没放行：{note}。流程：python3 scripts/review_tool.py animatic <项目> {ep}，看预演片和接触表后填 "
+                    f"审查/{ep}-预演.md（production-and-review §3b）")
         if e.get("视频", 0) < e.get("镜数", 0):
             return f"阶段 H：生成 {ep} 视频（带 ASR 自动重拍）：python3 scripts/produce.py videos <项目> {ep} --asr"
-        if e.get("审片", 0) < e.get("镜数", 0):
-            return f"阶段 I：审片 {ep}：review_tool.py sheets/asr/auto，模型看接触表后 mark"
+        if e.get("审片问题"):
+            iss = e["审片问题"]
+            return f"阶段 I：审片 {ep} 还有 {len(iss)} 项没过剪辑准入：" + "；".join(iss[:3]) + "（review_tool.py sheets/asr/auto，看接触表后 mark）"
         if not e["成片"]:
             return f"阶段 J：剪 {ep}：python3 scripts/cut.py <项目> {ep}"
-    return "全部集已出成片；可做终审或开新一季"
+        if e.get("终验问题"):
+            return f"阶段 J：终验 {ep} 没完成：" + "；".join(e["终验问题"][:3])
+    return "全部集已出成片并过终验；可做终审或开新一季"
 
 
 def main(argv=None) -> int:
@@ -176,6 +285,9 @@ def main(argv=None) -> int:
     s.add_argument("--json", action="store_true")
     n = sub.add_parser("next")
     n.add_argument("dir")
+    f = sub.add_parser("fingerprint")
+    f.add_argument("dir")
+    f.add_argument("episode")
     a = ap.parse_args(argv)
     if a.cmd == "init":
         root = init(Path(a.dir), a.title, a.episodes, a.dialogue_lang, a.genre, a.target_seconds, a.style, a.aspect, a.style_preset)
@@ -194,9 +306,16 @@ def main(argv=None) -> int:
                 g = e.get("门")
                 print(f"  {ep} 剧本:{'✓' if e['剧本'] else '✗'} 视觉:{'✓' if e['视觉设定'] else '✗'} shots:{'✓' if e['shots.json'] else '✗'} "
                       f"门:{(str(g['errors']) + 'E/' + str(g['warns']) + 'W') if g else '-'} 镜:{e.get('镜数', '-')} "
-                      f"帧:{e.get('起始帧', '-')} 预演:{'✓' if e.get('预演') else '✗'} 视频:{e.get('视频', '-')} 审片:{e.get('审片', '-')} 成片:{'✓' if e['成片'] else '✗'}")
+                      f"帧:{e.get('起始帧', '-')} 预演:{'✓' if e.get('预演') else '✗'} 视频:{e.get('视频', '-')} 审片:{e.get('审片', '-')}"
+                      f"{('（' + str(len(e['审片问题'])) + ' 项未过准入）') if e.get('审片问题') else ''} 成片:{'✓' if e['成片'] else '✗'} "
+                      f"终验:{'✓' if e.get('终验') else '✗'} C审:{'-' if e.get('C审查') is None else ('✓' if not e['C审查'] else '✗')} "
+                      f"E审:{'-' if e.get('E审查') is None else ('✓' if not e['E审查'] else '✗')}")
     elif a.cmd == "next":
         print(next_step(pr))
+    elif a.cmd == "fingerprint":
+        fps = pr.fingerprints(a.episode)
+        for label in ("剧本", "分镜"):
+            print(f"{label}指纹：{fps.get(label) or '（文件不存在）'}")
     return 0
 
 

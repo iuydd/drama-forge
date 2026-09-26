@@ -104,7 +104,7 @@ Keep the same person from Picture 1: same face, hairline, skin tone, build and h
 1. 这是什么空间、服务什么活动、整体尺度；
 2. 相机站在哪、看向哪（平面图锚点）、机位高度；
 3. 入口与路线：门、走廊、楼梯的位置和方向（楼梯往上还是往下写死）；
-4. 一到三个强锚点及其两两关系、视线终点；次要装饰概括带过；
+4. 一到三个强锚点及其两两关系、视线终点；有栅栏、门、玻璃、崖沿时写两侧各是什么；次要装饰概括带过；
 5. 对辨认结构有用的墙、地、顶材质和主次色；
 6. 当前状态：时段、天气、实际灯具开关（跨镜持续的状态才进底板）；
 7. `No people.` 与 `No readable text anywhere.`
@@ -144,7 +144,7 @@ Keep the same person from Picture 1: same face, hairline, skin tone, build and h
 ```text
 目标：哪条 IMG、哪个对象、哪个区域
 变化：看得见、有边界的变化（位置、方向、范围、程度、材质颜色结果）
-保留：最容易被误改的高价值事实——脸与体形、未变的服装部件、固定地理、道具轮廓、构图机位、光向、未选区域
+保留：最容易被误改的高价值事实——在场人数与每人的位置、朝向、持物（逐人点名，不写 everyone）、脸与体形、未变的服装部件、固定地理、道具轮廓、构图机位、光向、未选区域
 连续性影响：对应哪个已登记的状态或变体，影响哪些镜头的 frame_refs；没有影响写"无"并说明理由
 ```
 
@@ -153,6 +153,7 @@ Keep the same person from Picture 1: same face, hairline, skin tone, build and h
 - **太宽的要求先拆细**："改背景""让她更狼狈"不能直接写成提示词，要落到具体区域和可观察结果。
 - **改的是上游事实就不算编辑**：挪门窗、改身份、改道具状态要先改视觉设定（visual-assets §2、§4），不能在编辑提示词里偷改。
 - 局部删人这类编辑，变化和保留都要明说：`Remove the man on the right side of the frame completely. Keep every other person, their positions and poses, the background and the lighting exactly as they are.`
+- **改机位的链式编辑**（storyboard-keyframes §1 用上一镜末帧出下一镜起始帧）：改的是相机，人和物在世界里不动。先写相机怎么动，再按 video-prompts-general §2b 逐人写他在新画面里的位置；相机换方向后画左画右会跟着变，按轴线算好写死，不写 `same positions`：`Move the camera to the cliff rim, looking back toward the stone path. Keep exactly three people, each once: Gu Changsheng in the grey robe, now on screen-right with his heels on the rim, facing screen-left; Yan Chong in the black robe, on screen-left, facing him; the sword spirit in white, behind Gu's left shoulder, facing screen-left. Keep the light and the single sword in Gu's right hand.` 目检逐个数人头、核朝向，并和上一镜末帧对照有没有被整体镜像。
 - 旧图不覆盖：重出改名归档（硬约束 8），refs.json 里记下这次改了什么、为什么。
 - 自然语言修订（用户说"工作服换成深蓝，但保留脸和袖口油渍"）自动执行：读当前视觉设定和 refs.json 条目，分清哪些是提示词措辞、哪些要先改视觉设定；改完在 `项目开发/决策记录.md` 记一行改前、改后、保留项、受影响镜头。用户说"更有电影感"这类含糊要求时，不堆风格词，由 art-director 在光比、构图、色彩关系里选一个可观察的方向执行并记录理由。
 - 文件被别的会话或人工改过时，先重读当前条目，把两边的有效改动合并，不用旧版本覆盖。
@@ -208,7 +209,7 @@ Keep the same person from Picture 1: same face, hairline, skin tone, build and h
 
 | 模型/来源 | 已知行为 | 写法上的对应 |
 |---|---|---|
-| Qwen-Image-2.1 / Qwen-Image-Edit 系列（起始帧常用 `qwen21`） | 能收多张参考，但官方说多图编辑 1–3 张最好；职责重叠的参考会被平均 [官方] | 起始帧默认 2 张、接触镜 3 张（G38）；每张在分工句里点名只控制什么 |
+| Qwen-Image-2.1 / Qwen-Image-Edit 系列（中转档位名如 `qwen21`；用哪一档由用户定，写在 drama.json `profiles`） | 能收多张参考，但官方说多图编辑 1–3 张最好；职责重叠的参考会被平均 [官方] | 起始帧默认 2 张、接触镜 3 张（G38）；每张在分工句里点名只控制什么 |
 | Qwen-Edit 多角度类用法 | 用"相机转了多少度、站在哪、看向哪"的相机操作句换角度，比笼统"反方向"好控 [社区] | 派生底板、转面板用相机操作句（visual-assets §4） |
 | FLUX Kontext 类编辑模型 | 整体改写动词会把人换掉；连续代词会指代混乱 [官方] | 用 change only / replace / remove；用名字或描述性称呼代替 he/she |
 | OpenAI 图像模型指南 | 多图时逐张声明职责；多轮编辑每轮重复不变项 [官方] | 分工句逐张写；§4 保留清单每轮完整重复 |

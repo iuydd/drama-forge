@@ -854,8 +854,9 @@ def cut(project: Project, ep: str, out: Path | None = None, loudnorm: bool = Tru
         issues = cut_issues(project, ep, data, review)
         if issues:
             raise ValueError("正式剪辑未通过审查准入：\n" + "\n".join(issues) + "\n未审素材可用 --draft 生成草剪预览")
-    elif out is not None and out.resolve() == project.final_path(ep).resolve():
-        raise ValueError("草剪不得覆盖正式成片路径")
+    elif out is not None and (out.resolve() == project.final_path(ep).resolve()
+                              or out.resolve().parent == project.final_path(ep).resolve().parent):
+        raise ValueError("草剪不得写进 成片/ 目录（草剪不是成片；final_qa 也会拦 draft 元数据）")
     W, H = int(project.get("width")), int(project.get("height"))
     FPS = int(project.get("fps"))
     subcfg = project.sub("subtitle")

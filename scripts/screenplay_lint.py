@@ -123,6 +123,20 @@ def lint_text(text: str, speakers: set[str] | None = None) -> list[dict]:
     for sc, n in scene_body.items():
         if n == 0:
             add("SP11", "warn", None, sc, "场次没有任何正文")
+    # SP13 每场要有「[连续性] … 必拍：①…」（E 阶段逐条抄进 must_show，shots_tool G46 对账）；SP14 每场第一行写在场名单
+    cur, blocks = None, {}
+    for raw in lines:
+        m = SCENE_LOOSE_RE.match(raw.strip())
+        if m:
+            cur = m.group("id")
+            blocks[cur] = []
+        elif cur:
+            blocks[cur].append(raw.strip())
+    for sc, body in blocks.items():
+        if not any(re.match(r"^\[连续性\].*必拍\s*[：:]\s*\S", x) for x in body):
+            add("SP13", "error", None, sc, "本场没写「[连续性] … 必拍：①… ②… ③…」：观众必须看见的事实逐条写出来（screenplay 规则），分镜 must_show 照抄")
+        if not any(re.match(r"^\[连续性\]\s*在场\s*[：:]", x) for x in body):
+            add("SP14", "warn", None, sc, "本场没写在场名单：场次标头下第一行 `[连续性] 在场：甲（门口）、乙（桌后）；画外：丙（门外走廊）`（screenplay §1）")
 
     counts = Counter(sp for _, _, sp, _ in dialogues)
     for ln, sc, sp, hint in dialogues:

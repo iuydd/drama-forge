@@ -12,7 +12,7 @@ from unittest.mock import Mock, patch
 
 from common import Project, SHOTS_SCHEMA
 from project_tool import init
-from review_quality import speech_diff, cut_issues, protect_interval, verified_action
+from review_quality import speech_diff, cut_issues, protect_interval, verified_action, media_digest, shot_digest, text_digest
 from review_tool import auto, mark, choose_best, ASR
 from shots_tool import scene_state_issues
 
@@ -28,13 +28,38 @@ class QualityTests(unittest.TestCase):
         self.data = {"schema":SHOTS_SCHEMA, "shots":[self.shot]}
         self.write_shots()
         self.path = self.project.video_path("EP001", "EP001-S01", 1)
-        self.path.write_bytes(b"fixture-take-one")
+        self.make_take(1, b"fixture-take-one")
 
     def write_shots(self):
         self.project.shots_path("EP001").write_text(json.dumps(self.data))
 
+    def make_take(self, take, data, sid="EP001-S01", frame_sha=None):
+        """合成素材 + 账本记录（等同 h3_client 下载后写的 submitted/collected），让来源校验能对上。"""
+        path = self.project.video_path("EP001", sid, take)
+        path.write_bytes(data)
+        sh = next(x for x in self.data["shots"] if x["id"] == sid)
+        self.project.scripts_dir.mkdir(parents=True, exist_ok=True)
+        with open(self.project.scripts_dir / "jobs.jsonl", "a", encoding="utf-8") as f:
+            sub = {"status": "submitted", "job": f"job-{sid}-{take}", "name": path.stem, "out": str(path.resolve()),
+                   "source_prompt_sha256": text_digest(sh.get("video_prompt") or "")}
+            if frame_sha:
+                sub["frame_sha256"] = frame_sha
+            f.write(json.dumps(sub) + "\n")
+            f.write(json.dumps({"status": "collected", "job": f"job-{sid}-{take}", "out": str(path.resolve()), "sha256": media_digest(path)}) + "\n")
+        return path
+
+    def fake_asr(self, take=1, sid="EP001-S01", critical=()):
+        """合成 ASR 记录（等同 review_tool.asr_shot 对当前文件、当前镜头跑过一次）。"""
+        review = self.project.load_review("EP001")
+        sh = next(x for x in self.project.load_shots("EP001")["shots"] if x["id"] == sid)
+        rec = review.setdefault("shots", {}).setdefault(sid, {}).setdefault("video_takes", {}).setdefault(str(take), {"take": take})
+        rec.update(asr_media_sha256=media_digest(self.project.video_path("EP001", sid, take)), asr_shot_sha256=shot_digest(sh),
+                   speech_diff={"status": "exact", "critical_changes": list(critical), "similarity": 1.0})
+        self.project.save_review("EP001", review)
+
     def approve(self, take=1, **kw):
-        args = dict(video_take=take, visual="pass", audio="pass", continuity="pass", verdict="ok",
+        self.fake_asr(take)
+        args = dict(video_take=take, visual="pass", audio="pass", continuity="pass", verdict="ok", speaker_face_ok=True,
                     action_window=[1, 3], speech_window=[0.5, 2], evidence="offline fixture: action and speech verified")
         args.update(kw)
         return mark(self.project, "EP001", "EP001-S01", **args)
@@ -193,6 +218,118 @@ class QualityTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 cut(self.project,"EP001",dry=True)
             command.assert_not_called()
+
+    # ---- 红队回归（scratchpad/rt harness 场景）：每条都应被拦下 ----
+    def test_copied_take_without_ledger_is_rejected(self):
+        self.approve()
+        other = self.project.video_path("EP001", "EP001-S01", 2)
+        other.write_bytes(self.path.read_bytes())          # 复制成新 take，账本里没有它
+        self.fake_asr(2)
+        with self.assertRaises(ValueError) as cm:
+            self.approve(take=2)
+        self.assertIn("no_ledger_provenance", str(cm.exception))
+
+    def test_prompt_changed_after_generation_needs_retake(self):
+        self.approve()
+        self.shot["video_prompt"] = "He slams the table and storms out."
+        self.write_shots()
+        with self.assertRaises(ValueError) as cm:
+            self.approve()
+        self.assertIn("stale_prompt", str(cm.exception))
+
+    def test_video_from_old_frame_is_stale(self):
+        f1 = self.project.frame_path("EP001", "EP001-S01", 1)
+        f1.write_bytes(b"frame-one")
+        self.make_take(2, b"take-two", frame_sha=media_digest(f1))
+        self.approve(take=2)
+        self.assertFalse(self.issues())
+        self.project.frame_path("EP001", "EP001-S01", 2).write_bytes(b"frame-two")   # 换了起始帧
+        self.assertTrue(any("stale_frame" in x for x in self.issues()))
+
+    def test_asr_ok_requires_current_asr(self):
+        args = dict(video_take=1, visual="pass", continuity="pass", verdict="ok", action_window=[1, 3], speech_window=[0.5, 2],
+                    evidence="claims asr passed without running it")
+        with self.assertRaises(ValueError):
+            mark(self.project, "EP001", "EP001-S01", asr_ok=True, **args)
+        with self.assertRaises(ValueError):
+            mark(self.project, "EP001", "EP001-S01", audio="pass", **args)
+        self.fake_asr(1, critical=["语种疑似不符"])
+        with self.assertRaises(ValueError) as cm:
+            mark(self.project, "EP001", "EP001-S01", asr_ok=True, **args)
+        self.assertIn("语种", str(cm.exception))
+
+    def test_listen_ok_needs_human_listener(self):
+        self.approve()
+        for who in (None, "claude", "self", "Agent", "模型", "子代理"):
+            with self.assertRaises(ValueError):
+                mark(self.project, "EP001", "EP001-S01", listen_ok=True, listener=who, evidence="heard it")
+        e = mark(self.project, "EP001", "EP001-S01", listen_ok=True, listener="用户（母语者 佐藤）", evidence="0.5–2.0s 语调自然")
+        rec = self.project.load_review("EP001")["shots"]["EP001-S01"]["video_takes"]["1"]
+        self.assertEqual(rec["assessment"]["listener"], "用户（母语者 佐藤）")
+        self.assertGreaterEqual(len(rec["evidence_log"]), 2)   # 证据追加，不覆盖
+        self.assertEqual(e["verdict"], "ok")
+
+    def test_must_show_carrier_needs_pass_and_no_weak(self):
+        self.data["scenes"] = [{"id": "EP001-SC001", "must_show": [{"id": "MS1", "fact": "他把合同递过去", "shots": ["EP001-S01"]}]}]
+        self.shot["must_show_ids"] = ["MS1"]
+        self.write_shots()
+        with self.assertRaises(ValueError):
+            self.approve()                                   # 没核 must_show
+        with self.assertRaises(ValueError):
+            self.approve(must_show={"MS1": "unverified"})    # unverified 等同没核
+        with self.assertRaises(ValueError):
+            self.approve(verdict="weak", acceptance_reason="background softness only", must_show={"MS1": "pass"})
+        self.approve(must_show={"MS1": "pass"})
+        self.assertFalse(self.issues())
+
+    def test_frame_take_must_exist_and_binds_sha(self):
+        with self.assertRaises(ValueError):
+            mark(self.project, "EP001", "EP001-S01", frame_take=9)
+        f1 = self.project.frame_path("EP001", "EP001-S01", 1)
+        f1.write_bytes(b"frame-one")
+        mark(self.project, "EP001", "EP001-S01", frame_take=1, evidence="九项清单：一人、面朝左、手里合同、no text")
+        fr = self.project.load_review("EP001")["shots"]["EP001-S01"]["frame_review"]
+        self.assertEqual((fr["take"], fr["sha256"]), (1, media_digest(f1)))
+
+    def test_dialogue_take_needs_speaker_face_check(self):
+        with self.assertRaises(ValueError) as cm:
+            self.approve(speaker_face_ok="unset")
+        self.assertIn("speaker_face", str(cm.exception))
+        with self.assertRaises(ValueError):
+            self.approve(speaker_face_ok=False)
+        self.approve()
+        self.assertFalse(self.issues())
+        self.path.write_bytes(b"swapped")          # 换了文件：口型结论跟着失效
+        self.assertTrue(self.issues())
+
+    def test_final_asr_ignores_poisoned_cache(self):
+        with patch("review_tool.asr_python", return_value="fake-python"):
+            reader = ASR(self.project)
+        reader.cache[reader.key(self.path)] = [[0.0, 1.0, "我没有拿走合同"]]    # 投毒：缓存里写成"台词全对"
+        row = json.dumps([str(self.path), [[0.2, 0.6, "嗡"]]], ensure_ascii=False)
+        with patch("review_tool.subprocess.run", return_value=Mock(returncode=0, stdout=row)):
+            got = reader.words([self.path], fresh=True)[str(self.path)]
+        self.assertEqual(got, [[0.2, 0.6, "嗡"]])
+
+    def test_extra_vocal_and_voice_mismatch(self):
+        import shutil
+        import subprocess
+        from review_tool import extra_vocal_segments, voice_mismatch
+        words = [[0.1, 0.3, "あの"], [0.6, 1.0, "我没有"], [1.0, 1.6, "拿走合同"], [2.4, 2.8, "嘘"]]
+        self.assertEqual([r[2] for r in extra_vocal_segments(words, [0.6, 1.6])], ["あの", "嘘"])
+        if not shutil.which("ffmpeg"):
+            return
+        refs = self.project.refs_path
+        refs.write_text(json.dumps({"refs": {"IMG-A": {"kind": "identity", "subject": "甲", "voice": "a middle-aged man's low voice"}}}))
+        wav = self.project.video_path("EP001", "EP001-S01", 5)
+        subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "sine=frequency=300:duration=2", str(wav.with_suffix(".wav"))], check=True)
+        got = voice_mismatch(self.project, self.shot, wav.with_suffix(".wav"), [0.0, 2.0])
+        self.assertTrue(got and got["expected"] == "male" and got["f0_median_hz"] > 200)
+
+    def test_draft_cannot_land_in_final_dir(self):
+        from cut import cut
+        with self.assertRaises(ValueError):
+            cut(self.project, "EP001", out=self.project.final_path("EP001").with_name("x.mp4"), dry=True, draft=True)
 
     def test_draft_sheet_is_separate(self):
         from cut import cut

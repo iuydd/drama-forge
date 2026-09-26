@@ -2,7 +2,9 @@
 """审片：接触表、ASR 比对、自动选 take、记录取用区间。只读素材，不提交任何生成任务。
 
   review_tool.py sheets <项目> <EP> [SID ...]          每个 take 一张 2fps 接触表 审查/<EP>-sheets/<sid>_t<n>.jpg
-  review_tool.py asr    <项目> <EP> [SID ...]          全部 take 跑 ASR，比对台词，结果写 审查/<EP>-asr.json 和 review.json
+  review_tool.py asr    <项目> <EP> [SID ...]          全部 take 跑 ASR，比对台词，结果写 审查/<EP>-asr.json 和 review.json；每 take 另记
+                                                       extra_vocal_segments（speech_window 外识别到的人声 [[起, 止, 文本]]）与 voice_mismatch
+                                                       （基频粗筛：refs.json 身份图 voice 的性别与中位基频明显不符，男 >200Hz / 女 <150Hz；只提醒去听）
   review_tool.py motion <项目> <EP> [SID ...]          全部 take 算运动能量（8fps、160px 灰度帧差，每 0.25s 一格），写 review.json 的
                                                        video_takes[n].motion / action_peak / action_start / action_end / cuts（镜内跳切）
   review_tool.py animatic <项目> <EP> [--no-tts]      阶段 G2 预演：按 cut_order 把通过的起始帧各放 seconds 秒，叠说话人与台词、镜号、
@@ -14,12 +16,20 @@
                                                        环境变量 ANIMATIC_TTS=0 等同 --no-tts
   review_tool.py auto   <项目> <EP>                    按规则自动选 take、给 verdict（不改已由人/模型 mark 过的镜）
   review_tool.py report <项目> <EP>                    汇总 审查/<EP>-审片.md
-  review_tool.py mark   <项目> <EP> <SID> [--video-take N] [--frame-take N] [--in S] [--out S]
+  review_tool.py mark   <项目> <EP> <SID> [--video-take N] [--frame-take N] [--in S] [--out S] [--listener NAME]
                         [--mode after_last_word|to_end|fixed|full|action] [--verdict ok|weak|retake|drop|mute] [--speed X] [--note ...]
                         [--asr-ok true|false|null] [--listen-ok true|false|null] [--sync-ok true|false|null] [--must-show MS1=pass|fail|unverified]
     声音结论三分项写进 video_takes[n].assessment：asr_ok 识别正确、listen_ok 听感自然、sync_ok 口型/音画同步；null = 未验证，报告里显示「未验证」。
     旧 --audio pass 只等于 asr_ok=true。入剪要求 asr_ok=true，listen_ok/sync_ok 为 false 时拦下，null 放行但处处显示未验证。
-    --must-show 写 video_takes[n].must_show_check（并镜像到镜级 must_show_check）；有 fail 时不许 ok/weak，auto 给 retake。
+    --must-show 写 video_takes[n].must_show_check（并镜像到镜级 must_show_check）；有 fail 时不许 ok/weak，auto 给 retake；
+    承担 must_show 的镜要逐条 pass 才能 ok（unverified/缺项 = 没核），承担镜不许 weak。
+    --speaker-face-ok true|false|null（纯视觉，代理可签，要带 --evidence）：本句说话人的嘴在动、其他人嘴不动；有镜内台词的镜入正式剪辑要求 true。
+    --listen-ok true/false 必须带 --listener <真人>（用户或用户指定的母语者；model/claude/agent/ai/self 等一律拒绝）。
+    --asr-ok true（或旧 --audio pass）要求当前文件、当前镜头跑过 ASR（asr_media_sha256/asr_shot_sha256 对得上）且没判「语种疑似不符」。
+    --frame-take N --evidence "目检九项…"：起始帧目检，写 shots[sid].frame_review {take, sha256, evidence, time}（并追加 frame_review_log）；
+    produce.py videos/all 拒绝没有目检记录或记录后帧文件已变的起始帧。--frame-take 必须指向已存在的 take。
+    每次 mark 的 evidence 追加到 video_takes[n].evidence_log（时间、文件 sha、镜头 sha），不覆盖旧证据。
+    批准 ok/weak/mute 还要求账本来源：脚本/jobs.jsonl 里有收回这个文件的 collected 记录，提示词与起始帧没在生成后改过。
 
 ASR 用 faster-whisper：优先环境变量 ASR_PY 指向装了它的 python；否则依次试当前 python 和 ~/.venvs/*/bin/python。
 模型 ASR_MODEL（默认 medium），语言取 drama.json 的 dialogue_lang。词级时间戳缓存在 脚本/asr_cache.json。
@@ -38,9 +48,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import Project, ffprobe_duration, norm, speech_seconds  # noqa: E402
-from review_quality import (AUDIO_KEYS, CHECKS, EDIT_KEYS, MUST_SHOW_VALUES, audio_status, fmt_audio, media_digest,
-                            must_show_failed, must_show_facts, must_show_state, shot_digest, speech_diff, take_quality,
-                            valid_window)
+from review_quality import (AUDIO_KEYS, CHECKS, EDIT_KEYS, MUST_SHOW_VALUES, animatic_inputs_fp, audio_status, fmt_audio,
+                            media_digest, must_show_approval_issues, must_show_failed, must_show_facts, must_show_state,
+                            provenance_issues, shot_digest, speech_diff, take_quality, valid_window, asr_currency_issues)
 
 ASR_CODE = (
     "import sys,json\n"
@@ -90,8 +100,9 @@ class ASR:
     def key(self, path: Path) -> str:
         return f"{path.resolve()}:{media_digest(path)}:{self.model}:{self.lang}"
 
-    def words(self, paths: list[Path]) -> dict[str, list]:
-        todo = [p for p in paths if self.key(p) not in self.cache]
+    def words(self, paths: list[Path], fresh: bool = False) -> dict[str, list]:
+        """fresh=True 不读缓存（成片终验用：缓存文件在项目里，谁都能写）。"""
+        todo = [p for p in paths if fresh or self.key(p) not in self.cache]
         if todo:
             if not self.py:
                 raise SystemExit("没有可用的 faster-whisper 环境；设 ASR_PY 指向装了它的 python")
@@ -137,11 +148,72 @@ def asr_shot(project: Project, ep: str, sh: dict, take: int) -> dict:
     rec["stray_voice"] = bool(heard) and not bool(want)
     rec["asr_media_sha256"] = media_digest(path)
     rec["asr_shot_sha256"] = shot_digest(sh)
+    # 台词窗口外的人声（ASR 词在窗口外 → 多出来的话、乱语、别人开口）；窗口 = 已审的 speech_window，没审过按期望台词的词时间
+    old_rec = ((project.load_review(ep).get("shots") or {}).get(sid) or {}).get("video_takes", {}).get(str(take)) or {}
+    win = (old_rec.get("assessment") or {}).get("speech_window")
+    if not (isinstance(win, list) and len(win) == 2):
+        win = [ws[0][0], ws[-1][1]] if (ws and want) else None
+    rec["extra_vocal_segments"] = extra_vocal_segments(ws, win)
+    rec["voice_mismatch"] = voice_mismatch(project, sh, path, win)
     review = project.load_review(ep)
     entry = review.setdefault("shots", {}).setdefault(sid, {})
     entry.setdefault("video_takes", {}).setdefault(str(take), {}).update(rec)  # 保留 motion 等其他字段
     project.save_review(ep, review)
     return rec
+
+
+def extra_vocal_segments(words: list, window) -> list[list[float]]:
+    """speech_window 外被识别出来的人声片段（相邻 0.6s 内合并），[[start, end, text], …]。无台词镜的窗口为 None：全部都算多出来的。"""
+    outside = [w for w in words if not window or (w[1] <= window[0] - 0.15 or w[0] >= window[1] + 0.15)]
+    runs: list[list] = []
+    for w in outside:
+        if runs and w[0] - runs[-1][1] < 0.6:
+            runs[-1][1] = w[1]
+            runs[-1][2] += str(w[2])
+        else:
+            runs.append([w[0], w[1], str(w[2])])
+    return [r for r in runs if len(norm(r[2])) >= 1]
+
+
+VOICE_SEX = (("female", re.compile(r"\b(?:woman|woman's|girl|female|lady)\b|女", re.I)),
+             ("male", re.compile(r"\b(?:man|man's|boy|male|guy)\b|男", re.I)))
+
+
+def voice_mismatch(project: Project, sh: dict, path: Path, window) -> dict | None:
+    """基频粗筛：说话人身份图 refs.json voice 写的性别与台词段中位基频明显不符（男 >200Hz、女 <150Hz）时返回说明；判不了返回 None。
+    只是提醒去听，不是听审结论。"""
+    dlg = [d for d in sh.get("dialogue") or [] if d.get("text") and not d.get("vo")]
+    if not dlg or sh.get("audio_from") or not window:
+        return None
+    speaker = dlg[0].get("speaker")
+    voice = next((str(r.get("voice") or "") for r in project.load_refs().values() if r.get("subject") == speaker and r.get("voice")), "")
+    sex = next((k for k, rx in VOICE_SEX if rx.search(voice)), None)
+    if not sex:
+        return None
+    try:
+        import numpy as np
+        raw = subprocess.run(["ffmpeg", "-v", "error", "-ss", f"{max(0.0, window[0]):.2f}", "-t", f"{max(0.3, window[1] - window[0]):.2f}",
+                              "-i", str(path), "-ac", "1", "-ar", "16000", "-f", "s16le", "-"], capture_output=True).stdout
+        x = np.frombuffer(raw, dtype=np.int16).astype(np.float32) / 32768.0
+        f0s = []
+        for i in range(0, len(x) - 640, 320):   # 40ms 帧、20ms 步长的自相关基频
+            fr = x[i:i + 640] - x[i:i + 640].mean()
+            if np.sqrt((fr ** 2).mean()) < 0.02:
+                continue
+            ac = np.correlate(fr, fr, "full")[639:]
+            lo, hi = 16000 // 400, 16000 // 70
+            k = lo + int(np.argmax(ac[lo:hi]))
+            if ac[k] > 0.3 * ac[0]:
+                f0s.append(16000 / k)
+        if len(f0s) < 5:
+            return None
+        med = float(np.median(f0s))
+    except Exception:  # noqa: BLE001  粗筛失败不影响 ASR 主流程
+        return None
+    if (sex == "male" and med > 200) or (sex == "female" and med < 150):
+        return {"speaker": speaker, "expected": sex, "f0_median_hz": round(med, 1), "voice": voice[:60],
+                "note": "中位基频和身份图 voice 设定的性别不符：听审确认是不是换了人声/口音严重不像"}
+    return None
 
 
 def choose_best(project: Project, ep: str, sid: str, review: dict | None = None, save: bool = True) -> int | None:
@@ -453,7 +525,7 @@ def animatic(project: Project, ep: str, tts: bool = True) -> tuple[Path, Path, l
                     "-frames:v", "1", str(jpg)], check=False)
     fingerprint = hashlib.sha256(json.dumps([[{k: r[k] for k in ("shot", "frames", "lines", "action", "reaction")} for r in plan["rows"]], frames_used],
                                             ensure_ascii=False, sort_keys=True).encode()).hexdigest()[:16]
-    write_animatic_md(project, ep, plan, missing, fingerprint, bool(label))
+    write_animatic_md(project, ep, plan, missing, fingerprint, bool(label), animatic_inputs_fp(project, ep, review))
     return mp4, jpg, missing
 
 
@@ -490,22 +562,32 @@ def animatic_stats(project: Project, plan: dict) -> dict:
             "no_action_mark": [r["shot"] for r in rows if r["kind"] in ("person", "hands") and not r["action"] and not r["lines"]]}
 
 
-def write_animatic_md(project: Project, ep: str, plan: dict, missing: list[str], fingerprint: str, has_font: bool) -> Path:
-    """写 审查/<EP>-预演.md：首行结论待填（脚本只认首行 PASS）；已有人填过结论且预演内容没变就不动，内容变了把旧文件挪成 .prev.md。"""
+def write_animatic_md(project: Project, ep: str, plan: dict, missing: list[str], fingerprint: str, has_font: bool,
+                      inputs_fp: str | None = None) -> Path:
+    """写 审查/<EP>-预演.md：首行结论待填；已有人填过结论且预演内容没变就不动（只补/更新「预演输入指纹」行），
+    内容变了把旧文件挪成 .prev.md。放行判定见 common.Project.animatic_problems。"""
     p = project.review_dir / f"{ep}-预演.md"
+    inputs_line = f"预演输入指纹：{inputs_fp}（shots.json 与所选起始帧的指纹；放行时脚本重算比对，这一行不要改）" if inputs_fp else ""
     if p.exists():
         old = p.read_text(encoding="utf-8")
         first = next((ln.strip() for ln in old.splitlines() if ln.strip()), "")
         filled = re.match(r"^结论\s*[：:]\s*(PASS|REVISE)\b", first, re.I)
         if filled and f"预演指纹：{fingerprint}" in old:
+            if inputs_line:   # 预演内容没变：旧文件升级，补上输入指纹行（旧版脚本生成的 md 没有这一行）
+                new = re.sub(r"^预演输入指纹[：:].*$", inputs_line, old, flags=re.M) if re.search(r"^预演输入指纹[：:]", old, re.M) \
+                    else re.sub(r"^(预演指纹[：:].*)$", lambda m: m.group(1) + "\n\n" + inputs_line, old, count=1, flags=re.M)
+                if new != old:
+                    p.write_text(new, encoding="utf-8")
             return p
         if filled:
             p.with_name(f"{ep}-预演.prev.md").write_text(old, encoding="utf-8")
     st = animatic_stats(project, plan)
     names = {"dub": "配音", "tts": "临时读稿", "estimate": "估算静音"}
-    L = ["结论：待填（看完预演片后把这一行改成「结论：PASS」或「结论：REVISE」；脚本只认首行，有一条不过就写 REVISE）", "",
+    L = ["结论：待填（看完预演片后把这一行改成「结论：PASS」或「结论：REVISE」；有一条不过就写 REVISE。PASS 还要：下面「必拍事实」表逐条填「镜号 · 预演第几秒」和"
+         "「看得到」、模板方括号全部填掉、预演输入指纹行不改——project_tool next 与 produce.py videos/all 逐项核对）", "",
          f"# {ep} 预演", "",
          f"预演指纹：{fingerprint}（预演内容变了会重出模板，旧结论挪到 {ep}-预演.prev.md）", "",
+         *([inputs_line, ""] if inputs_line else []),
          f"预演片：审查/{ep}-预演.mp4；接触表：审查/{ep}-预演.jpg。临时对白：配音 {st['sources']['dub']} 句、"
          f"本地 TTS 临时读稿 {st['sources']['tts']} 句（{plan.get('voice') or '无'}，只作节奏参考，文件名带 temp）、按估算时长留静音 {st['sources']['estimate']} 句。"
          + ("" if has_font else "⚠ 没找到中日文字体，画面上没有字幕和标记，只能对照本表看。"), "",
@@ -530,6 +612,9 @@ def write_animatic_md(project: Project, ep: str, plan: dict, missing: list[str],
         rb = "；".join(f"{a:.1f}–{b:.1f}s" for a, b in r["reaction"]) or "无"
         L.append(f"| {i} | {r['shot']} | {r['scene']} | {r['seconds']:.1f}s | {lines} | {'是' if r['fits'] else '✗ 否'} | {act} | {rb} | "
                  f"{','.join(r['must_show_ids']) or '-'} | {'是' if r['explains_ability'] else '-'} |")
+    if st["must_show"]:
+        L += ["", "## 必拍事实", "", "| ID | 事实 | 承担镜 · 预演第几秒 | 结果（看得到 / 看不到 / 只靠台词；数量类写逐个数的结果） |", "|---|---|---|---|"]
+        L += [f"| {f['id']} | {f['fact']} | 【{(f['in_cut'] or ['镜号'])[0]} · X.Xs】 | 【看得到 / 看不到 / 只靠台词】 |" for f in st["must_show"]]
     L += ["", "## 审查逐条回答（production-and-review §3b）", "",
           "1. 只看画面、听临时对白，能不能复述每场发生了什么、谁赢谁输？",
           "2. 每条必须拍清楚的事实（数量、谁做了什么、反派具体损失）在哪一镜、第几秒让观众看清？",
@@ -629,7 +714,8 @@ def asr_all(project: Project, ep: str, sids: list[str] | None = None) -> dict:
 def auto(project: Project, ep: str) -> dict:
     """Measurements create pending_review; only current evidence can retain approval."""
     review = project.load_review(ep)
-    for sh in project.load_shots(ep).get("shots") or []:
+    data = project.load_shots(ep)
+    for sh in data.get("shots") or []:
         sid = sh["id"]
         entry = review.setdefault("shots", {}).setdefault(sid, {})
         if entry.get("verdict") == "drop" and entry.get("note"):
@@ -639,7 +725,8 @@ def auto(project: Project, ep: str) -> dict:
             entry["verdict"] = "missing"
             continue
         rec = (entry.get("video_takes") or {}).get(str(best)) or {}
-        issues = take_quality(project.video_path(ep, sid, best), sh, rec)
+        issues = take_quality(project.video_path(ep, sid, best), sh, rec) + provenance_issues(project, ep, sid, best, sh, review)
+        issues += must_show_approval_issues(data, sid, entry, best, rec.get("verdict"))
         ms_fail = must_show_failed(entry, best)
         if ms_fail:   # 必须拍清楚的事实没拍出来：不许给 ok/weak，只能重拍或回剧本/分镜改
             issues = issues + [f"must_show_failed:{','.join(ms_fail)}"]
@@ -679,6 +766,10 @@ def report(project: Project, ep: str) -> Path:
             heard += "；待听审差异：" + json.dumps(diff["edits"], ensure_ascii=False)
         if diff.get("critical_changes"):
             heard += "；⚠ 关键词识别分歧（需母语者确认）：" + "、".join(diff["critical_changes"])
+        if rec.get("extra_vocal_segments"):
+            heard += "；⚠ 台词窗口外人声：" + "、".join(f"{a:.1f}–{b:.1f}s「{t}」" for a, b, t in rec["extra_vocal_segments"])
+        if rec.get("voice_mismatch"):
+            heard += f"；[warn] 声线疑似不符（中位基频 {rec['voice_mismatch']['f0_median_hz']}Hz，设定 {rec['voice_mismatch']['expected']}），听审确认"
         audio = fmt_audio(audio_status(rec.get("assessment"))) if sh.get("dialogue") else "-"
         state = must_show_state(e, t) if t else {}
         ids = list(dict.fromkeys(list(sh.get("must_show_ids") or []) + list(state)))
@@ -699,16 +790,49 @@ def report(project: Project, ep: str) -> Path:
     return p
 
 
+BAD_LISTENERS = ("model", "claude", "agent", "ai", "self", "llm", "gpt", "assistant", "bot", "opus", "sonnet", "haiku", "fable",
+                 "whisper", "asr", "subagent", "reviewer", "代理", "模型", "自己", "本人", "子代理", "助手", "机器")
+
+
+def valid_listener(name) -> bool:
+    """listen_ok 只能由真人签（用户或用户指定的母语者）；执行代理、子代理、模型名一律拒绝（SKILL 防钻空子总则第 5 条）。"""
+    n = str(name or "").strip().lower()
+    if len(n) < 2 or n in ("-", "无", "none", "null"):
+        return False
+    return not any(b == n or (b.isascii() and len(b) > 2 and b in n) or (not b.isascii() and b in n) for b in BAD_LISTENERS)
+
+
+def _now() -> str:
+    return time.strftime("%Y-%m-%dT%H:%M:%S")
+
+
 def mark(project: Project, ep: str, sid: str, **kw) -> dict:
     review = project.load_review(ep)
-    sh = next((s for s in project.load_shots(ep).get("shots") or [] if s["id"] == sid), None)
+    data = project.load_shots(ep)
+    sh = next((s for s in data.get("shots") or [] if s["id"] == sid), None)
     if sh is None:
         raise ValueError("unknown shot")
     entry = review.setdefault("shots", {}).setdefault(sid, {})
-    if kw.get("frame_take") is not None:
-        entry["frame_take"] = kw["frame_take"]
+    frame_mark = kw.get("frame_take") is not None
+    if frame_mark:
+        ft = int(kw["frame_take"])
+        fpath = project.frame_path(ep, sid, ft)
+        if not fpath.is_file():
+            raise ValueError(f"起始帧 {fpath.name} 不存在；--frame-take 只能选已生成的 take")
+        entry["frame_take"] = ft
+        ev = str(kw.get("evidence") or "").strip()
+        if ev:   # 起始帧目检：证据绑定这张帧文件的 sha256；重出/换帧后自动失效，produce.py videos 拒绝提交
+            fr = {"take": ft, "sha256": media_digest(fpath), "evidence": ev, "time": _now()}
+            entry["frame_review"] = fr
+            entry.setdefault("frame_review_log", []).append(fr)
     video_keys = set(EDIT_KEYS) | set(CHECKS) | set(AUDIO_KEYS) | {"video_take", "verdict", "evidence", "action_window", "speech_window",
                                                                    "acceptance_reason", "must_show"}
+    if kw.get("speaker_face_ok", "unset") == "unset":
+        kw.pop("speaker_face_ok", None)
+    else:
+        video_keys.add("speaker_face_ok")
+    if frame_mark:
+        video_keys.discard("evidence")   # 带 --frame-take 时 --evidence 是起始帧目检证据
     if not any(kw.get(key) is not None for key in video_keys):
         if kw.get("note") is not None:
             entry["note"] = kw["note"]
@@ -747,7 +871,8 @@ def mark(project: Project, ep: str, sid: str, **kw) -> dict:
     assessment = dict(old) if current else {}
     checks = dict(assessment.get("checks") or {})
     audio_given = {k: kw[k] for k in AUDIO_KEYS if k in kw and kw[k] != "unset"}   # None（null）也是有效写入：写成未验证
-    has_review = any(kw.get(k) is not None for k in (*CHECKS, "action_window", "speech_window", "must_show")) or bool(audio_given)
+    has_review = any(kw.get(k) is not None for k in (*CHECKS, "action_window", "speech_window", "must_show")) or bool(audio_given) \
+        or "speaker_face_ok" in kw
     if has_review:
         if not str(kw.get("evidence") or "").strip():
             raise ValueError("review changes require evidence (what was seen/heard and where)")
@@ -765,10 +890,26 @@ def mark(project: Project, ep: str, sid: str, **kw) -> dict:
             if val not in (True, False, None):
                 raise ValueError(f"{key} must be true/false/null")
             assessment[key] = val
+        if "speaker_face_ok" in kw:
+            if kw["speaker_face_ok"] not in (True, False, None):
+                raise ValueError("speaker_face_ok must be true/false/null")
+            assessment["speaker_face_ok"] = kw["speaker_face_ok"]   # 绑定本 take：assessment 带 media_sha256，换文件自动失效
+        if "listen_ok" in audio_given:
+            if audio_given["listen_ok"] is None:
+                assessment.pop("listener", None)
+            elif not valid_listener(kw.get("listener")):
+                raise ValueError("listen_ok 只能由真人签：--listener 写听的人（用户或用户指定的母语者），"
+                                 f"不接受模型/代理/自己（收到 {kw.get('listener')!r}）；没人听就写 --listen-ok null，汇报「未听审」")
+            else:
+                assessment["listener"] = str(kw["listener"]).strip()
         if "asr_ok" in audio_given and kw.get("audio") is None and audio_given["asr_ok"] is not None:
             checks["audio"] = "pass" if audio_given["asr_ok"] else "fail"   # 旧字段跟着新字段走，旧读者不至于误读
         if kw.get("audio") is not None and "asr_ok" not in audio_given:
             assessment["asr_ok"] = {"pass": True, "fail": False}.get(kw["audio"])   # 旧 --audio pass 只等于识别通过
+        if assessment.get("asr_ok") is True and ("asr_ok" in audio_given or kw.get("audio") is not None):
+            bad = [x for x in asr_currency_issues(path, sh, rec)]
+            if bad:
+                raise ValueError("不能写 asr_ok=true：" + "；".join(bad))
         if kw.get("must_show"):
             ms = dict(rec.get("must_show_check") or {})
             for mid, val in kw["must_show"].items():
@@ -778,7 +919,10 @@ def mark(project: Project, ep: str, sid: str, **kw) -> dict:
             rec["must_show_check"] = ms
             entry["must_show_check"] = dict(ms)
         assessment.update(media_sha256=md, shot_sha256=sd, checks=checks,
-                          evidence=kw["evidence"].strip(), reviewed_at=time.strftime("%Y-%m-%dT%H:%M:%S"))
+                          evidence=kw["evidence"].strip(), reviewed_at=_now())
+        # 证据只追加不覆盖：每条带时间和被审文件 sha，改结论也留得下旧证据
+        rec.setdefault("evidence_log", []).append({"time": assessment["reviewed_at"], "evidence": kw["evidence"].strip(),
+                                                   "media_sha256": md, "shot_sha256": sd, "verdict": kw.get("verdict")})
         if kw.get("audio") is not None or audio_given:
             assessment["speed"] = float(edit.get("speed") or 1.0)
         rec["assessment"] = assessment
@@ -787,7 +931,8 @@ def mark(project: Project, ep: str, sid: str, **kw) -> dict:
         if current or has_review:
             rec["assessment"] = assessment
     verdict = kw.get("verdict") or rec.get("verdict") or "pending_review"
-    issues = take_quality(path, sh, rec)
+    issues = take_quality(path, sh, rec) + provenance_issues(project, ep, sid, take, sh, review)
+    issues += [x for x in must_show_approval_issues(data, sid, entry, take, verdict) if not must_show_failed(entry, take)]
     if float(edit.get("speed") or 1.0) != float(assessment.get("speed") or 1.0):
         issues.append("changed speed needs listening review")
     if verdict in ("ok", "weak", "mute") and issues:
@@ -846,6 +991,9 @@ def main(argv=None) -> int:
                        help={"asr_ok": "识别正确（ASR 与台词一致）", "listen_ok": "听感自然（人听过）", "sync_ok": "口型/音画同步"}[key])
     m.add_argument("--must-show", action="append", default=[], metavar="MS1=pass|fail|unverified",
                    help="本 take 对必须拍清楚事实的核验结果，可重复")
+    m.add_argument("--speaker-face-ok", choices=["true", "false", "null"],
+                   help="纯视觉：本句说话人的嘴在动、其他人嘴不动（要带 --evidence 写看到的时间码）；有台词的镜入剪要求 true")
+    m.add_argument("--listener", help="listen_ok 非 null 时必填：听的真人（用户或用户指定的母语者）；模型/代理/自己一律拒绝")
     a = ap.parse_args(argv)
     pr = Project(a.project)
     if a.cmd == "sheets":
@@ -856,7 +1004,9 @@ def main(argv=None) -> int:
         for k, v in res.items():
             flag = "" if v.get("hit") is None else f" hit {v['hit']:.0%}"
             stray = " ⚠stray voice" if v.get("stray_voice") else ""
-            print(f"{k}: {v['duration']:.1f}s heard「{v['heard']}」{flag}{stray}")
+            extra = f" ⚠台词窗口外人声 {v['extra_vocal_segments']}" if v.get("extra_vocal_segments") else ""
+            vm = f" ⚠[warn] 声线疑似不符（中位基频 {v['voice_mismatch']['f0_median_hz']}Hz，设定 {v['voice_mismatch']['expected']}）" if v.get("voice_mismatch") else ""
+            print(f"{k}: {v['duration']:.1f}s heard「{v['heard']}」{flag}{stray}{extra}{vm}")
     elif a.cmd == "motion":
         for k, v in motion_all(pr, a.episode, a.sids or None).items():
             span = f"{v['action_start']}–{v['action_end']}s" if v.get("action_end") is not None else "无明显动作"
@@ -879,7 +1029,8 @@ def main(argv=None) -> int:
                  mode=a.mode, verdict=a.verdict, speed=a.speed, note=a.note,
                  visual=a.visual, audio=a.audio, continuity=a.continuity, evidence=a.evidence,
                  action_window=a.action_window, speech_window=a.speech_window, acceptance_reason=a.acceptance_reason,
-                 must_show=dict(x.split("=", 1) for x in a.must_show) or None,
+                 must_show=dict(x.split("=", 1) for x in a.must_show) or None, listener=a.listener,
+                 speaker_face_ok={"true": True, "false": False, "null": None}[a.speaker_face_ok] if a.speaker_face_ok else "unset",
                  **{k: ({"true": True, "false": False, "null": None}[getattr(a, k)] if getattr(a, k) else "unset") for k in AUDIO_KEYS})
         print(json.dumps(e, ensure_ascii=False))
     return 0

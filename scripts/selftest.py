@@ -29,6 +29,54 @@ def require(cond: bool, msg: str) -> None:
         raise AssertionError(msg)
 
 
+def expect_exit(fn, word: str, msg: str) -> None:
+    try:
+        fn()
+    except SystemExit as e:
+        require(word in str(e), f"{msg}：{e}")
+        return
+    raise AssertionError(f"{msg}：没有拒绝")
+
+
+def review_frames(pr, ep: str = "EP001") -> None:
+    """合成夹具：每镜当前所选起始帧记一条目检（绑定帧文件 sha），produce.py videos 才肯提交。"""
+    import review_tool
+    for sh in pr.load_shots(ep)["shots"]:
+        ft = pr.chosen_take(ep, sh["id"], "frame")
+        if ft:
+            review_tool.mark(pr, ep, sh["id"], frame_take=ft, evidence="synthetic selftest fixture: 九项清单逐项核过")
+
+
+def pass_animatic(pr, ep: str = "EP001", media: bool = True) -> None:
+    """合成夹具：预演放行（有 ffmpeg 就真跑 animatic；首行 PASS、必拍表逐条填「镜号 · 秒 · 看得到」）。"""
+    import re as _re
+    import review_tool
+    from review_quality import animatic_inputs_fp, must_show_facts
+    p = pr.review_dir / f"{ep}-预演.md"
+    if media:
+        if p.exists():
+            p.unlink()
+        review_tool.animatic(pr, ep, tts=False)
+        md = p.read_text(encoding="utf-8").replace("结论：待填", "结论：PASS", 1)
+        md = _re.sub(r"【([^】·]*?) · X\.Xs】", r"\1 · 1.0s", md).replace("【看得到 / 看不到 / 只靠台词】", "看得到")
+        md = md.replace("【镜号 · 1.0s】", "镜号 · 1.0s")
+    else:
+        pr.review_dir.mkdir(parents=True, exist_ok=True)
+        (pr.review_dir / f"{ep}-预演.mp4").write_bytes(b"fixture")
+        rows = [f"| {f['id']} | {f['fact']} | {(f['shots'] or ['?'])[0]} · 1.0s | 看得到 |" for f in must_show_facts(pr.load_shots(ep))]
+        md = "\n".join(["结论：PASS", "", f"预演输入指纹：{animatic_inputs_fp(pr, ep)}", "", "- 缺起始帧（用灰卡占位）：无。", "", "## 必拍事实", ""] + rows) + "\n"
+    p.write_text(md, encoding="utf-8")
+    require(pr.animatic_passed(ep), f"夹具预演应放行：{pr.animatic_problems(ep)}")
+
+
+def pass_reviews(pr, ep: str = "EP001") -> None:
+    """合成夹具：C/E 审查文件（review_md_check 0 error、结论 PASS、指纹绑定当前剧本/分镜）。"""
+    fps = pr.fingerprints(ep)
+    for name, label in (("审查", "剧本"), ("分镜审查", "分镜")):
+        (pr.review_dir / f"{ep}-{name}.md").write_text(
+            f"# {ep} {name}\n\n- 结论：PASS\n- 复核方式：独立 reviewer\n- {label}指纹：{fps[label]}\n\nkeep:\n- 全部\n", encoding="utf-8")
+
+
 # ---- 假中转 --------------------------------------------------------------------
 class Mock:
     def __init__(self, tmp: Path, media: bool = True):
@@ -189,6 +237,7 @@ def main() -> int:
     nb["shots"][1]["environment_motion_required"] = True
     nb["shots"][1]["video_prompt"] = nb["shots"][1]["video_prompt"].replace(" Dust drifts slowly in the window light above the table.", "")
     nb["shots"][2]["framing"] = "中景，主位，三上一人，面朝画右"
+    nb["shots"][2]["frame_prompt"] = nb["shots"][2]["frame_prompt"].replace(" Seated, the table top is level with his waist; he is about a head taller than her.", "")
     sp.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
     old_preset = pr.cfg.get("style_preset")
     pr.cfg["style_preset"] = "watercolor"
@@ -228,14 +277,16 @@ def main() -> int:
     rj["refs"]["IMG-HARUKA-FACE"] = {**hk, "refs": ["IMG-HARUKA"], "voice": None,
                                      "prompt": hk["prompt"].replace("full-body", "head-and-shoulders").replace("Full-body", "Head-and-shoulders")}
     rp0.write_text(json.dumps(rj, ensure_ascii=False), encoding="utf-8")
-    saved = {k: pr.cfg.get(k) for k in ("style_preset", "ai_label", "line_max")}
+    saved = {k: pr.cfg.get(k) for k in ("style_preset", "ai_label", "line_max", "video_prompt_head")}
     pr.cfg["style_preset"] = "anime_cel"; pr.cfg.pop("ai_label", None); pr.cfg["line_max"] = {"ja": 5}
+    pr.cfg["video_prompt_head"] = "Handheld camera with small natural breathing sway, realistic human behaviour, drifting particles."   # 旧版真人头句
     Fg = check(pr, "EP001")
     wg = [(f["code"], f["shot"], f["msg"]) for f in Fg.warns()]
     eg = {(f["code"], f["shot"]) for f in Fg.errors()}
     g36 = [m for c, s_, m in wg if c == "G36" and s_ == "EP001-S01"]
     require(g36 and "85mm" in g36[0] and "bokeh" in g36[0] and "volumetric" not in g36[0], f"动漫画风起始帧摄影词报 G36、否定式不算：{g36}")
     require(any(c == "G36" and s_ is None and "handheld" in m.lower() for c, s_, m in wg), "动漫画风沿用真人视频头句要报 G36")
+    require(any(c == "G36" and s_ is None and "particles" in m for c, s_, m in wg), "视频头句含运镜/特效词（handheld、particles…）要报 G36")
     require(any(c == "G37" for c, _, _ in wg), "单句超过 line_max 要报 G37")
     g38 = [m for c, s_, m in wg if c == "G38" and s_ == "EP001-S02"]
     require(any("4 张" in m for m in g38) and any("职责重叠" in m for m in g38), f"参考图超 3 张、全身图和头肩图同绑要报 G38：{g38}")
@@ -342,7 +393,56 @@ def main() -> int:
     by["EP001-S04"]["motion"] = "她把杯子推回三上面前；约 0.6 秒开口；说完看着画左等答案。"
     by["EP001-S03"]["waive"] = ["G49"]
     sp.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
-    require(not any(f["code"] == "G49" for f in check(pr, "EP001").warns()), "补了承接动作或豁免后不报 G49")
+    Fw = check(pr, "EP001")
+    require(any(f["code"] == "G49" for f in Fw.warns()) and any(f["code"] == "G51" and "旧写法" in f["msg"] for f in Fw.warns()),
+            "旧写法 waive [\"G49\"]（无理由、无决策号）不生效并报 G51")
+    by["EP001-S03"]["waive"] = [{"gate": "G49", "reason": "三上这镜的嘲笑本身就是改变局面的反应，笑声压住遥", "decision": "D-001"}]
+    sp.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    require(not any(f["code"] == "G49" for f in check(pr, "EP001").warns()), "补了承接动作或完整豁免（门号+理由+决策号）后不报 G49")
+    sp.write_text(good_sp, encoding="utf-8")
+
+    # 红队回归（scratchpad/rt harness T2–T4、kind 逃门、G47/G52/G53）：每条都应被拦下
+    nb = json.loads(good_sp)
+    by = {s_["id"]: s_ for s_ in nb["shots"]}
+    scn = {s_["id"]: s_ for s_ in nb["scenes"]}
+    by["EP001-S01"]["kind"] = "object"                                       # 有台词的人物镜改成物件镜
+    by["EP001-S01"]["frame_prompt"] = by["EP001-S01"]["frame_prompt"].replace("Exactly two people in the frame, each appearing once. ", "")
+    by["EP001-S03"]["dialogue"][0]["text"] += "ぜんぜん違う"
+    by["EP001-S03"]["waive"] = [{"gate": "G10", "reason": "自测：想用豁免把台词漂移压下去", "decision": "D-001"}, "G06"]
+    by["EP001-S04"]["frame_prompt"] = by["EP001-S04"]["frame_prompt"].replace("no text, ", "")
+    by["EP001-S04"]["waive"] = ["G06"]
+    scn["EP001-SC001"]["must_show"] = scn["EP001-SC001"]["must_show"][:2]      # 剧本 3 条必拍，只抄 2 条
+    scn["EP001-SC001"]["must_show"][1]["fact"] = "有"                         # 空话
+    by["EP001-S03"]["must_show_ids"] = []
+    scn["EP001-SC002"]["must_show"][0].update(fact="桌上正好十份文件", kind="state")   # 改 kind 逃 G47
+    by["EP001-S02"]["adversarial_preflight"][0]["blocked_by"] = "a sentence that is not in any prompt"
+    by["EP001-S02"]["adversarial_preflight"][2]["worst"] = by["EP001-S02"]["adversarial_preflight"][1]["worst"]
+    by["EP001-S03"].pop("adversarial_preflight")
+    sp.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    saved = {k: pr.cfg.get(k) for k in ("one_person_clause", "no_text_clause", "gate_limits", "final_qa")}
+    pr.cfg.update(one_person_clause="", no_text_clause="", gate_limits={"talk_only_ratio": 1.0}, final_qa={"asr_min": 0.0})
+    Fr_ = check(pr, "EP001")
+    e_ = {(f["code"], f["shot"]) for f in Fr_.errors()}
+    w_ = {(f["code"], f["shot"]) for f in Fr_.warns()}
+    em_ = [f["msg"] for f in Fr_.errors()]
+    require(("G02", "EP001-S01") in e_ and ("G01", "EP001-S01") in w_, f"kind 改成 object 逃不掉人物镜的人数句门：{e_}")
+    require(("G10", "EP001-S03") in e_ and ("G06", "EP001-S04") in e_, f"error 门写 waive 也照样 error：{e_}")
+    require(("G51", "EP001-S03") in w_ and ("G51", "EP001-S04") in w_, "失效的豁免报 G51")
+    require(sum(1 for f in Fr_.errors() if f["code"] == "G50") >= 2 and ("G50", None) in w_, f"阈值调松报 G50 error、固定句置空报 G50 warn：{em_}")
+    require(any(f["code"] == "G46" and "只有 2 条" in f["msg"] for f in Fr_.errors()) and any(f["code"] == "G46" and "没照抄" in f["msg"] for f in Fr_.errors()),
+            f"剧本必拍与 must_show 对账（条数、照抄）：{[m for m in em_ if '必拍' in m]}")
+    require(any(f["code"] == "G47" for f in Fr_.warns()), "写了数量的事实改 kind 也按数量查 G47")
+    require(("G52", "EP001-S02") in e_ and ("G52", "EP001-S03") in w_, f"恶意预演 blocked_by 不在提示词里/worst 重复报 error、缺预演报 warn：{e_}")
+    pr.cfg.update(saved)
+    nb = json.loads(good_sp)
+    by = {s_["id"]: s_ for s_ in nb["shots"]}
+    by["EP001-S01"].pop("multi_person")
+    by["EP001-S01"]["frame_prompt"] = by["EP001-S01"]["frame_prompt"].replace("Exactly two people in the frame, each appearing once.", "Only one person in the frame.")
+    sp.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    require(("G53", "EP001-S01") in {(f["code"], f["shot"]) for f in check(pr, "EP001").errors()}, "台词镜只有一人入画、没写 single_reason 报 G53 error")
+    by["EP001-S01"]["single_reason"] = "遥在 S01 是对满桌人宣布放弃署名（剧本「名前は消していいです」），上一镜 S02 已建立全桌站位"
+    sp.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    require(("G53", "EP001-S01") not in {(f["code"], f["shot"]) for f in check(pr, "EP001").errors()}, "写了具体 single_reason 不报 G53")
     sp.write_text(good_sp, encoding="utf-8")
     ep2 = root / "EP002"
     ep2.mkdir(exist_ok=True)
@@ -441,8 +541,30 @@ def main() -> int:
     require(pr.chosen_take("EP001", "EP001-S02", "frame") == 2, "默认选最新 take")
     passed += 1
 
+    # 视频提交预检（红队 T12）：起始帧没目检、预演没放行时拒绝；金丝雀只放一镜
+    expect_exit(lambda: produce.produce_videos(pr, "EP001"), "预演", "预演没放行时 produce videos 拒绝整批提交")
+    expect_exit(lambda: produce.produce_videos(pr, "EP001", ["EP001-S01"]), "目检", "金丝雀镜的起始帧没目检也拒绝")
+    review_frames(pr)
+    done = produce.produce_videos(pr, "EP001", ["EP001-S01"])
+    require(done == ["EP001-S01"], f"金丝雀一镜可以在预演前提交：{done}")
+    expect_exit(lambda: produce.produce_videos(pr, "EP001", ["EP001-S02"]), "预演", "已有金丝雀视频后，第二镜仍要等预演放行")
+    lg = [json.loads(x) for x in (pr.scripts_dir / "jobs.jsonl").read_text(encoding="utf-8").splitlines()]
+    sub_v = next(j for j in lg if j.get("status") == "submitted" and j.get("name") == "V_EP001-S01_t1")
+    col_v = next(j for j in lg if j.get("status") == "collected" and j.get("out", "").endswith("V_EP001-S01_t1.mp4"))
+    from review_quality import media_digest as _md
+    require(sub_v.get("frame_sha256") == _md(pr.frame_path("EP001", "EP001-S01", 1)) and sub_v.get("source_prompt_sha256")
+            and col_v.get("sha256") == _md(pr.video_path("EP001", "EP001-S01", 1)), "账本记起始帧 sha、完整提示词 sha 与产物 sha")
+    pass_animatic(pr, media=not args.no_media)
+    os.environ["DF_SUBAGENT"] = "1"
+    expect_exit(lambda: produce.produce_videos(pr, "EP001"), "子代理", "DF_SUBAGENT=1 时拒绝提交")
+    try:
+        Client(root=root, log_dir=pr.scripts_dir).submit_image("x", pr.frame_path("EP001", "EP001-S01", 9), profile="qwen21", res="1K", name="F_sub")
+        require(False, "子代理直接调 h3_client 也要被拒")
+    except SystemExit as e:
+        require("子代理" in str(e), str(e))
+    os.environ.pop("DF_SUBAGENT")
     done = produce.produce_videos(pr, "EP001")
-    require(len(done) == 4 and pr.video_path("EP001", "EP001-S03", 1).exists(), "视频 take1")
+    require(len(done) == 3 and pr.video_path("EP001", "EP001-S03", 1).exists(), "视频 take1（金丝雀之外的三镜）")
     posts_before = mock.posts
     require(not produce.produce_videos(pr, "EP001") and mock.posts == posts_before, "已有视频不重复提交")
     log = (pr.scripts_dir / "ids.log").read_text(encoding="utf-8").splitlines()
@@ -472,6 +594,11 @@ def main() -> int:
         (dev / "情绪集纲.md").write_text("| 集 | 行 |\n|---|---|\nEP001 | 自测 |\n", encoding="utf-8")
         for v in pr.ep_dir("EP001").joinpath("视频").glob("*.mp4"):
             v.rename(v.with_suffix(".bak"))
+        require(next_step(pr).startswith("阶段 C") and "审查" in next_step(pr), f"没有 C 审查时 next 停在 C（红队 T10）：{next_step(pr)}")
+        pass_reviews(pr)
+        require(next_step(pr).startswith("阶段 G") and "目检" in next_step(pr), f"S04 起始帧重出后没目检，next 指向 G：{next_step(pr)}")
+        review_frames(pr)
+        (pr.review_dir / "EP001-预演.md").unlink()
         require(next_step(pr).startswith("阶段 G2"), f"起始帧齐、没有预演记录时 next 指向 G2：{next_step(pr)}")
         amp4, ajpg, amiss = review_tool.animatic(pr, "EP001")
         want = sum(float(x["seconds"]) for x in json.loads(bp.read_text(encoding="utf-8"))["shots"])
@@ -480,7 +607,14 @@ def main() -> int:
         require(next_step(pr).startswith("阶段 G2"), f"预演结论不是 PASS 时 next 仍停在 G2：{next_step(pr)}")
         require(not pr.animatic_passed("EP001"), "预演结论 REVISE 不放行")
         (pr.review_dir / "EP001-预演.md").write_text("\n结论：PASS\n情节点全部看得到\n", encoding="utf-8")
-        require(next_step(pr).startswith("阶段 H"), f"预演结论 PASS 后 next 指向 H：{next_step(pr)}")
+        require(next_step(pr).startswith("阶段 G2"), f"手写一行 PASS（没跑 animatic、没指纹、必拍没答）不放行（红队 T5）：{next_step(pr)}")
+        pass_animatic(pr)
+        require(next_step(pr).startswith("阶段 H"), f"预演放行后 next 指向 H：{next_step(pr)}")
+        sp_txt = bp.read_text(encoding="utf-8")
+        chg = json.loads(sp_txt); chg["shots"][0]["seconds"] = float(chg["shots"][0]["seconds"]) + 1
+        bp.write_text(json.dumps(chg, ensure_ascii=False), encoding="utf-8")
+        require(not pr.animatic_passed("EP001") and next_step(pr).startswith("阶段"), "PASS 之后改了 shots.json，旧预演过期（红队 T5b）")
+        bp.write_text(sp_txt, encoding="utf-8")
         for v in pr.ep_dir("EP001").joinpath("视频").glob("*.bak"):
             v.rename(v.with_suffix(".mp4"))
         (dev / "系列简报.md").write_text(brief_bak, encoding="utf-8"); (dev / "情绪集纲.md").write_text(beat_bak, encoding="utf-8")
@@ -534,8 +668,19 @@ def main() -> int:
         opts = dict(visual="pass", audio="pass", continuity="pass",
                     evidence="synthetic selftest fixture: injected approval for cut contract", verdict="ok")
         shot = next(x for x in pr.load_shots("EP001")["shots"] if x["id"] == sid)
+        take = kw.get("video_take") or pr.chosen_take("EP001", sid, "video")
         if shot.get("dialogue"):
             opts["speech_window"] = [0.3, 2.5]
+            opts["speaker_face_ok"] = True
+            if not asr_py:   # 没跑真 ASR 时注入一条"对当前文件跑过 ASR"的记录（等同 review_tool.asr_shot 的产物）
+                from review_quality import media_digest, shot_digest
+                rv_ = pr.load_review("EP001")
+                rec_ = rv_.setdefault("shots", {}).setdefault(sid, {}).setdefault("video_takes", {}).setdefault(str(take), {"take": take})
+                rec_.update(asr_media_sha256=media_digest(pr.video_path("EP001", sid, take)), asr_shot_sha256=shot_digest(shot),
+                            speech_diff={"status": "exact", "critical_changes": [], "similarity": 1.0})
+                pr.save_review("EP001", rv_)
+        if shot.get("must_show_ids"):
+            opts["must_show"] = {m: "pass" for m in shot["must_show_ids"]}
         opts.update(kw)
         return review_tool.mark(pr, "EP001", sid, **opts)
     approve_fixture("EP001-S02", **{"in": 0.5}, out=2.5, mode="fixed", note="取中段")
@@ -580,6 +725,11 @@ def main() -> int:
                     "-i", "color=c=white:s=60x60:d=4:r=24", "-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo",
                     "-filter_complex", "[0][1]overlay=x='if(lt(t,1),20,if(lt(t,3),20+(t-1)*110,240))':y=60:shortest=1[v]",
                     "-map", "[v]", "-map", "2:a", "-t", "4", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", str(syn)], check=True)
+    from review_quality import media_digest as _md2, text_digest as _td
+    with open(pr.scripts_dir / "jobs.jsonl", "a", encoding="utf-8") as fh:   # 合成 take 的账本记录（等同生成通道收回时写的）
+        sh2 = next(x for x in pr.load_shots("EP001")["shots"] if x["id"] == "EP001-S02")
+        fh.write(json.dumps({"status": "submitted", "job": "syn-3", "out": str(syn.resolve()), "source_prompt_sha256": _td(sh2["video_prompt"])}) + "\n")
+        fh.write(json.dumps({"status": "collected", "job": "syn-3", "out": str(syn.resolve()), "sha256": _md2(syn)}) + "\n")
     mv = review_tool.motion_all(pr, "EP001", ["EP001-S02"])["EP001-S02_t3"]
     require(len(mv["motion"]) == 16 and max(mv["motion"][:3]) < 0.2 and min(mv["motion"][5:11]) > 1.0, f"运动曲线每 0.25s 一格、静止段近零：{mv['motion']}")
     require(abs(mv["action_start"] - 1.0) <= 0.25 and abs(mv["action_end"] - 3.0) <= 0.25 and 1.0 <= mv["action_peak"] <= 3.0,
@@ -622,6 +772,10 @@ def main() -> int:
 
     st = status(pr)
     require(st["episodes"]["EP001"]["成片"] and st["episodes"]["EP001"]["视频"] == 4, "status 统计")
+    from project_tool import delivery_problems
+    dp = delivery_problems(pr, "EP001")
+    require(not st["episodes"]["EP001"]["终验"] and any("final-qa" in x for x in dp) and any("成片终验" in x for x in dp),
+            f"成片在但没跑 final_qa、没写成片终验.md 时 J 未完成（红队 T9）：{dp}")
     require("全部集已出成片" in next_step(pr) or "阶段" in next_step(pr), "next 可运行")
     passed += 1
 

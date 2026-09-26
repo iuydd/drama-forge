@@ -10,9 +10,13 @@
 - 台词：成片整段 ASR，逐句与字幕原文比对——字幕有而声音识别不到列「字幕多于声音」，切点附近首尾缺失列「疑似裁词」，
   关键词（readings、dialogue[].reading、critical_terms）识别分歧单列「需母语者确认」，有人声却没字幕列「有声无字幕」。
 - 声音：削波、整体响度（EBU R128）与目标差、镜间响度跳变、片尾静止/静音拖尾、画面比声音长。
-结论三分项：asr_ok 按比对阈值；listen_ok、sync_ok 脚本无法听审、判口型，一律 null（未验证，需人工），
-除非 review.json 的 final_qa 里有人工写入的值（必须带 evidence）。null 不汇总成通过。
-首行结论：没有 error 级问题且 asr_ok 为 true（或全片无台词）才写 PASS，否则 REVISE。
+结论三分项：asr_ok 只由本次对成片真跑的 ASR 给（不读 脚本/asr_cache.json 缓存）；listen_ok、sync_ok 脚本无法听审、判口型，一律 null，
+除非 review.json 的 final_qa 里有人工写入的值：必须带 evidence、listener（真人，模型/代理一律拒绝）和 video_sha256（等于当前成片，
+重剪后自动失效），且只能填脚本给 null 的项——asr_ok 的人工值只能把「关键词识别分歧（需母语者确认）」确认掉，不能替代没跑的 ASR。
+期望台词从 shots.json 取（cut_order 里没 drop 的镜的镜内台词），元数据里缺字幕的台词报 error；草剪（overlays draft=true）一律 REVISE；
+成片还要重过一次剪辑准入（review_quality.cut_issues）。识别召回下限不低于 0.8（drama.json 或 --asr-min 更低也按 0.8）。
+首行结论：没有 error 级问题且 asr_ok 为 true（或全片无台词）才写 PASS，否则 REVISE。只有对交付文件（成片/<EP>.mp4）跑的报告
+delivery=true，project_tool next 只认它。
 """
 from __future__ import annotations
 
@@ -31,6 +35,32 @@ from review_quality import AUDIO_KEYS, fmt_audio, media_digest, speech_diff  # n
 import cut as cut_mod  # noqa: E402
 
 SCHEMA = "drama-forge/final-qa/v1"
+ASR_FLOOR = 0.8
+SPEECH_TYPES = ("字幕多于声音", "疑似裁词", "否定词/数字差异", "元数据缺台词字幕")
+
+
+def expected_lines(data: dict, review: dict) -> list[tuple[str, str]]:
+    """成片应当说出的台词：cut_order 里没 drop 的镜的镜内台词（vo 与垫录音的镜也算，字幕照样要有）。"""
+    shots = {sh["id"]: sh for sh in data.get("shots") or []}
+    order = data.get("cut_order") if data.get("cut_order") is not None else list(shots)
+    out = []
+    for sid in order:
+        if ((review.get("shots") or {}).get(sid) or {}).get("verdict") == "drop" or sid not in shots:
+            continue
+        out += [(sid, d["text"]) for d in shots[sid].get("dialogue") or [] if d.get("text")]
+    return out
+
+
+def expected_line_issues(data: dict, review: dict, meta: dict) -> list[dict]:
+    """期望台词逐句要在成片字幕里：删字幕条目、删带台词的镜都藏不住。"""
+    subs = [norm(g["speech"]) + "|" + norm(g["full_text"]) for g in sub_groups(meta)]
+    blob = "\n".join(subs)
+    out = []
+    for sid, text in expected_lines(data, review):
+        if norm(text) and norm(text) not in blob:
+            out.append({"t": None, "end": None, "type": "元数据缺台词字幕", "severity": "error", "shot": sid,
+                        "detail": f"shots.json 里 {sid} 的台词「{text}」在成片字幕里找不到：台词被裁掉、字幕被删，或元数据被改过；重剪（cut.py）"})
+    return out
 
 
 def tc(t: float | None) -> str:
@@ -143,7 +173,7 @@ def check_speech(project: Project, ep: str, meta: dict, video: Path, issues: lis
             from review_tool import ASR
             asr = ASR(project)
             if asr.py:
-                words = [tuple(w) for w in asr.words([video])[str(video)]]
+                words = [tuple(w) for w in asr.words([video], fresh=True)[str(video)]]   # 终验不读缓存：缓存文件谁都能写
             else:
                 note = "没有 faster-whisper 环境（设 ASR_PY）"
         except (RuntimeError, SystemExit) as err:
@@ -316,7 +346,8 @@ def final_qa(project: Project, ep: str, video: Path | None = None, use_asr: bool
     qa_dir = project.review_dir / f"{ep}-final-qa"
     qa_dir.mkdir(parents=True, exist_ok=True)
     cfg = project.cfg.get("final_qa") or {}
-    asr_min = float(asr_min if asr_min is not None else cfg.get("asr_min", 0.8))
+    asr_min = max(float(asr_min if asr_min is not None else cfg.get("asr_min", ASR_FLOOR)), ASR_FLOOR)   # 门槛只能收紧
+    delivery = video.resolve() == project.final_path(ep).resolve()
     duration = ffprobe_duration(video)
     issues: list[dict] = []
     meta_path = cut_mod.overlays_path(video)
@@ -329,6 +360,19 @@ def final_qa(project: Project, ep: str, video: Path | None = None, use_asr: bool
     else:
         issues.append({"t": None, "end": None, "type": "缺叠字元数据", "severity": "error",
                        "detail": f"没有 {meta_path.name}（旧版 cut.py 剪的）；断行、压脸、字幕与声音比对都做不了，用新版 cut.py 重剪"})
+    if meta.get("draft"):
+        issues.append({"t": None, "end": None, "type": "草剪冒充成片", "severity": "error",
+                       "detail": f"{meta_path.name} 标着 draft=true：这是 cut.py --draft 的草剪，不能当成片交付；审片过准入后用 cut.py 正式剪"})
+    try:
+        data = project.load_shots(ep)
+        from review_quality import cut_issues
+        for x in cut_issues(project, ep, data, project.load_review(ep)):
+            issues.append({"t": None, "end": None, "type": "剪辑准入不过", "severity": "error", "detail": x})
+        missing = expected_line_issues(data, project.load_review(ep), meta) if meta else []
+        issues.extend(missing)
+    except SystemExit as err:
+        data = {}
+        issues.append({"t": None, "end": None, "type": "缺 shots.json", "severity": "error", "detail": str(err)})
     text = check_text(meta, video, qa_dir, issues) if meta else {"face_check": "未验证（缺元数据）"}
     speech = check_speech(project, ep, meta, video, issues, asr_min, use_asr) if meta else {"available": False, "asr_ok": None, "rows": [], "note": "缺元数据"}
     audio = audio_checks(project, meta, video, qa_dir, issues, duration)
@@ -336,12 +380,31 @@ def final_qa(project: Project, ep: str, video: Path | None = None, use_asr: bool
     # 三分项：脚本只能给 asr_ok；听审、同步一律 null，除非 review.json final_qa 有人工写入（必须带 evidence）
     status = {"asr_ok": speech.get("asr_ok"), "listen_ok": None, "sync_ok": None}
     manual = (project.load_review(ep).get("final_qa") or {})
-    manual_used = {}
+    manual_used, manual_ignored = {}, []
+    vsha = media_digest(video)
     if str(manual.get("evidence") or "").strip():
-        for k in AUDIO_KEYS:
-            if manual.get(k) is not None:
-                status[k] = bool(manual[k])
-                manual_used[k] = status[k]
+        from review_tool import valid_listener
+        if manual.get("video_sha256") != vsha:
+            manual_ignored.append("人工补验没带 video_sha256 或不是当前成片（重剪后旧人工结论作废）")
+        else:
+            confirm_only = speech.get("available") and not any(i["severity"] == "error" and i["type"] in SPEECH_TYPES for i in issues)
+            for k in AUDIO_KEYS:
+                if manual.get(k) is None:
+                    continue
+                if k == "asr_ok":
+                    if speech.get("asr_ok") is False and confirm_only:   # 只剩「需母语者确认」的关键词分歧时，人工确认能放行
+                        status[k] = bool(manual[k]); manual_used[k] = status[k]
+                    elif speech.get("asr_ok") is None:
+                        manual_ignored.append("asr_ok 人工值不能替代没跑的 ASR")
+                    continue
+                if status[k] is not None:
+                    continue
+                if not valid_listener(manual.get("listener")):
+                    manual_ignored.append(f"{k} 人工值没写真人 listener（模型/代理不能签听审与同步）")
+                    continue
+                status[k] = bool(manual[k]); manual_used[k] = status[k]
+    for m in manual_ignored:
+        issues.append({"t": None, "end": None, "type": "人工补验不采用", "severity": "warn", "detail": m})
     # 证据帧
     for n, it in enumerate(issues, 1):
         g = it.pop("_grab", None) or {}
@@ -351,10 +414,11 @@ def final_qa(project: Project, ep: str, video: Path | None = None, use_asr: bool
             if p:
                 it["evidence"] = str(p.relative_to(project.root)) if p.is_relative_to(project.root) else str(p)
     errors = [i for i in issues if i["severity"] == "error"]
-    has_dialogue = (bool(speech.get("rows")) or bool(sub_groups(meta))) if meta else True
+    has_dialogue = bool(expected_lines(data, project.load_review(ep))) or ((bool(speech.get("rows")) or bool(sub_groups(meta))) if meta else True)
     conclusion = "PASS" if not errors and (status["asr_ok"] is True or not has_dialogue) else "REVISE"
     report = {"schema": SCHEMA, "episode": ep, "video": str(video.relative_to(project.root)) if video.is_relative_to(project.root) else str(video),
-              "video_sha256": media_digest(video), "duration": round(duration, 3), "conclusion": conclusion,
+              "video_sha256": vsha, "duration": round(duration, 3), "conclusion": conclusion, "delivery": delivery,
+              "draft": bool(meta.get("draft")),
               "asr_ok": status["asr_ok"], "listen_ok": status["listen_ok"], "sync_ok": status["sync_ok"], "manual": manual_used,
               "asr_min": asr_min, "issues": issues, "text": text, "speech": speech, "audio": audio,
               "contact_sheet": str(sheet.relative_to(project.root)) if sheet and sheet.is_relative_to(project.root) else (str(sheet) if sheet else None),

@@ -39,7 +39,7 @@
   },
   "dialogue_start_max": null,
   "video_dialect": "minimax-h3",
-  "video_prompt_head": "integrated_multimodal_description: [Shot 1] Single continuous take, no cuts, no scene change, starting exactly from the opening frame. Handheld camera with small natural breathing sway, real-time speed, realistic human behaviour with blinking, breathing and small weight shifts; movement and pauses follow the described performance. No subtitles, captions or on-screen text at any time.",
+  "video_prompt_head": "integrated_multimodal_description: [Shot 1] Single continuous take, no cuts, no scene change, starting exactly from the opening frame. Locked-off camera on a tripod; real-time speed; realistic human behaviour with blinking, breathing and small weight shifts; movement and pauses follow the described performance. No subtitles, captions or on-screen text at any time.",
   "video_prompt_keys": [
     "integrated_multimodal_description",
     "overall_soundscape",

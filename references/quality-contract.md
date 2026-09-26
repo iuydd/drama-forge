@@ -10,22 +10,22 @@
 - `assessment.checks.visual`：职责动作、人物身份、重要物件、揭示内容是否正确。
 - `assessment.checks.audio`：旧字段，现在跟着 `asr_ok` 走（mark 写了 `--asr-ok` 时自动同步成 pass/fail）；听感和同步看下面的三项，不看它。无对白镜也要检查实际声音。
 - `assessment.checks.continuity`：与相邻镜、该场持续状态和人物知情相容。
-- `assessment.evidence`：所看/所听的位置、动作与判断依据。
-- `video_takes[n].must_show_check`（`mark --must-show MS1=pass|fail|unverified` 写入，并镜像到镜级 `must_show_check`；读时以 take 级为准）：本镜 `must_show_ids` 每条事实在当前 take 里 `pass` / `fail` / `unverified`；有 `fail` 时 mark 拒绝 `ok` / `weak`、auto 给 retake、正式剪辑拒绝，只能重拍或回剧本、分镜改；`unverified` 脚本不拦，但审片规则要求承担镜进正式剪辑前核成 pass（production-and-review §5、§5c）。
-- 声音结论拆三项，写在 `assessment` 里：`asr_ok`（识别正确，ASR 逐字比对）、`listen_ok`（听感自然，真的听过）、`sync_ok`（口型同步），都是 true/false/null（`mark --asr-ok / --listen-ok / --sync-ok`）。null 显示为"未验证"，不得汇总成"通过"。入剪要求 `asr_ok` 为 true；`listen_ok` 或 `sync_ok` 为 false 时拦下，null 放行但处处标"未验证"。旧记录只有 `checks.audio: pass` 时只算 `asr_ok: true`，另两项为 null。
+- `assessment.evidence`：所看/所听的位置、动作与判断依据；`assessment.evidence` 保存最新一次，每次带 evidence 的 mark 另追加进 `video_takes[n].evidence_log`（时间、文件 sha、镜头 sha、verdict），旧证据不丢。要可抽查（几个人、各在哪、每只手属于谁、道具几件、第几秒），"看过无问题""自然"这类套话按没审算（SKILL.md「防钻空子总则」第 4 条）。
+- `video_takes[n].must_show_check`（`mark --must-show MS1=pass|fail|unverified` 写入，并镜像到镜级 `must_show_check`；读时以 take 级为准）：本镜 `must_show_ids` 每条事实在当前 take 里 `pass` / `fail` / `unverified`；mark 写 `ok` / `weak` 要求本镜每条都是 `pass`；有 `fail` 时 auto 给 retake、正式剪辑拒绝，只能重拍或回剧本、分镜改；`unverified` 和缺项在正式剪辑里等同 `fail`（`--draft` 放行并标"未验证"）；核不出来按 fail 处理（production-and-review §5、§5c）。
+- 声音结论拆三项，写在 `assessment` 里：`asr_ok`（识别正确，ASR 逐字比对）、`listen_ok`（听感自然，真的听过）、`sync_ok`（口型同步），都是 true/false/null（`mark --asr-ok / --listen-ok / --sync-ok`）。`asr_ok: true` 要求当前素材、当前镜头规格跑过 ASR（`asr_media_sha256` / `asr_shot_sha256` 对得上）且没有语种不符（脚本查）。模型听不到声音：`listen_ok` 只能由真人（用户或用户指定的母语者）签，写非 null 时必须带 `--listener <人名>`，脚本拒绝 model、claude、agent、ai、self 这类值；执行代理和子代理一律写 null，汇报写"未听审"，不用"听感"推翻 ASR，也不从 ASR 文本推断听感（总则第 5 条）。null 显示为"未验证"，不得汇总成"通过"。`asr` 附带列出的 `extra_vocal_segments`（`speech_window` 以外 ASR 识别到的人声片段 `[起, 止, 文本]`；窗口还没审时按期望台词的词时间）要逐段看口型或听来源，剧本没有来源的多出台词、笑、叫、哼记 `asr_ok` false；ASR 认不出的笑和哼不会列出来，看接触表和听审照样要查。入剪要求 `asr_ok` 为 true，并且有台词的镜 `speaker_face_ok` 为 true（`mark --speaker-face-ok`，null 或缺项脚本拒收）：在 `speech_window` 内按 4 fps 抽帧，只有台词归属的那张脸嘴在动，画内其他看得见的脸（含侧脸）嘴闭着；这是视觉判断，代理可以签，evidence 写第几秒谁的嘴在动。`listen_ok` 或 `sync_ok` 为 false 时拦下，null 放行但处处标"未验证"。音色串人另有机械粗筛：`asr` 取 `speech_window` 内的基频中位数，和说话人身份图 refs.json `voice` 写的性别明显不符（男角色高于 200 Hz、女角色低于 150 Hz；年龄段不判，`voice` 没写性别词就不判）时标 `voice_mismatch`，标了的镜交真人听或重拍；没标不等于音色对。旧记录只有 `checks.audio: pass` 时只算 `asr_ok: true`，另两项为 null。
 - `assessment.action_window`：该 take 实测的职责动作开始/结束秒。镜头声明 `action_required`、`planned_action_window` 或旧 action_window 时必需。
 - `assessment.speech_window`：该 take 必要对白从首音到末音的实测区间。有对白且不用替代音源时必需；被引用作 audio_from 的音源也必需。
 - `assessment.media_sha256` 与 `shot_sha256`：工具自动绑定当前素材字节与镜头规格；换文件、改镜头后审查失效。
 - `edit`：该 take 自己的 in/out/mode/speed，换 take 不继承旧剪点。
 
-三项 checks 为 pass/fail/pending。`ok` 要求全部 pass、`must_show_check` 没有 fail（脚本强制；unverified 由审片人核掉），且证据/必要时段齐全；`weak` 还需明确接受非关键缺陷的 acceptance_reason，不能豁免剧情动作或错误台词。`mute` 不能移除必需对白，除非存在已审替代音源。`retake` 表示待修复，仍不能进入正式剪辑。
+三项 checks 为 pass/fail/pending。`ok` 要求全部 pass、`must_show_check` 全部 pass、有镜内台词时 `speaker_face_ok` 为 true、账本来源成立（`jobs.jsonl` 有收回这个文件的记录且生成后提示词与起始帧没改；这几项脚本强制），且证据/必要时段齐全；`weak` 还需明确接受非关键缺陷的 acceptance_reason，不能豁免剧情动作或错误台词；必拍事实承担镜和关键情节镜不能 weak，只能 retake、改分镜或回剧本。`mute` 不能移除必需对白，除非存在已审替代音源。`retake` 表示待修复，仍不能进入正式剪辑。
 
 ## 怎样记录
 
 以下是命令形式示例，数值和证据必须来自实际查看/听审，不能照抄示例冒充已审。短接触事件用更密抽帧或播放核对，2fps 接触表可能漏掉瞬间。
 
 ```text
-python3 scripts/review_tool.py mark PROJECT EP001 EP001-S01 --video-take 1 --visual pass --asr-ok true --listen-ok true --sync-ok null --continuity pass --must-show MS1=pass --action-window 1.0 3.0 --speech-window 0.5 2.6 --evidence "t1：1.0–3.0 秒先接后放；对白逐字听过；持物与反打一致" --verdict ok
+python3 scripts/review_tool.py mark PROJECT EP001 EP001-S01 --video-take 1 --visual pass --asr-ok true --listen-ok null --sync-ok null --continuity pass --speaker-face-ok true --must-show MS1=pass --action-window 1.0 3.0 --speech-window 0.5 2.6 --evidence "t1：画内 2 人，遥在左朝右、三上在右；1.0 秒遥右手递出文件，3.0 秒三上左手接住；0.5–2.6 秒只有遥的嘴在动，三上侧脸嘴闭着；ASR 逐字与台词一致；持物与上一镜末帧一致" --verdict ok
 python3 scripts/cut.py PROJECT EP001 --dry-run
 python3 scripts/cut.py PROJECT EP001
 ```
@@ -48,4 +48,4 @@ python3 scripts/cut.py PROJECT EP001 --draft
 
 旧 review 中只有镜头级 ok、note 或剪点，不自动升级为新证据。保留旧记录，按当前所选素材补录三项审查与时段。缺少听音能力时保持 pending，可出草剪，不能伪造 audio pass。文件哈希证明证据关联到哪份素材，不证明审查者判断本身正确。
 
-ASR 失败/输出缺行不会被记作无声；识别差异先听审，不按固定分数自动付费重拍。`readings` 只接受已确认的读音等价，不用它抹掉否定、数量、身份或剧情事实。旧 `budget.asr_pass` 不再决定准入或自动重拍。
+ASR 失败/输出缺行不会被记作无声；识别差异先核实（重跑 ASR、对照口型与画面，听感交真人），不按固定分数自动付费重拍。`readings` 只接受已确认的读音等价，不用它抹掉否定、数量、身份或剧情事实。旧 `budget.asr_pass` 不再决定准入或自动重拍。

@@ -8,8 +8,10 @@
   shots_tool.py check-refs <项目>                 参考图门 G18–G20、G34（身份图/底板/道具图提示词、雷同、尺度锚点；头肩图 -FACE 免全身与身高、同人不比雷同）
   shots_tool.py build  <项目> <EP>                只写了 video_body/soundscape 的镜头，拼出 H3 三段 video_prompt
 
-门的编号 G00–G49（见 references/pipeline-contract.md §7），分 error / warn 两级；error 必须修，warn 由写作者判断后
-可在 shot 里用 "waive": ["G05"] 明确豁免。每次 check 追加一行 脚本/gates.jsonl。
+门的编号 G00–G53（见 references/pipeline-contract.md §7），分 error / warn 两级；error 必须修、永不豁免。warn 由写作者判断后
+可在 shot（G49 可在 scene）里豁免，只认完整写法 "waive": [{"gate": "G05", "reason": "≥8 字、引本镜事实", "decision": "D-003"}]；
+旧写法 "waive": ["G05"]、缺理由或缺决策记录编号的豁免不生效（G51 提示）。每次 check 追加一行 脚本/gates.jsonl（含生效的阈值与豁免）。
+G50 drama.json 门阈值比内置默认宽松（error）；G52 恶意执行预演 adversarial_preflight；G53 画内人数与对话对象（11c）。
 """
 from __future__ import annotations
 
@@ -20,7 +22,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from common import (Project, dialogue_lines, norm, parse_screenplay, parse_visual, speakers, speech_seconds)  # noqa: E402
+from common import (DEFAULTS, Project, dialogue_lines, norm, parse_screenplay, parse_visual, speakers, speech_seconds)  # noqa: E402
+from difflib import SequenceMatcher  # noqa: E402
 import json as _json  # noqa: E402
 import time as _time  # noqa: E402
 
@@ -38,7 +41,9 @@ def log_gates(project: Project, ep: str, findings: "Findings", scope: str) -> No
         with open(project.scripts_dir / "gates.jsonl", "a", encoding="utf-8") as f:
             f.write(_json.dumps({"time": _time.strftime("%Y-%m-%d %H:%M:%S"), "scope": scope, "episode": ep,
                                  "errors": len(findings.errors()), "warns": len(findings.warns()),
-                                 "codes": sorted({x["code"] for x in findings.items})}, ensure_ascii=False) + "\n")
+                                 "codes": sorted({x["code"] for x in findings.items}),
+                                 "limits": getattr(findings, "limits", None), "waived": getattr(findings, "waived", None)},
+                                ensure_ascii=False) + "\n")
     except OSError:
         pass
 
@@ -61,6 +66,7 @@ LIVE_LOOK_PRESETS = ("live_modern", "live_period", "live_xianxia", "cg_realistic
 ANIME_DRIFT_RE = re.compile(r"\b\d{2,3}\s?mm\b|\bbokeh\b|cinematic lighting|\bvolumetric\b|\b[48]k\b|photo-?realistic|\bphotograph(?:ic|y)?\b|film grain|depth of field", re.I)
 GUOMAN_DRIFT_RE = re.compile(r"photo-?realistic|\bphotograph(?:ic|y)?\b|film grain", re.I)
 LIVE_HEAD_RE = re.compile(r"realistic human|\bhandheld\b", re.I)
+HEAD_FX_RE = re.compile(r"motivated camera|\bhandheld\b|\bparticles?\b|\bmist\b|\bvolumetric\b", re.I)
 NEG_BEFORE_RE = re.compile(r"\b(?:no|not|never|without|nor)\s+(?:[\w-]+\s+){0,2}$", re.I)
 # G37 单句长度（screenplay §4"短"）：可发声字数；en 按词
 LINE_MAX_DEFAULT = {"zh": 15, "ja": 20, "en": 10}
@@ -89,6 +95,10 @@ REACT_RE = re.compile(r"接过|接住|夺|抢|推|拽|拉住|拉开|按住|按�
                       r"|\b(?:grab|push|shove|pull|hand(?:s|ed)? over|slam|point|stand(?:s)? up|step(?:s)? (?:back|forward)|turn(?:s)? away|nod|shake(?:s)? (?:his|her) head|freez|flinch|recoil|close(?:s)? the|open(?:s)? the)", re.I)
 
 
+# G49 弱动作：只写这些不算「承接对方、改变局面」（关键词堆砌防护）
+WEAK_ACT_RE = re.compile(r"点头|摇头|低头|抬头|看了?一眼|看向|看着|\bnods?\b|\bnodding\b|\blooks?\b(?: at| toward| up| down)?|\bglances?\b", re.I)
+
+
 def scene_state_issues(shots: list[dict]) -> list[dict]:
     states = {}
     issues = []
@@ -113,6 +123,8 @@ def scene_state_issues(shots: list[dict]) -> list[dict]:
 class Findings:
     def __init__(self):
         self.items: list[dict] = []
+        self.limits: dict | None = None
+        self.waived: list | None = None
 
     def add(self, code: str, level: str, shot: str | None, msg: str):
         self.items.append({"code": code, "level": level, "shot": shot, "msg": msg})
@@ -124,8 +136,35 @@ class Findings:
         return [f for f in self.items if f["level"] == "warn"]
 
 
+WAIVE_REASON_MIN = 8
+DECISION_RE = re.compile(r"\bD-\d+\b")
+# 这些门的 error 以前能被 waive 降级或抹掉；现在 error 门一律不认 waive（G51 提示旧豁免已失效）
+FORMERLY_WAIVED_ERRORS = ("G02", "G06", "G10", "G23", "G26")
+
+
+def _waive_entry(shot: dict, code: str) -> dict | None:
+    for w in shot.get("waive") or []:
+        if isinstance(w, dict) and w.get("gate") == code:
+            return w
+    return None
+
+
 def _waived(shot: dict, code: str) -> bool:
-    return code in (shot.get("waive") or [])
+    """只认完整豁免 {gate, reason(≥8 字), decision(D-xxx)}；只用于 warn 门（error 门的调用点不查豁免）。"""
+    w = _waive_entry(shot, code)
+    return bool(w and len(str(w.get("reason") or "").strip()) >= WAIVE_REASON_MIN and DECISION_RE.search(str(w.get("decision") or "")))
+
+
+def _people_count(fp: str, one: str) -> int | None:
+    """起始帧提示词里写定的画内人数：单人固定句 → 1；exactly N people/figures/persons → N；都没有 → None。"""
+    low = fp.lower()
+    if one and one.lower() in low or "only one person in the frame" in low:
+        return 1
+    m = re.search(r"\bexactly\s+(\d+|one|two|three|four|five|six|seven|eight|nine|ten)\s+(?:people|persons?|figures?|characters?|men|women|individuals|humans?)\b", low)
+    if not m:
+        return None
+    w = m.group(1)
+    return int(w) if w.isdigit() else _EN_NUM.index(w)
 
 
 _CN_DIGIT = {"零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
@@ -165,6 +204,122 @@ def _planned_use(sh: dict) -> float:
     return min(vals) if vals else float(sh.get("seconds") or 0)
 
 
+# G50：门阈值不许调松（SKILL 防钻空子总则第 9 条）。方向：+1 = 数值越大越宽松，-1 = 越小越宽松
+LOOSER = {"gate_limits": {"ability_explain_shots": 1, "ability_explain_seconds": 1, "recap_window": -1, "recap_explain_shots": 1,
+                          "talk_only_ratio": 1, "talk_only_min_shots": 1},
+          "pace": {"dialogue_min": -1, "dialogue_tail": -1, "reaction_min": -1, "insert_min": -1, "scene_avg_min": -1}}
+FINAL_ASR_MIN = 0.8
+
+
+def config_limits(project: Project, F: "Findings | None" = None) -> dict:
+    """实际生效的阈值：drama.json 只能收紧；比内置默认宽松的值不生效（用默认）并报 G50 error。"""
+    out = {}
+    for sec, dirs in LOOSER.items():
+        base = GATE_LIMITS_DEFAULT if sec == "gate_limits" else DEFAULTS["pace"]
+        user = project.cfg.get(sec) or {}
+        eff = dict(base)
+        for k, v in user.items():
+            if k not in dirs or not isinstance(v, (int, float)) or isinstance(v, bool):
+                eff[k] = v
+                continue
+            if (v - float(base[k])) * dirs[k] > 1e-9:
+                if F is not None:
+                    F.add("G50", "error", None, f"drama.json {sec}.{k}={v} 比内置默认 {base[k]} 宽松；门阈值只能收紧不能调松（改回默认或删掉这一项）")
+            else:
+                eff[k] = v
+        out[sec] = eff
+    fq = (project.cfg.get("final_qa") or {}).get("asr_min")
+    if isinstance(fq, (int, float)) and fq < FINAL_ASR_MIN and F is not None:
+        F.add("G50", "error", None, f"drama.json final_qa.asr_min={fq} 低于内置下限 {FINAL_ASR_MIN}；终验按 {FINAL_ASR_MIN} 执行，删掉这一项")
+    ap = (project.cfg.get("budget") or {}).get("asr_pass")
+    if isinstance(ap, (int, float)) and ap < DEFAULTS["budget"]["asr_pass"] and F is not None:
+        F.add("G50", "error", None, f"drama.json budget.asr_pass={ap} 低于内置 {DEFAULTS['budget']['asr_pass']}；改回默认")
+    for lang_, cap in (project.cfg.get("line_max") or {}).items():
+        if lang_ in LINE_MAX_DEFAULT and isinstance(cap, (int, float)) and cap > LINE_MAX_DEFAULT[lang_] and F is not None:
+            F.add("G50", "error", None, f"drama.json line_max.{lang_}={cap} 比内置 {LINE_MAX_DEFAULT[lang_]} 宽松；单句上限只能收紧")
+    for key in ("one_person_clause", "no_text_clause"):
+        if key in project.cfg and not str(project.cfg.get(key) or "").strip() and F is not None:
+            F.add("G50", "warn", None, f"drama.json {key} 是空的：门照样按内置默认句「{DEFAULTS[key]}」查，删掉这一项或写回默认句")
+    return out
+
+
+def waive_findings(F: "Findings", shots: list[dict], scenes: list[dict], project: Project) -> None:
+    """G51：豁免写法。只认 {gate, reason, decision}；decision 要在 项目开发/决策记录.md 里查得到。"""
+    rec_p = project.root / "项目开发" / "决策记录.md"
+    rec_text = rec_p.read_text(encoding="utf-8") if rec_p.exists() else ""
+    waived = []
+    for owner in list(shots) + list(scenes):
+        oid = owner.get("id")
+        for w in owner.get("waive") or []:
+            if isinstance(w, str):
+                F.add("G51", "warn", oid, f"waive「{w}」是旧写法，不生效；warn 门豁免写成 {{\"gate\": \"{w}\", \"reason\": \"引本镜事实的理由\", \"decision\": \"D-xxx\"}}"
+                      + ("；这是 error 门，任何写法都不能豁免" if w in FORMERLY_WAIVED_ERRORS else ""))
+                continue
+            if not isinstance(w, dict) or not w.get("gate"):
+                F.add("G51", "warn", oid, f"waive 条目格式不对：{w}")
+                continue
+            gate, reason, dec = w.get("gate"), str(w.get("reason") or "").strip(), str(w.get("decision") or "")
+            if gate in FORMERLY_WAIVED_ERRORS:
+                F.add("G51", "warn", oid, f"waive {gate} 无效：error 门不能豁免")
+            elif len(reason) < WAIVE_REASON_MIN or not DECISION_RE.search(dec):
+                F.add("G51", "warn", oid, f"waive {gate} 缺理由（≥{WAIVE_REASON_MIN} 字）或决策记录编号（D-xxx），不生效")
+            else:
+                if rec_text and DECISION_RE.search(dec).group(0) not in rec_text:
+                    F.add("G51", "warn", oid, f"waive {gate} 引的 {dec} 在 项目开发/决策记录.md 里找不到")
+                waived.append([oid, gate, reason, dec])
+    F.waived = waived
+
+
+def adversarial_findings(F: "Findings", owner: str | None, items, sources: list[str], *, code: str = "G52") -> None:
+    """G52：恶意执行预演。缺或少于 3 条 → warn（produce.py 提交前升 error）；blocked_by 不是当前提示词原句也不是「验收：」→ error；worst 重复 → error。"""
+    items = items if isinstance(items, list) else []
+    good = [x for x in items if isinstance(x, dict) and str(x.get("worst") or "").strip()]
+    if len(good) < 3:
+        F.add(code, "warn", owner, f"adversarial_preflight 只有 {len(good)} 条：提交前写 3 条「完全符合字面但最差」的成品和各自的堵法"
+              "（[{\"worst\": …, \"blocked_by\": 提示词原句或「验收：…」}]，video-prompts-general §2b 第五部分）；不满 3 条 produce.py 拒绝提交")
+    worsts = [norm(str(x["worst"])) for x in good]
+    if len(set(worsts)) != len(worsts):
+        F.add(code, "error", owner, "adversarial_preflight 的 worst 有重复：三条要从不同角度想（人、手、时间、声音、镜头、可见性）")
+    hay = "\n".join(sources)
+    for x in good:
+        b = str(x.get("blocked_by") or "").strip()
+        if not b:
+            F.add(code, "error", owner, f"adversarial_preflight「{str(x['worst'])[:20]}」没写 blocked_by")
+        elif not b.startswith("验收：") and b not in hay:
+            F.add(code, "error", owner, f"adversarial_preflight 的 blocked_by「{b[:40]}」不在当前提示词里（要逐字引提示词原句，或写「验收：…」指向验收项）；提示词改过就同步改预演")
+
+
+def script_must_show(doc: dict) -> dict[str, list[str]]:
+    """剧本每场 `[连续性] … 必拍：①… ②…` 的条目（C 阶段写，E 阶段逐条抄进 scenes[].must_show）。"""
+    out: dict[str, list[str]] = {}
+    for sc in doc["scenes"]:
+        for ln in sc["lines"]:
+            if ln["type"] == "tag" and ln["tag"] == "连续性" and re.search(r"必拍\s*[：:]", ln["text"]):
+                body = re.split(r"必拍\s*[：:]", ln["text"], maxsplit=1)[-1]
+                items = [x.strip(" 。；;，,") for x in re.split(r"[①②③④⑤⑥⑦⑧⑨⑩]|(?<![\d.])\d+[.、)）](?!\d)", body)]
+                out.setdefault(sc["id"], []).extend(x for x in items if x)
+    return out
+
+
+def must_show_vs_script(F: "Findings", doc: dict, scenes: list[dict]) -> None:
+    """G46 对账：剧本「必拍：」逐条要进同场 must_show（条数不少、每条文字照抄到可认出）。"""
+    want = script_must_show(doc)
+    have = {sc.get("id"): [str(f.get("fact") or "") for f in sc.get("must_show") or [] if isinstance(f, dict)] for sc in scenes}
+    for sc in doc["scenes"]:
+        sc_id = sc["id"]
+        items = want.get(sc_id) or []
+        if not items:
+            F.add("G46", "warn", None, f"剧本 {sc_id} 没写「[连续性] … 必拍：①…」：按 screenplay 规则补（每场 ≥3 条观众必须看见的事实），再抄进 scenes[].must_show")
+            continue
+        facts = have.get(sc_id) or []
+        if len(facts) < len(items):
+            F.add("G46", "error", None, f"剧本 {sc_id} 必拍 {len(items)} 条，shots.json 同场 must_show 只有 {len(facts)} 条；逐条抄进 must_show 并指定承担镜")
+        for it in items:
+            best = max((SequenceMatcher(None, norm(it), norm(f)).ratio() for f in facts), default=0.0)
+            if best < 0.5:
+                F.add("G46", "error", None, f"剧本 {sc_id} 必拍「{it[:24]}」没照抄进 must_show（最相近 {best:.0%}）；照剧本原意写 fact，不许换成空话")
+
+
 def check(project: Project, ep: str) -> Findings:
     F = Findings()
     data = project.load_shots(ep)
@@ -181,8 +336,8 @@ def check(project: Project, ep: str) -> Findings:
     lang = project.get("dialogue_lang")
     rates = project.sub("speech_rates")
     secs = project.sub("shot_seconds")
-    one = project.get("one_person_clause")
-    notext = project.get("no_text_clause")
+    one = project.get("one_person_clause") or DEFAULTS["one_person_clause"]    # 置空不等于关门：空值用内置默认句
+    notext = project.get("no_text_clause") or DEFAULTS["no_text_clause"]
     forbidden = [w.lower() for w in project.get("forbidden_words") or []]
     keys = project.get("video_prompt_keys") or []
     fast_craft = project.get("craft_profile") == "commercial_fast"
@@ -210,10 +365,14 @@ def check(project: Project, ep: str) -> Findings:
     covered_dialogue: set[str] = set()
     covered_scenes: set[str] = set()
     planned_total = 0.0
-    pace = project.sub("pace")
+    pace = config_limits(project)["pace"]   # 比默认宽松的值不生效（G50）
     scene_use: dict[str, list[float]] = {}
     prev_shot: dict | None = None
     readings_all = project.get("readings") or {}
+    single_reasons: dict[str, list[str]] = {}
+    scene_people: dict[str, dict[str, bool]] = {}
+    F.limits = config_limits(project, F)
+    waive_findings(F, shots, data.get("scenes") or [], project)
 
     for sh in shots:
         sid = sh.get("id", "?")
@@ -227,6 +386,9 @@ def check(project: Project, ep: str) -> Findings:
         if not re.match(rf"^{ep}-S\d{{2,3}}$", sid):
             F.add("G01", "error", sid, f"ID 应形如 {ep}-S01")
         scene = sh.get("scene", "")
+        for name, st_ in (((sh.get("scene_state") or {}).get("start") or {}).get("characters") or {}).items():
+            if isinstance(st_, dict) and "present" in st_:
+                scene_people.setdefault(scene, {})[name] = bool(st_["present"])
         if script_doc and scene not in script_scene_ids:
             F.add("G01", "error", sid, f"场景 {scene} 不在剧本里")
         covered_scenes.add(scene)
@@ -234,13 +396,43 @@ def check(project: Project, ep: str) -> Findings:
         fp, vp = sh.get("frame_prompt", "") or "", sh.get("video_prompt", "") or ""
         seconds = float(sh.get("seconds") or 0)
         planned_total += seconds
+        talk = [d for d in sh.get("dialogue") or [] if d.get("text") and not d.get("vo")] if not sh.get("audio_from") else []
+        if kind in INSERT_KINDS and (talk or sh.get("characters")):
+            # kind 是自报字段，不能用来逃人物镜的门：有镜内台词或 characters 的镜一律按人物镜查
+            F.add("G01", "warn", sid, f"kind 标成「{kind}」但本镜有{'镜内台词' if talk else ' characters'}：按人物镜查全部门；确是插入镜就把台词改成 vo 或拆出去")
+            kind = "person"
 
-        # G02 一镜一人
-        if kind not in INSERT_KINDS and not sh.get("multi_person"):
-            if one and one.lower() not in fp.lower():
-                F.add("G02", "error" if not _waived(sh, "G02") else "warn", sid, f"起始帧提示词缺一镜一人句「{one}」")
-        if sh.get("multi_person") and not sh.get("multi_person_reason"):
-            F.add("G02", "error", sid, "multi_person 必须写 multi_person_reason（为什么必须两人同框）")
+        # G02 画内人数句（不看 kind 声明，见上）：单人写固定句，多人写 exactly N（video-prompts-general §2b 封闭世界）
+        n_people = _people_count(fp, one)
+        if kind not in INSERT_KINDS:
+            if n_people is None:
+                F.add("G02", "error", sid, f"起始帧提示词缺画内人数句：单人写「{one}」，多人写 exactly N people（并开 multi_person、逐人写位置朝向）")
+            elif sh.get("multi_person") and n_people < 2:
+                F.add("G02", "error", sid, "multi_person 镜的起始帧提示词要写 exactly N people（N≥2），不能写单人句")
+            elif n_people >= 2 and not sh.get("multi_person"):
+                F.add("G02", "warn", sid, f"起始帧写了 exactly {n_people} people 但 multi_person 没开；多人镜打开 multi_person 并写 multi_person_reason")
+
+        # G53 对话要看得见对象（SKILL 11c）；多人镜人数和在场名单对得上
+        if kind not in INSERT_KINDS and talk and n_people == 1:
+            sr = str(sh.get("single_reason") or "").strip()
+            if not sr:
+                F.add("G53", "error", sid, "台词镜只有一人入画：被说话的人要入画（multi_person + exactly N，听者只露背/肩），"
+                      "只有自言自语、对全场喊话且上一镜已建立站位时才用单人，并写 single_reason（引剧本原句和上一镜镜号）")
+            elif len(sr) < 10:
+                F.add("G53", "error", sid, f"single_reason「{sr}」太短，说不清为什么不给听者入画（引剧本原句和上一镜镜号）")
+            else:
+                single_reasons.setdefault(sr, []).append(sid)
+        if kind not in INSERT_KINDS and n_people and n_people >= 2:
+            present = sorted(k for k, v in (scene_people.get(scene) or {}).items() if v)
+            in_frame = sh.get("in_frame")
+            if isinstance(in_frame, list) and in_frame:
+                if len(in_frame) != n_people:
+                    F.add("G53", "error", sid, f"frame_prompt 写 exactly {n_people}，in_frame 列了 {len(in_frame)} 人 {in_frame}；人数写死且一致")
+                gone = [x for x in in_frame if present and x not in present]
+                if gone:
+                    F.add("G53", "error", sid, f"in_frame 里的 {gone} 不在 scene_state 的在场名单 {present} 里（已离场或没登场）")
+            elif present and n_people > len(present):
+                F.add("G53", "error", sid, f"frame_prompt 写 exactly {n_people} 人入画，scene_state 在场只有 {len(present)} 人 {present}；多出来的人从哪来")
 
         # G03 参考图存在；人物镜要有身份图
         for r in sh.get("frame_refs") or []:
@@ -274,7 +466,7 @@ def check(project: Project, ep: str) -> Findings:
                 F.add("G09", "error", sid, f"台词「{t}」没有逐字出现在 video_prompt 里")
             # G10 台词来自剧本
             if script_doc and t and norm(t) not in script_norm:
-                F.add("G10", "error" if not _waived(sh, "G10") else "warn", sid, f"台词「{t}」在剧本里找不到（剧本和镜头漂移）")
+                F.add("G10", "error", sid, f"台词「{t}」在剧本里找不到（剧本和镜头漂移）：台词逐字来自剧本，改镜头台词或回剧本改（error 门不能 waive）")
             covered_dialogue.add(norm(t))
         if dlg and need + 0.5 > seconds:
             F.add("G04", "error", sid, f"台词需要约 {need:.1f}s + 0.5s 收尾，seconds={seconds} 装不下")
@@ -282,7 +474,7 @@ def check(project: Project, ep: str) -> Findings:
             F.add("G05", "warn", sid, "人物镜没有台词；要么给一句，要么写 silent_reason")
 
         # G06 不出可读文字；G07 禁词
-        if notext and notext.lower() not in fp.lower() and not _waived(sh, "G06"):
+        if notext and notext.lower() not in fp.lower():
             F.add("G06", "error", sid, f"起始帧提示词缺「{notext}」")
         if READABLE_TEXT_RE.search(fp) and not sh.get("readable_text_ok"):
             F.add("G06", "warn", sid, "起始帧提示词像是在要求画面里出现可读文字；文字应走后期叠加")
@@ -317,7 +509,7 @@ def check(project: Project, ep: str) -> Findings:
             phrase = (lk.get("phrase") or "").lower()
             if phrase and kind not in INSERT_KINDS and sh.get("subject") and lk.get("subject", sh.get("subject")) == sh.get("subject"):
                 hit = re.search(r"(?<!no )(?<!without )" + re.escape(phrase), fp.lower())
-                if not hit and not _waived(sh, "G23"):
+                if not hit:
                     F.add("G23", "error", sid, f"锁 {lk.get('id')} 的锁面「{lk.get('phrase')}」没有逐字出现在 frame_prompt 里")
                 # 视频提示词同样要带锁面（CON-07）；台词 <d>…</d> 不算，只查 warn
                 vtext = re.sub(r"<d>.*?</d>", "", (vp or sh.get("video_body") or ""), flags=re.S).lower()
@@ -339,7 +531,7 @@ def check(project: Project, ep: str) -> Findings:
             if prev and b.get("start") and (prev.get("boundary") or {}).get("end"):
                 pe, cs = prev["boundary"]["end"], b["start"]
                 diffs = [k for k in BOUNDARY_KEYS if k in pe and k in cs and norm(str(pe[k])) != norm(str(cs[k]))]
-                if diffs and not sh.get("boundary_break") and not _waived(sh, "G26"):
+                if diffs and not sh.get("boundary_break"):
                     F.add("G26", "error", sid, f"与上一镜 {prev['id']} 的边界链不接：{diffs} 前一镜终点≠本镜起点；补一镜、改边界，或写 boundary_break 说明镜外发生了什么")
             # G27 同景别同主体跳切
             # 紧挨着且没写 split_reason 时由 G45 提示合并成长镜头，这里不再劝"换景别拆开"
@@ -373,10 +565,17 @@ def check(project: Project, ep: str) -> Findings:
         # G13 质量地板
         if len(sh.get("keyframe", "")) < 20:
             F.add("G13", "warn", sid, "冻结关键帧描述太短（<20 字），下游没法核对构图")
-        if kind not in INSERT_KINDS and one and one.lower() in fp.lower() and re.search(r"\b(two|three|both|couple|crowd|people)\b(?!-quarter)", fp.lower()) and not sh.get("multi_person"):
-            F.add("G13", "warn", sid, "起始帧提示词既写一镜一人又出现 two/both/people 等词，检查是否多人入画")
+        if kind not in INSERT_KINDS and n_people == 1 and re.search(
+                r"\b(two|three|both|couple|crowd|people)\b(?!-quarter)(?!\s+(?:of\s+(?:his|her|their)\s+)?(?:hands?|arms?|eyes?|feet|legs?|palms?|sides?|ends?|shoulders?|knees?|fingers?)\b)",
+                fp.lower()) and not sh.get("multi_person"):
+            F.add("G13", "warn", sid, "起始帧提示词写了单人句又出现 two/both/people 等词：真是多人镜就开 multi_person、写 exactly N 和逐人位置朝向；不是就删掉这些词")
         if kind not in INSERT_KINDS and re.search(r"\bin focus\b", fp.lower()) and not _waived(sh, "G13"):
-            F.add("G13", "warn", sid, "「in focus」给虚焦背景里的路人留了口子（实战里多出过人）；写 Only one person in the frame，不写 in focus")
+            F.add("G13", "warn", sid, "「in focus」给虚焦背景里的路人留了口子（实战里多出过人）；按封闭世界写死画内人数，不写 in focus")
+        if re.search(r"\bas (?:a|the) background\b", fp.lower()) and not _waived(sh, "G13"):
+            F.add("G13", "warn", sid, "frame_prompt 写了「as a background」：参考图会被当成背景贴图、人物被重画（E30）；写清参考图分工，不用 as a background")
+
+        # G52 恶意执行预演：3 条「完全符合字面但最差」的成品和各自的堵法（blocked_by 必须是当前提示词原句或「验收：…」）
+        adversarial_findings(F, sid, sh.get("adversarial_preflight"), [fp, sh.get("motion") or "", vp, sh.get("video_body") or ""])
 
         # G29 动作职责镜：生成模型动作常晚 1–2 秒，计划取用太短或没标 action_window，动作会落在剪点外
         if kind in ("person", "hands") and ACTION_WORDS_RE.search(sh.get("motion", "") or "") and not _waived(sh, "G29"):
@@ -479,6 +678,12 @@ def check(project: Project, ep: str) -> Findings:
             extra = f"；合并后约 {merged:.0f}s 超过 shot_seconds.max={cap:.0f}，先删同质节拍" if merged > cap else ""
             F.add("G45", "warn", sid, f"与上一镜 {prev_shot.get('id')} 同场同一人物「{sh['subject']}」相邻、中间没有别人的镜头或插入镜；默认合并成一个长镜头（按内容定时长，上限 {cap:.0f}s）{extra}；只有景别/机位/剧情明显变化或时间跳跃才拆，拆就写 split_reason")
         prev_shot = sh
+        for name, st_ in (((sh.get("scene_state") or {}).get("end") or {}).get("characters") or {}).items():
+            if isinstance(st_, dict) and "present" in st_:
+                scene_people.setdefault(scene, {})[name] = bool(st_["present"])
+    for sr, who in single_reasons.items():
+        if len(who) >= 2:
+            F.add("G53", "error", who[1], f"single_reason 原样用在 {who}：理由挪到另一镜仍成立就是套话（搬家测试），按没写算；每镜引本镜的剧本原句和上一镜镜号")
 
     # G42 同场平均镜长下限（只设下限，允许长镜头）
     for sc_id, uses in scene_use.items():
@@ -589,6 +794,8 @@ def check(project: Project, ep: str) -> Findings:
                     F.add("G46", "error", None, f"{f_['id']}「{f_['fact'][:16]}」的 shots 指向不存在的镜 {t}")
                 elif f_["id"] not in (by_sid[t].get("must_show_ids") or []):
                     F.add("G46", "warn", t, f"{f_['id']} 的 shots 列了本镜，但本镜 must_show_ids 没写 {f_['id']}；承担关系两边写一致")
+    if script_doc:
+        must_show_vs_script(F, script_doc, data.get("scenes") or [])
     carriers: dict[str, list[str]] = {}
     for sh in shots:
         for mid in sh.get("must_show_ids") or []:
@@ -603,7 +810,7 @@ def check(project: Project, ep: str) -> Findings:
         elif not any(x in in_cut for x in who):
             F.add("G46", "error", None, f"必拍事实 {mid}「{f_['fact'][:20]}」的承担镜 {who} 都不在 cut_order 里；删镜删掉了因果证据，恢复一镜或换承担镜")
         # G47 数量类事实：承担镜的起始帧提示词要把数字写进去（数量与排布写死，目检时逐个数）
-        if f_.get("kind") == "count":
+        if f_.get("kind") == "count" or _fact_numbers(str(f_["fact"])):   # 写了数量就按数量事实查，改 kind 逃不掉
             nums = _fact_numbers(str(f_["fact"]))
             for x in sorted(set(who) | set(f_.get("shots") or [])):
                 sh = by_sid.get(x)
@@ -615,13 +822,18 @@ def check(project: Project, ep: str) -> Findings:
                     F.add("G47", "warn", x, f"承担数量事实 {mid}「{f_['fact'][:20]}」，frame_prompt 里没写出 {miss}；把数量和排布写死（exactly ten boxes, five on the top row and five on the bottom row），起始帧目检逐个数")
 
     # G48 能力规则重复解释：同集 explains_ability 镜累计超限；第二集起开头窗口内不许超过 1 镜
-    lim = {**GATE_LIMITS_DEFAULT, **(project.get("gate_limits") or {})}
+    lim = F.limits["gate_limits"]
+    ability_terms = [str(t) for t in project.get("ability_terms") or []]   # 立项时从装置条款抄；自报 explains_ability 之外的兜底
     t_cursor, early, expl = 0.0, [], []
     for sh in shots:
         if sh.get("id") not in in_cut:
             continue
         use = _planned_use(sh)
-        if sh.get("explains_ability") and not _waived(sh, "G48"):
+        said = " ".join(str(d.get("text") or "") for d in sh.get("dialogue") or []) + " " + str(sh.get("duty") or "")
+        hit_terms = [t for t in ability_terms if t and t in said]
+        if hit_terms and not sh.get("explains_ability"):
+            F.add("G48", "warn", sh.get("id"), f"台词/duty 提到能力关键词 {hit_terms[:3]} 却没标 explains_ability；按解释能力计数（drama.json ability_terms）")
+        if (sh.get("explains_ability") or hit_terms) and not _waived(sh, "G48"):
             expl.append((sh.get("id"), use))
             if t_cursor < float(lim["recap_window"]):
                 early.append(sh.get("id"))
@@ -639,10 +851,10 @@ def check(project: Project, ep: str) -> Findings:
     for sh in shots:
         if sh.get("kind", "person") != "person" or not sh.get("dialogue") or sh.get("audio_from") or sh.get("id") not in in_cut:
             continue
-        acts = bool(REACT_RE.search(str(sh.get("motion") or ""))) or _waived(sh, "G49")
+        acts = bool(REACT_RE.search(WEAK_ACT_RE.sub("", str(sh.get("motion") or "")))) or _waived(sh, "G49")   # 只点头/看一眼不算承接
         talk_by_scene.setdefault(sh.get("scene"), []).append((sh.get("id"), acts))
     for sc_id, rows in talk_by_scene.items():
-        if "G49" in ((scenes.get(sc_id) or {}).get("waive") or []) or len(rows) < int(lim["talk_only_min_shots"]):
+        if _waived(scenes.get(sc_id) or {}, "G49") or len(rows) < int(lim["talk_only_min_shots"]):
             continue
         idle = [x for x, a in rows if not a]
         if len(idle) / len(rows) > float(lim["talk_only_ratio"]) + 1e-9:
@@ -661,6 +873,9 @@ def check(project: Project, ep: str) -> Findings:
         bad = [m.group(0) for m in LIVE_HEAD_RE.finditer(head_) if not NEG_BEFORE_RE.search(head_[max(0, m.start() - 30):m.start()])]
         if bad:
             F.add("G36", "warn", None, f"画风 {preset} 的 drama.json video_prompt_head 含 {sorted(set(bad))}（真人头句）；按 styles.md §1 换成本画风的视频头句和保持句")
+    fx = sorted({m.group(0).lower() for m in HEAD_FX_RE.finditer(head_) if not NEG_BEFORE_RE.search(head_[max(0, m.start() - 30):m.start()])})
+    if fx:
+        F.add("G36", "warn", None, f"drama.json video_prompt_head 含运镜/特效词 {fx}：每镜都会被加上漂移的机位和多余的粒子雾气；头句用锁定机位（Locked-off camera on a tripod; real-time speed.），运镜写进需要的那一镜")
     # G39 AI 生成标识：drama.json 要明确写 ai_label（大陆发行写标识文字，海外写 null 并记决策）
     if "ai_label" not in project.cfg:
         F.add("G39", "warn", None, "drama.json 没写 ai_label；大陆发行要在成片前 3 秒叠显式标识（例「本片由AI生成」，cut.py 自动叠），只在海外发行写 null 并记决策记录")
@@ -694,7 +909,8 @@ def check(project: Project, ep: str) -> Findings:
             if not any(ln["type"] == "action" for ln in sc["lines"]):
                 F.add("G16", "warn", None, f"{sc['id']} 没有动作段，只有对白")
         # G37 单句超长：拆成两句、中间插对方反应或动作（为了句数多、反应快，不是少说话）
-        lmax = {**(LINE_MAX_DEFAULT if fast_craft else {}), **(project.get("line_max") or {})}
+        # general 档也查（上限放宽到 1.5 倍）：不写 line_max 不等于不查
+        lmax = {**(LINE_MAX_DEFAULT if fast_craft else {k: int(v * 1.5) for k, v in LINE_MAX_DEFAULT.items()}), **(project.get("line_max") or {})}
         for d in (script_dialogue if lmax else []):
             t = d["text"]
             if lang == "en" or not re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", t):
@@ -758,6 +974,7 @@ def check_refs(project: Project) -> Findings:
     ident = {k: v for k, v in refs.items() if v.get("kind") == "identity"}
     for rid, r in refs.items():
         p = (r.get("prompt") or "")
+        adversarial_findings(F, rid, r.get("adversarial_preflight"), [p])
         low = p.lower()
         if not p:
             F.add("G18", "error", rid, "缺 prompt")
@@ -855,7 +1072,8 @@ def render(project: Project, ep: str) -> list[Path]:
     L = [f"# {ep} 分镜", "",
          f"画风：{project.get('style_preset') or '未选（G33）'}（references/styles.md，全剧锁定）。",
          f"目标模型：{project.get('video_dialect')}；一镜一生成，keyframe 首帧模式；每镜生成秒数见各镜；成片取用区间按审片结果（审查/{ep}-review.json）。",
-         f"拍法：{project.get('one_person_clause')} 每镜一人或一双手；关系和冲突靠特写与剪辑建立；字幕与后期字全部后期叠加，生成画面里不出字。", ""]
+         "拍法：对话镜被说话的人必须入画（SKILL 11c：两人一左一右，或听者只露背/肩在前景）；多人镜写死 exactly N、逐人位置朝向；"
+         "单人台词镜只限自言自语、对全场喊话，写 single_reason；字幕与后期字全部后期叠加，生成画面里不出字。", ""]
     if data.get("notes"):
         L += ["本集说明：", *[f"- {n}" for n in data["notes"]], ""]
     for sc in data.get("scenes") or []:

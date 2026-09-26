@@ -6,7 +6,7 @@ license: MIT
 
 # 爆剧引擎 / DramaForge
 
-把一个点子做成能追看的商业爽剧成片，在用户已授权的范围和成本边界内连续执行。商业爽剧的密集对白、即时反应和顺叙是本流程的创作预设，当前请求和项目设定优先。
+把一个点子做成能追看的商业爽剧成片，在用户已授权的范围和成本边界内连续执行。商业爽剧的密集对白、即时反应和顺叙是本流程的创作预设，当前请求和项目设定优先；但项目设定不能放宽下面的「防钻空子总则」和质量底线。
 
 ## Quick Start
 
@@ -19,16 +19,37 @@ python3 "$S/project_tool.py" next <项目目录>                               #
 
 生产需要环境变量 `H3_API`（你的 H3 中转地址，也可写在 `drama.json` 的 `api_base`）和 `H3_STUDIO_TOKEN`（只从环境读，不落盘）；审片需要 `ASR_PY`（装了 faster-whisper 的 python，例如 `~/.venvs/asr/bin/python`；不设则自动扫 `~/.venvs/*`）。
 
+## 防钻空子总则（所有条文按这里的读法执行）
+
+本技能假设执行者会被诱惑着抄近路：用最少的工作宣称完成、只守字面、挑宽松的那条规则。下面几条堵的就是这些路，任何其他条文、参考文件、模板、项目设定都不能放宽它们。
+
+1. **按目的读规则**：字面和目的冲突、两条规则宽严冲突时取更严的，同严取日期更新的。发现规则空隙不许利用，记进决策记录「规则空隙」一栏，按更严的读法做，并在汇报里告诉用户。
+2. **授权只来自用户原话**：用户授权 = 用户在对话里说的话，记在 `项目开发/决策记录.md`，`拍板人: 用户`、`用户原话`、日期三项齐全才算。`拍板人: 代理` 的行、模板、示例、历史项目、本技能里的案例都不构成授权；"继续""全自动""你看着办"只授权按既定规则往下做，不授权放宽任何规则、换模型或加预算。
+3. **质量底线不可被项目设定覆盖**：画面不出字（4）、台词逐字（5）、必拍事实（6g）、对话看得见对象（11c）、串行与提交上限（2）、模型由用户指定（1b）、写审分离（7）、不删产物（8）。只有用户原话点名某一条、说明本项目放宽，才放宽那一条。
+4. **"看过/听过/审过"要留证据**：每次目检写可抽查的具体观察（几个人、各在哪朝哪、脚下是什么、每只手属于谁、道具几件、和上一镜接不接得上），绑定被审文件的 sha256；"看过无问题""9/9 过""自然"这类套话按没做算。文件变了（重拍、重出、重剪），旧结论自动作废。网格和缩略图只用来找可疑处，放行要看过单张原图。
+5. **模型听不到声音**：`listen_ok`、口音、语调、情绪听感只能由真人（用户或用户指定的母语者）签，记下 `listener`；执行代理和任何子代理一律写 null、汇报写"未听审"。不许用"听感"推翻 ASR，也不许从 ASR 文本推断听感。
+6. **放行不自签**：预演、C/E 审查、成片终验的 PASS 要逐条答案填满、输入指纹没变；C/E 审查由没参与写作的 reviewer 写，主会话不得改 reviewer 原稿（修订另写一份）。
+7. **逃生口有边界**：
+   - `weak` 不能用在承担必拍事实或关键情节的镜头上，这类镜头只有 retake、改分镜、回剧本三条路。
+   - 「未决」不能用在 Blocker 和剧情事实类 Major 上；其余未决写轮次和决策记录编号，结论写 `PASS（未决 N）`。
+   - 「用户确认」必须是用户看过问题清单之后的原话、点到问题编号；拿不到就写"待确认"，该集汇报为**未交付**。剧情事实类缺陷不能靠用户确认放行。
+   - `waive` 只能豁免 warn 门，带门号、理由、决策记录编号；error 门永不豁免。
+   - 各种例外理由（`split_reason`、`gaze_reason`、`fast_cut_reason`、单人镜理由等）要过**搬家测试**：理由原样挪到另一镜仍然成立，就是套话，按没写算。"适当""自然""合理""若干"这类词不能单独充当规格。
+8. **影响范围按依赖算**：重拍或重出一镜，作废的不只是这一镜，还有链式出帧的全部下游镜（起始帧取自本镜末帧的）、相邻镜的连续性结论、该集预演和成片终验。
+9. **不动门**：运行中不改本技能的脚本、门逻辑、阈值、白名单，不改 `drama.json` 里的门阈值或固定句来让门通过。门误报就记进决策记录、告诉用户，按更严的执行。
+10. **如实汇报**：没做的写没做，没验证的写未验证；镜数、重拍数、weak/drop、花费取自脚本输出，不手写估计。
+11. **生成模型也会钻空子**：提示词里没写死的，图像/视频/TTS 模型都会按最坏情况补（多一个人、少一个人、朝向乱、手凭空出现、停顿处补字、镜内硬切、出字）。提示词按「封闭世界」写，见 [video-prompts-general.md](references/video-prompts-general.md) §2b。
+
 ## 硬约束（一直有效）
 
-1. **有界自动执行**：按[运行边界与恢复](references/runtime-boundaries.md)先明确本轮集数、任务范围、模型/尺寸、提交次数上限及成本边界；已有明确授权直接沿用，范围内连续执行。缺模型配置、触及预算、STOP/DEADLINE、提交结果未知或真实创作分叉时停止依赖工作。常规创作决定写进 `项目开发/决策记录.md`。
+1. **有界自动执行**：按[运行边界与恢复](references/runtime-boundaries.md)先明确本轮集数、任务范围、模型/尺寸、提交次数上限及成本边界；已有明确授权（按总则 2 的用户原话）直接沿用，范围内连续执行。缺模型配置、触及预算、STOP/DEADLINE、提交结果未知或真实创作分叉时停止依赖工作。常规创作决定写进 `项目开发/决策记录.md`。
 1a. **全自动 = 不能弹权限请求**（用户 2026-09-26 定）：主会话和子代理的命令都不能触发权限确认弹窗。禁止 `rm`/`rm -f` 配变量路径或通配符（每次输出到新目录，或字面路径 + `/usr/bin/trash`）、禁止前台 `sleep` 后接命令（用后台任务或 until 循环）、禁止 curl/wget 直连（用 python requests）；遇到会弹窗的写法就换写法。
-1b. **模型由用户指定**：生成用的模型、档位、分辨率（视频、图片、TTS、对口型）由用户指定；项目里用户已定的默认（`drama.json` / `项目开发/决策记录.md`）可直接用；用户没指定的，不许自选、不许擅自换，列 2–3 个候选和价格交用户定。新项目 `profiles` 初始为空；模板、技能中的案例和历史项目决定都不构成当前项目授权。
-2. **串行**：一次只提交一个生成任务；提交前查 `/api/status` 空闲。POST 永不自动重发；先查账本收回未收回的任务。
-3. **镜头服务可读性**：对话可用单人正反打；接触用双人镜、可辨手部特写或有意省略，确保前后归属和因果成立。景别、节拍和长度由叙事及项目模型能力决定，不固定脸部比例或每镜秒数。详见 storyboard-keyframes.md。
+1b. **模型由用户指定**：生成用的模型、档位、分辨率（视频、图片、TTS、对口型）由用户指定；项目里用户已定的默认（`drama.json` / `项目开发/决策记录.md`）可直接用；用户没指定的，不许自选、不许擅自换，列 2–3 个候选和价格交用户定。新项目 `profiles` 初始为空；`profiles` 每一项都要能指回决策记录里 `拍板人: 用户` 的那一行（`profiles_source`），指不回的按未授权处理；模板、技能中的案例和历史项目决定都不构成当前项目授权；镜头级、参考图级另写档位也要有同样的出处（`produce.py` 提交前拒绝与 `profiles` 不同的镜头级/参考图级档位；`profiles_source` 缺失只报 warn，它指向的是不是用户原话那一行脚本不查，靠规则）。
+2. **串行**：一次只提交一个生成任务；提交前查 `/api/status` 空闲。POST 永不自动重发；先查账本收回未收回的任务。任何通道（fal、kling 等）的 `--jobs N` 并行都要用户原话单独授权并发（规则要求；`produce.py` 只拒绝非 fal/kling 通道用 `--jobs`，不查授权）。
+3. **镜头服务可读性**：对话镜按 11c 让听者入画；接触用双人镜、可辨手部特写或有意省略，确保前后归属和因果成立。多人镜把人数写死（`exactly N`）。景别、节拍和长度由叙事及项目模型能力决定，不固定脸部比例或每镜秒数。详见 storyboard-keyframes.md。
 4. **生成画面不出字**：字幕、面板、印章字全部后期叠加；手机屏幕背对镜头。
 5. **台词逐字等于剧本**（G09/G10）；能力规则/装置条款先改系列简报再进剧本。
-6. **剧情优先**：审片只看剧情、动作可读、台词完整、有无出字、有没有认错人；画质不作重拍理由。但**关键情节点的动作没生成出来、方向反了、或被剪在出点之外，是必须处理的问题**（重拍、改取用区间或改分镜），不能用"不重拍"放过；审片必须看接触表，逐镜写出职责动作在原片第几秒发生（production-and-review §5）。
+6. **剧情优先**：审片只看剧情、动作可读、台词完整、有无出字、有没有认错人；画质不作重拍理由。"画质"只指清晰度、噪点、质感；多人少人、多手少手、手形错、出字、认错人、镜像、镜内硬切、人站错一侧都是内容缺陷，不能归为画质放过。但**关键情节点的动作没生成出来、方向反了、或被剪在出点之外，是必须处理的问题**（重拍、改取用区间或改分镜），不能用"不重拍"放过；审片必须看接触表，逐镜写出职责动作在原片第几秒发生（production-and-review §5）。
 6a. **点子要新、要爽**：立项先出 ≥6 个机制不同的候选、按爽感检查表打分选一；看破谎言、摸物知价、挨打到账、强制说真话、短时回溯、读心、系统面板、重生复仇、赘婿战神退婚、亮令牌等饱和设定可以用，但必须带新内容（新规则/限制、新代价、新视角、新兑现方式、新反制循环、新组合或新世界观/职业承载，至少一项），在候选表写清新在哪里，只换皮不算（[premise-novelty.md](references/premise-novelty.md)）。出候选前先查[市场爆款题材库](references/market-hits.md)，定首发平台与形态，每个候选标注对标的爆款组合与长青度（长青的是能持续升级的金手指，隐藏大佬亮身份型多是昙花一现）。
 6b. **开场服从故事**：默认 `opening_mode: story_driven`，先建立可理解的冲突；只有已选异能获得型故事才用 `power_acquisition` 开场。闪回、闪前可以使用，但必须标清时间、视角和信息来源；`cut_order` 遵循剧本的叙述顺序。
 6c. **信息可读且不提前泄底**：交代当前理解行动所需的场景与规则；规则可以通过行动、对白或字幕呈现。区分世界事实、角色所知、观众所知；有意隐藏的信息记揭示计划，不强制事先展示全部道具。
@@ -51,19 +72,19 @@ python3 "$S/project_tool.py" next <项目目录>                               #
    - **演出承接、能力只讲一次**：对白镜的 motion 先写人物怎样接住对方的行为、做了什么改变局面，不是轮流说明情况（G49）；能力规则讲清后只留一句提醒，新角色确认 ≤1 句，跨集回顾 ≤5 秒（G48，screenplay §5b3、storyboard-keyframes §8c）。
    - **预演是粗剪**：视频前的预演带临时对白（草音或字幕）、按计划取用时长、标动作起止和反应拍，预演片与结论留档（production-and-review §3b）。
    - **成片终验**：每集从最终 MP4 重新验收必拍事实、文字排版（金额数字专名不断行、叠字不压脸和眼、长文字分屏）、台词边界（入点不切进台词或语气词，字幕 = 成片可听内容）、切点、片尾无拖尾停帧：`final_qa.py` 写机读的 `审查/<EP>-final-qa.json` 与 `.md`，模型看图、听审后写结论 `审查/<EP>-成片终验.md`（edit-and-delivery §7b）。
-   - **声音三项如实**：`asr_ok`（识别正确）、`listen_ok`（真的听过、听感自然）、`sync_ok`（口型同步）分开记；没听、没核就是 null，显示为"未验证"，不得汇总成"通过"；关键能力词、专名 ASR 有分歧交母语听审。
-7. **写作与审查分离**：写的子代理不审自己写的；reviewer 子代理只出结论和修订要求。代理继承当前会话模型与配置，不写死供应商模型名；环境不支持代理时分轮审查，并明确说明没有独立审查者。
+   - **声音三项如实**：`asr_ok`（识别正确）、`listen_ok`（真人听过、听感自然，带 `listener`，见总则 5）、`sync_ok`（口型同步）分开记；没听、没核就是 null，显示为"未验证"，不得汇总成"通过"；`asr_ok` 只能来自对当前文件实际跑出的 ASR 结果；关键能力词、专名 ASR 有分歧交母语听审。
+7. **写作与审查分离**：写的子代理不审自己写的；reviewer 子代理只出结论和修订要求。reviewer 的任务书只给文件路径和审查范围，不许写"只看格式""从宽""重点放过"之类的限定；reviewer 原稿不许改。代理继承当前会话模型与配置，不写死供应商模型名；环境不支持代理时分轮审查，并明确说明没有独立审查者。
 8. 不删产物：重拍开新 take；参考图重出改名归档。
 9. **剧组分工**：同时开多个子代理按岗位分工——导演 `director`、角色设计 `character-designer`、美术/场景 `art-director`、场记/连续性 `script-supervisor`、剪辑/审片 `editor`，写作阶段另有编剧与 reviewer（按 7 分离）。岗位按当前运行环境的代理机制定义；只有平台明确支持项目代理文件时才写该平台目录，路径使用仓库相对路径。子代理只写本岗负责的文件和审查意见，**不提交生成任务、不做 git**；生成（串行）、mark、cut 由主会话统一做；Git 操作遵循项目已确认的交付策略。
 10. **交付节奏**：同时做几部剧时，先把每部剧的 EP001 都出成片，再做各剧的后续集。项目是 git 仓库时先只读检查分支、工作区和远端；仅在用户已授权同步、且目标分支明确时执行 pull/commit/push，不默认推送主分支。回复里给出成片路径；不在只存在于临时目录（scratchpad）里的文件上积累进度——mark 清单、审查意见一律写进项目 `审查/`。
-11. **生产纸面纪律**：H3 模型与尺寸只读取本项目已确认的 `profiles`，不得沿用技能历史档位；**每一张起始帧都要用当前环境的看图工具看过、通过目检才提交视频**；H3 不生成画外人声，要有画外声就拍说话人的在镜单人镜，或另生成音源镜用 `audio_from` 垫音；改剧本/分镜后只重拍受影响的镜头，重拍后重新 mark、重剪该集。
+11. **生产纸面纪律**：H3 模型与尺寸只读取本项目已确认的 `profiles`，不得沿用技能历史档位；**每一张起始帧都要用当前环境的看图工具单张看过原图、按总则 4 写下具体观察并 `mark --frame-take N --evidence "…"` 后才提交视频**；H3 不生成画外人声，要有画外声就拍说话人的在镜单人镜，或另生成音源镜用 `audio_from` 垫音；改剧本/分镜后重拍受影响的镜头（范围按总则 8 算，含链式出帧下游），重拍后重新 mark、重剪该集、重做预演与终验。
 11b. **实拍错误表必读**：生产（F–J）开工前读 [production-and-review.md](references/production-and-review.md) 的「实拍踩过的错」E1–E12（改提示词后已排队的图不会更新、设定改了要 grep 旧词、过肩双人会画两次主角、三人同框第三人会跑到前景、状态细节要在两段提示词各写一句、audio_from 默认 phone、静音段 ASR 幻听、队列跑完要自动接手、断网要对账不重投……）。新发现的错误照同样格式追加进这张表：错在哪、以后怎么做。用 fal 通道见 [providers.md](references/providers.md) §7b。
 11c. **对话看得见对象、同场链式出帧**：台词镜里被说话的人必须入画（两人同框或听者背影在前景），不拍单人对着画外说话；同场连续镜头的起始帧用上一镜视频出点帧作 Picture 1。见 [storyboard-keyframes.md](references/storyboard-keyframes.md) §1、错误表 E33。
 12. **新角色与真人素材**：用户给新角色素材（照片、文档，可能放在 iCloud Drive `~/Library/Mobile Documents/com~apple~CloudDocs/` 或指定文件夹）时，按 [visual-assets.md](references/visual-assets.md) §11 接入：角色设计岗逐张看素材定名字、外形、服装锁、音色；导演岗定出场位置；编剧与 reviewer 分开改剧本；门全过（含 G28）。真人素材的角色形象保持正面尊重，不写殴打受伤、恶意羞辱，去掉能认出真实学校、姓名的标识。
 
 ## 项目与契约
 
-目录布局、ID、`shots.json` / `refs.json` / `review.json` / `drama.json` 字段、机械门 G00–G49、自动决策默认表、续跑与收回：[pipeline-contract.md](references/pipeline-contract.md)。开工先读它，全程按它对账。各阶段审查问题、分级与输出格式统一在 [review-checklists.md](references/review-checklists.md)；多剧总览、导出资料、决策记录与规则冲突优先级见 [project-hub.md](references/project-hub.md)。
+目录布局、ID、`shots.json` / `refs.json` / `review.json` / `drama.json` 字段、机械门 G00–G53、自动决策默认表、续跑与收回：[pipeline-contract.md](references/pipeline-contract.md)。开工先读它，全程按它对账。各阶段审查问题、分级与输出格式统一在 [review-checklists.md](references/review-checklists.md)；多剧总览、导出资料、决策记录与规则冲突优先级见 [project-hub.md](references/project-hub.md)。
 
 ## 阶段与门
 
@@ -78,23 +99,23 @@ python3 "$S/project_tool.py" next <项目目录>                               #
 | D 视觉设定 | 人物/地点/道具条目、锚点、音色、锁、身高与尺度锚点（厘米身高 + 头身比）、每个主场景一行平面图与动线；有台词的主要人物加头肩身份图 `IMG-<NAME>-FACE`；refs.json 增量 | [visual-assets.md](references/visual-assets.md)（§4b 空间逻辑、§12 尺度）、[image-prompts.md](references/image-prompts.md)（refs.json 的 `prompt` 怎么写）、[styles.md](references/styles.md) | `EPxxx/视觉设定.md`（骨架 `assets/templates/视觉设定.md`）、`参考图/refs.json` | `shots_tool.py check-refs`（G18–G20、G34；头肩图免全身/身高 warn）；`visual_lint.py`（V01–V06）；reviewer 按 review-checklists §D |
 | E 分镜与提示词 | 每镜职责、起点与终点、必要身份/空间锚点、台词与表演；同一个人的连续戏合并成长镜头（拆就写 `split_reason`）；说话镜写 `gaze`（看对手、方向与对手位置一致）；事件镜 `requires_setup` 指起因镜、关键物品有来源镜或插入特写；插入/冲击镜过短写 `fast_cut_reason`；台词 `lang`、`reading`；参考图按功能分工；动作计划用 `planned_action_window`，跨正反打事实可用 `scene_state`；每场 `must_show` 照抄剧本「必拍：」、承担镜写 `must_show_ids`，数量类把数字和排布写进 frame_prompt；解释能力的镜标 `explains_ability`；对白镜 motion 写承接动作 | [storyboard-keyframes.md](references/storyboard-keyframes.md)（§2c 一眼看懂、§2e 必拍事实、§4 视线、§6b 道具布局镜、§7b 长镜头、§7c 节奏下限、§8c 承接与能力重复）、[video-prompts-general.md](references/video-prompts-general.md)（§3b 长镜头写法）、[video-prompts-h3.md](references/video-prompts-h3.md)（用户指定 Seedance 时改读 [video-prompts-seedance.md](references/video-prompts-seedance.md)） | shots.json 与渲染分镜 | 机械门无 error（G46 必拍事实覆盖是 error；G42–G45、G47–G49 是 warn，逐条判断）；warn 结合叙事判断，不能靠堆提示词消警告；`visual_lint.py`；reviewer 按 review-checklists §E |
 | F 参考图 | 身份图、底板、道具图 | visual-assets §7–8、§4b、§12、image-prompts §3–4、§9、[production-and-review.md](references/production-and-review.md) §4；走官方接口时读 [providers.md](references/providers.md) | `参考图/IMG-*.png` | `produce.py refs`；模型 查看每张 PNG 目检（底板必答"空间说不说得通"、尺寸是否现实），不过 `--retake` |
-| G 起始帧 | 每镜起始帧 | production-and-review §3–4 | `起始帧/F_*_t*.png` | 先金丝雀一镜；`produce.py frames`；逐张目检（一人、朝向、持物、留空、无字、像参考，加 production-and-review §4b 细节与比例清单 9 项）；`review_tool.py mark --frame-take` |
-| G2 预演粗剪 | 起始帧全部通过后、提交视频前（金丝雀一镜除外），按镜序和计划取用时长把起始帧拼成带临时对白（草音或字幕）、标出动作起止与反应拍的粗剪，按时间看完复述情节、逐条核必拍事实和对白反应节奏 | production-and-review §3b；模板 `assets/templates/预演.md` | `审查/<EP>-预演.mp4`、`<EP>-预演.jpg`、`<EP>-预演.md`（都留档，重做另存 -v2） | `review_tool.py animatic`；查看接触表逐条答（情节点、必拍事实逐条"看得到"、对白与反应节奏、能力是否重复、一眼看懂、视线、碎切、时长差）；有"看不到"或必拍事实只靠台词回 E 或 G；animatic 生成的 `<EP>-预演.md` 首行「结论：待填」改成「结论：PASS」、按模板补逐条答案才进 H（`next`、`produce.py all` 都查首行，待填、REVISE 或文件不在都不放行；指纹行不删） |
+| G 起始帧 | 每镜起始帧 | production-and-review §3–4 | `起始帧/F_*_t*.png` | 先金丝雀一镜；`produce.py frames`；逐张目检（一人、朝向、持物、留空、无字、像参考，加 production-and-review §4b 细节与比例清单 9 项）；`review_tool.py mark <项目> <EP> <SID> --frame-take N --evidence "具体观察"`（绑定起始帧 sha，`produce.py videos/all` 提交前查） |
+| G2 预演粗剪 | 起始帧全部通过后、提交视频前（金丝雀一镜除外），按镜序和计划取用时长把起始帧拼成带临时对白（草音或字幕）、标出动作起止与反应拍的粗剪，按时间看完复述情节、逐条核必拍事实和对白反应节奏 | production-and-review §3b；模板 `assets/templates/预演.md` | `审查/<EP>-预演.mp4`、`<EP>-预演.jpg`、`<EP>-预演.md`（都留档，重做另存 -v2） | `review_tool.py animatic`；查看接触表逐条答（情节点、必拍事实逐条"看得到"、对白与反应节奏、能力是否重复、一眼看懂、视线、碎切、时长差）；有"看不到"或必拍事实只靠台词回 E 或 G；animatic 生成的 `<EP>-预演.md` 按模板补齐逐条答案（每条必拍事实写秒数和看到了什么）后，首行「结论：待填」才能改成「结论：PASS」；`next` 和 `produce.py videos/all` 都按当前分镜与起始帧重算「预演输入指纹」，首行不是 PASS、模板【】没填、「## 必拍事实」表缺某条的「镜号 · 秒 · 看得到」行、有灰卡占位、预演 mp4 不在或起始帧/分镜在预演之后改过，一律不放行，要重跑 animatic；`预演指纹` 与 `预演输入指纹` 两行不删不改 |
 | H 视频 | 在授权批次内生成；ASR 标出差异，先听审再决定是否重拍；另配音的，语言参数 = 台词语言、参考音频是同语言母语者，听感五问含口音与句尾语调 | [production-and-review.md](references/production-and-review.md)（§10 配音）；官方视频/语音/配乐接口读 [providers.md](references/providers.md)（`providers.py`） | 视频与候选检查 | `produce.py videos --asr` 不凭分数自动重拍；ASR 读错专名或识别成别的语言（"语种疑似不符"）即不合格 |
-| I 审片 | 对具体 take 看画面、听声音、核连续性；测动作和对白区间，记录证据；逐镜核必拍事实；声音分三项记 | [quality-contract.md](references/quality-contract.md)、production-and-review §5、§5c、review-checklists §F–J | review.json 每 take 的 assessment/edit/verdict、每镜 `must_show_check`、`asr_ok` / `listen_ok` / `sync_ok` | 未审、失败或过期记录不能进正式剪辑；草剪显式用 `--draft`；`must_show_check` 有 fail 时 verdict 只能 retake 或回剧本/分镜改；"台词能解释/观众数不出来"不能放行；声音三项 null 如实写"未验证" |
-| J 剪辑 | 删镜、改剪点前先做因果自检（must_show 与 requires_setup 还在）；取用（出点包住动作、入点不切进台词或语气词、不低于节奏下限）、字幕（行长、阅读速度、数字专名不断行、以成片可听内容为准）、叠加（系统面板按 `overlays.panel` 主题出科技感样式，不压脸和眼，长文字分屏）、声音设计（底噪、音效、白光、配乐另做）、响度与真峰、片尾无拖尾停帧、AI 生成标识、成片；最后从最终 MP4 做成片终验 | [edit-and-delivery.md](references/edit-and-delivery.md)（§2d 因果自检、§2e 台词边界、§3 字幕、§4b 叠字排版、§5 声音、§7 交付核对、§7b 成片终验）；模板 `assets/templates/成片终验.md`；多剧总览与导出读 [project-hub.md](references/project-hub.md) | `成片/EPxxx.mp4`、`成片/EPxxx.overlays.json`、`剪辑单.md`、`审查/<EP>-final-qa.json`、`<EP>-final-qa.md`（脚本写）、`<EP>-成片终验.md`（模型写） | `hub_tool.py measure`（交付数字）、`hub_tool.py grade`（接镜调色，可选）；`cut.py`（`ai_label` 自动叠在前 3 秒；剪辑单标过短镜和同场平均镜长；`cut.py --panel-demo` 预览面板）；`final_qa.py <项目> <EP> [--video PATH]` 写终验机读部分（PASS 退出码 0，REVISE 退出码 2）；交付核对五步（edit-and-delivery §7）；**完成标准**：`final-qa.md` 与 `成片终验.md` 首行都是「结论：PASS」，或 `成片终验.md` 写「结论：REVISE」并列明已知问题与用户确认（剧情事实类缺陷不能靠用户确认放行） |
+| I 审片 | 对具体 take 看画面、听声音、核连续性；测动作和对白区间，记录证据；逐镜核必拍事实；声音分三项记 | [quality-contract.md](references/quality-contract.md)、production-and-review §5、§5c、review-checklists §F–J | review.json 每 take 的 assessment/edit/verdict、每镜 `must_show_check`、`asr_ok` / `listen_ok` / `sync_ok` | 未审、失败或过期记录不能进正式剪辑；草剪显式用 `--draft`；`must_show_check` 有 fail 时 verdict 只能 retake 或回剧本/分镜改；"台词能解释/观众数不出来"不能放行；声音三项 null 如实写"未验证"；有镜内台词的镜还要 `--speaker-face-ok true`（纯视觉，带 evidence）；批 ok/weak/mute 要求账本来源（`jobs.jsonl` 有收回该文件的记录，生成后提示词和起始帧没改过） |
+| J 剪辑 | 删镜、改剪点前先做因果自检（must_show 与 requires_setup 还在）；取用（出点包住动作、入点不切进台词或语气词、不低于节奏下限）、字幕（行长、阅读速度、数字专名不断行、以成片可听内容为准）、叠加（系统面板按 `overlays.panel` 主题出科技感样式，不压脸和眼，长文字分屏）、声音设计（底噪、音效、白光、配乐另做）、响度与真峰、片尾无拖尾停帧、AI 生成标识、成片；最后从最终 MP4 做成片终验 | [edit-and-delivery.md](references/edit-and-delivery.md)（§2d 因果自检、§2e 台词边界、§3 字幕、§4b 叠字排版、§5 声音、§7 交付核对、§7b 成片终验）；模板 `assets/templates/成片终验.md`；多剧总览与导出读 [project-hub.md](references/project-hub.md) | `成片/EPxxx.mp4`、`成片/EPxxx.overlays.json`、`剪辑单.md`、`审查/<EP>-final-qa.json`、`<EP>-final-qa.md`（脚本写）、`<EP>-成片终验.md`（模型写） | `hub_tool.py measure`（交付数字）、`hub_tool.py grade`（接镜调色，可选）；`cut.py`（`ai_label` 自动叠在前 3 秒；剪辑单标过短镜和同场平均镜长；`cut.py --panel-demo` 预览面板）；`final_qa.py <项目> <EP> [--video PATH]` 写终验机读部分（PASS 退出码 0，REVISE 退出码 2）；交付核对五步（edit-and-delivery §7）；**完成标准**：`final-qa.json` 结论为 PASS、`delivery` 为 true（对 `成片/<EP>.mp4` 跑的）、记录的 sha256 等于当前成片（`final-qa.md` 由脚本写，手改无效），`成片终验.md` 首行「结论：PASS」；或 `成片终验.md` 写「结论：REVISE」、列明已知问题，并附用户看过问题清单后点到问题编号的原话（总则 7）。拿不到用户原话 = 未交付；剧情事实类缺陷不能靠用户确认放行；`--draft` 草剪永远不算成片。`project_tool.py next` 只认 PASS：REVISE + 用户确认的集 `next` 仍会报终验未完成，汇报时照实写明 |
 
 ## 每次执行
 
 1. `project_tool.py status` 看全貌，`next` 定位阶段；读 `项目开发/决策记录.md` 和上一集的 `[连续性]`（三回锚：本批任务、上一批结束状态、当前规则）。
-2. 做当前阶段，跑门，修 error；warn 逐条判断后豁免或修。
+2. 做当前阶段，跑门，修 error；warn 逐条判断后修，或按总则 7 写成 `{gate, reason, decision}` 豁免（error 门不能豁免）。
 
-> **派子代理一律用隔离方式**：不用 Agent 工具，改跑 `scripts/isolated_agent.sh <项目目录> <任务文件>`（Bash 后台运行）。子代理只拿到本 SKILL.md 和任务书，看不到主会话上下文、CLAUDE.md、其他 skill 和 MCP，所以任务书要自带：要读写的文件路径、阶段、验收标准、需要的前情事实。
+> **派子代理一律用隔离方式**：不用 Agent 工具，改跑 `scripts/isolated_agent.sh <项目目录> <任务文件> [worker|reviewer]`（Bash 后台运行；审查派 `reviewer`，带固定职责头）。子代理只拿到本 SKILL.md 和任务书，看不到主会话上下文、CLAUDE.md、其他 skill 和 MCP，所以任务书要自带：要读写的文件路径、阶段、验收标准、需要的前情事实。任务书和子代理输出由脚本留档在 `审查/agents/`；子代理拿不到生成密钥、带 `DF_SUBAGENT=1`（所有提交入口见到就拒绝），不能提交生成任务；「不改 `scripts/`」是任务书约束，脚本不拦。
 
-3. C、E 阶段派 **reviewer 子代理**（没参与写作、同级模型）：按 [review-checklists.md](references/review-checklists.md) 引用证据写 `审查/<EP>-审查.md`（骨架 `assets/templates/审查.md`；分级、结论 PASS/REVISE/BLOCKED 的判定与输出格式见其 §0），每条问题带位置、证据、影响、最小修复，末尾 `keep:` 清单；写完跑 `review_md_check.py 审查/<EP>-审查.md`。writer 改完对 keep 清单做字面比对。同一 Major 两轮没过：按 reviewer 的修订建议直接改并记未决，不停。
+3. C、E 阶段派 **reviewer 子代理**（没参与写作、同级模型）：按 [review-checklists.md](references/review-checklists.md) 引用证据写审查文件——C 写 `审查/<EP>-审查.md`（带 `剧本指纹：<12位>` 行），E 写 `审查/<EP>-分镜审查.md`（带 `分镜指纹：<12位>` 行），指纹用 `project_tool.py fingerprint <项目> <EP>` 打印（骨架 `assets/templates/审查.md`；分级、结论 PASS/REVISE/BLOCKED 的判定与输出格式见其 §0），每条问题带位置、证据、影响、最小修复，末尾 `keep:` 清单；写完跑 `review_md_check.py <审查文件>`（RV09 未决规则、RV10 reviewer 原稿未被改、RV11 非标准问题格式、RV12 指纹过期都是 error）；`next` 要求结论 PASS、指纹等于当前剧本/分镜。writer 改完对 keep 清单做字面比对，再派 reviewer 复审（不是 writer 自己勾掉）。同一 Major 两轮没过：按 reviewer 的修订建议原样改，再复审一次；Blocker 和剧情事实类 Major 不能记未决，仍不过就停下报告用户，其余按总则 7 记未决后继续。
 4. 生产阶段用少量样片覆盖身份、接触、长对白等实际风险；先预演粗剪再批量视频。重拍先诊断、受授权预算限制；take 用尽仍缺关键情节时暂停正式成片并改分镜，不能自动 weak 放行。
-5. 每集出成片后：每秒抽一帧拼网格用看图工具目检（镜序、人物、叠字位置、前 3 秒 AI 标识），整片跑一遍 ASR 核对全集台词（edit-and-delivery §7），再跑 `final_qa.py` 并写成片终验 `审查/<EP>-成片终验.md`（§7b，结论 PASS 或列已知问题待用户确认）；汇报时声音结论按三项写，未听审就说未听审；`project_tool.py status`，把决策、未决、weak 镜写进决策记录；按已授权的 Git 交付策略同步，汇报成片路径；授权范围内继续下一集。
-6. 全部集完成后汇报：每集时长、镜数、重拍次数、weak/drop 镜、未决项、决策记录摘要。
+5. 每集出成片后：每秒抽一帧拼网格找可疑处，可疑处和每条必拍事实抽单帧看原图（镜序、人物、叠字位置、前 3 秒 AI 标识），网格和抽帧存进 `审查/`、每条写格位秒数和看到了什么；整片跑一遍 ASR 核对全集台词（edit-and-delivery §7），再跑 `final_qa.py` 并写成片终验 `审查/<EP>-成片终验.md`（§7b，结论 PASS，或列已知问题等用户原话确认，等到之前该集算未交付）；汇报时声音结论按三项写，未听审就说未听审；`project_tool.py status`，把决策、未决、weak 镜写进决策记录；按已授权的 Git 交付策略同步，汇报成片路径；授权范围内继续下一集。
+6. 全部集完成后汇报：每集时长、镜数、重拍次数、weak/drop 镜、未决项、未交付项、决策记录摘要；数字取自 `project_tool.py status` 与账本输出，原样贴，不手写。
 
 ## 自动决策（不问人）
 
@@ -103,7 +124,7 @@ python3 "$S/project_tool.py" next <项目目录>                               #
 ## 修改纪律
 
 - 改一拍，连读三拍：改过的镜头前后各一镜一起重读边界链（G26）。
-- 修门只改诊断出的那一项；不往提示词里堆负面词。
+- 修门只改诊断出的那一项；不往提示词里堆负面词（点名否定的写法见 video-prompts-general §2b）。修门是把内容改对，不是把字段填满：用空话、同义改写或改 `kind` 之类让门不再检查，都算没修（总则 9）。
 - 台词只能在剧本阶段改；分镜和提示词阶段发现台词装不下，先加秒数（同一个人就写成一个长镜头，上限 `shot_seconds.max`），仍装不下再回剧本合并同质节拍；换人说话才拆镜。
 - 语速：`drama.json` 的 `speech_rates` 是估算值，第一集 ASR 出来后用实测（词级时间）校准，写回配置。
 - 模型行为先记账再立规矩：实测到的模型行为（某个写法让口型、动作、画风变好或变坏）先写 `项目开发/模型观察.md`，写清 N 次里几次、能判断什么、混杂因素；同一写法有效 ≥ 3 次才升级成 references 里的规则，单次改善只记录。[社区][推断]
@@ -141,7 +162,7 @@ python3 "$S/project_tool.py" next <项目目录>                               #
 
 ## 安装维护
 
-`python3 scripts/selftest.py`：起假中转把整条链离线跑一遍（含提交恢复回归、G36–G49、预演、父帧、AI 标识、面板渲染与入场动画、剪辑单节奏统计）。需要 ffmpeg/ffprobe、Pillow、requests；cut.py 避脸和 final_qa.py 压脸检测另需 OpenCV（`opencv-python-headless`，可选：没装时照常出片，剪辑单写"未做避脸"，终验压脸项写未验证）；只有显式设置 `SELFTEST_ASR=1` 才测 ASR，模型需已缓存在本地。只测提交与恢复可运行 `python3 scripts/client_selftest.py`，不需要 ffmpeg/Pillow。
+`python3 scripts/selftest.py`：起假中转把整条链离线跑一遍（含提交恢复回归、G36–G53、预演、父帧、AI 标识、面板渲染与入场动画、剪辑单节奏统计）。需要 ffmpeg/ffprobe、Pillow、requests；cut.py 避脸和 final_qa.py 压脸检测另需 OpenCV（`opencv-python-headless`，可选：没装时照常出片，剪辑单写"未做避脸"，终验压脸项写未验证）；只有显式设置 `SELFTEST_ASR=1` 才测 ASR，模型需已缓存在本地。只测提交与恢复可运行 `python3 scripts/client_selftest.py`，不需要 ffmpeg/Pillow。
 
 无 ffmpeg/ffprobe 时可运行 `python3 scripts/selftest.py --no-media`，覆盖初始化、机械门、渲染、假中转生产与续跑；不验证真实视频解码、预演、ASR 或剪辑。
 

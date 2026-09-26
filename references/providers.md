@@ -95,7 +95,7 @@ job 的 `model` 写用户开通的 Endpoint/模型 ID，脚本不假设是 2.0 �
 
 ## 5. MiniMax 配乐
 
-`POST {base}/music_generation`，模型固定 `music-3.0`，非流式 hex 返回（同步通道）。配乐属于剪辑层（edit-and-delivery）：生成的是源音轨，落点、循环、淡入淡出和对白 ducking 仍在剪辑时做。
+`POST {base}/music_generation`，通道内唯一型号是 `music-3.0`（用不用这个通道仍由用户指定，硬约束 1b），非流式 hex 返回（同步通道）。配乐属于剪辑层（edit-and-delivery）：生成的是源音轨，落点、循环、淡入淡出和对白 ducking 仍在剪辑时做。
 
 - 配乐任务之前先在 `剪辑单.md` 或决策记录写清这段音乐：用在成片哪一段（起止秒）、承担什么剧情作用（画面和表演为什么不够）、从哪里进、到哪里出、是否压在对白下。音乐任务不塞进每个镜头的视频生成里。
 - `prompt` 只写音乐本身：风格、情绪、配器、能量走向，例如 `Instrumental restrained urban drama score, low pulse, sparse piano, muted strings, controlled tension, no triumphant release.` 不写模型名、艺人名或"模仿某曲"。
@@ -104,7 +104,7 @@ job 的 `model` 写用户开通的 Endpoint/模型 ID，脚本不假设是 2.0 �
 
 ## 6. GPT Image 2
 
-无参考图走 `POST {base}/images/generations`（JSON），有 1–16 张参考图走 `POST {base}/images/edits`（multipart `image[]`）。模型固定 `gpt-image-2`、每次一张、结果为 `b64_json`（同步通道）。环境变量 `OPENAI_API_KEY`，可选 `OPENAI_BASE_URL`（https）。
+无参考图走 `POST {base}/images/generations`（JSON），有 1–16 张参考图走 `POST {base}/images/edits`（multipart `image[]`）。通道内唯一型号是 `gpt-image-2`（用不用这个通道仍由用户指定，硬约束 1b）、每次一张、结果为 `b64_json`（同步通道）。环境变量 `OPENAI_API_KEY`，可选 `OPENAI_BASE_URL`（https）。
 
 - 尺寸用 `size: "宽x高"` 或 `width` + `height`：边长能被 16 整除、宽高比在 1:3 到 3:1、边长 ≤ 3840、总像素 65.5 万–829 万；也可 `auto`。
 - `background` 只收 `auto` / `opaque`（不支持透明）；`quality` 取 `auto` / `low` / `medium` / `high`；`moderation` 取 `auto` / `low`。输出扩展名决定 png / jpeg / webp。
@@ -131,9 +131,9 @@ job 的 `model` 写用户开通的 Endpoint/模型 ID，脚本不假设是 2.0 �
 
 - **时长只收整数 5–15 秒**：镜头秒数向上取整、不足 5 取 5（本地 H3 的 4 秒镜会变 5 秒，剪辑按取用区间收）。
 - **`prompt_expansion_mode` 固定 `disabled`**：默认 `balanced` 会改写提示词，逐字台词会被改。
-- **可以并行**：fal 是云端队列，`produce.py videos … --jobs 16` 每镜一个线程；提交仍经账本锁逐条记 intent→submitted，等待与下载并行。本地 H3 单卡**不许**用 `--jobs`（脚本会拒绝）。实测 29 条 768P 5 秒视频 81 秒出齐，约 0.02 美元/秒。
+- **并行要用户单独授权**：硬约束 2 的串行是默认；用户在对话里明确同意并发、给了并发上限（决策记录 `拍板人: 用户` 抄原话），才用 `--jobs`，并发镜数 × 单价先算进本轮成本边界。"用 fal""用可灵"不等于同意并发。fal 是云端队列，`produce.py videos … --jobs 16` 每镜一个线程；提交仍经账本锁逐条记 intent→submitted，等待与下载并行。本地 H3 单卡**不许**用 `--jobs`（脚本会拒绝）。授权是规则要求：`produce.py` 只查通道是不是 fal/kling，不查决策记录里有没有并发授权、也不限并发数，执行者自己对账。实测 29 条 768P 5 秒视频 81 秒出齐，约 0.02 美元/秒。
 - 起始帧 data URI 内联；结果从 `video.url` 的 CDN 地址下载（不带密钥）；中断用 `fal_client.py collect --root <项目> --job <request_id> --endpoint <端点> --out <路径>` 收回。
-- **起始帧也可走 fal**：`drama.json` 写 `"frame_provider": "fal"`、`profiles.frame` 写图片编辑端点（例 `alibaba/qwen-image-3/edit`，1K 约 0.04 美元/张）；最多 3 张参考图（按 `frame_refs` 顺序 = image 1/2/3，提示词里的 Picture N 自动改成 image N），`enable_prompt_expansion` 固定关；`produce.py frames … --jobs 16` 并行。参考图（身份图、底板）仍走 H3 中转。
+- **起始帧也可走 fal**：`drama.json` 写 `"frame_provider": "fal"`、`profiles.frame` 写图片编辑端点（例 `alibaba/qwen-image-3/edit`，1K 约 0.04 美元/张）；最多 3 张参考图（按 `frame_refs` 顺序 = image 1/2/3，提示词里的 Picture N 自动改成 image N），`enable_prompt_expansion` 固定关；`produce.py frames … --jobs N` 并行同样要用户单独授权（见上）。参考图（身份图、底板）仍走 H3 中转。
 - 画质与本地 H3 同源、风格稳定；同样有约 0.5–2 秒的镜内切景和状态细节丢失，审片照 production-and-review 的 E1–E12 处理。
 
 ## 7c. 可灵开放平台（kling-v3，2026-09-26 实测接通）
@@ -144,7 +144,7 @@ job 的 `model` 写用户开通的 Endpoint/模型 ID，脚本不假设是 2.0 �
 - **时长整数 3–15 秒**：镜头秒数向上取整、不足 3 取 3。
 - **原生音频逐镜开关**：请求字段 `sound` on/off。镜头写 `kling_sound` 就用它；没写时有在镜台词（`dialogue[]` 里不含 `"vo": true` 的项）开，否则关；心声、画外声标 `vo: true` 后期另配。
 - **起始帧**：原始 base64（不带 `data:` 前缀）放 `image`；结果从 `data.task_result.videos[0].url` 下载。
-- **并发**：试用包 5 并发，`produce.py videos … --jobs 5`。
+- **并发**：试用包上限 5 并发；用 `produce.py videos … --jobs N`（N ≤ 5）要用户单独授权，同 §7b（授权和 N ≤ 5 都是规则，脚本不查）。
 - **探测参数的坑**：1×1 像素图不会被同步拒绝，会建成任务再终态失败；只用会被同步校验拒绝的错误值（错误的 `mode`、`duration`、`sound` 会同步返回允许值列表）。
 - 中断收回：`kling_client.py collect --root <项目> --job <task_id> --out <路径>`。
 

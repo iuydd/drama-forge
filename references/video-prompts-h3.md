@@ -7,12 +7,12 @@
 ## 目录
 
 1. H3 三段骨架与硬规则
-2. 一镜一人与口型
+2. 说话对象入画与口型
 3. 台词多、反应快
 4. 正文怎么写：起点 → 唯一动作 → 台词挂拍 → 终点
    4b. 环境动态在 H3 里的写法
 5. 表演层：触发词、两个信号、情绪保护层
-6. 运镜：5 秒单人镜常用八种
+6. 运镜：5 秒人物镜常用八种
 7. 可生成性改写阶梯
 8. 听者镜与反应优先
 9. 实战骨架与示例
@@ -23,36 +23,36 @@
 
 ```text
 integrated_multimodal_description: [Shot 1] <头部固定句> <起点> <唯一动作> <台词事件> <终点>
-overall_soundscape: <环境声 / 音效 / 非语言人声；不重复对白>
+overall_soundscape: <环境声 / 音效 / 非语言人声；不重复对白；末尾写 These are the only sounds in the shot.>
 non_diegetic_music: N/A
 ```
 
 - `duration` 是 4–15 的**整数秒**，由 `shots.json` 的 `seconds` 决定；正文里的秒数不能代替请求时长。
 - 起始帧图生视频走 `first_frame`（`image_mode: keyframe`），三段结构；起始帧只锚定开场构图与姿态，不锁整镜画面语法。起始帧和参考图/参考音频**互斥**，要挂身份图就整组走六段 full-reference（自建 API 是否支持要先验证；现阶段默认三段）。
-- 结构字段用英文；台词写 `<d>[Japanese] 逐字台词</d>`，`<d>` 里只放语言标签和台词原文，秒数、声线、语速写在外面；每句只出现一次，紧跟在说话人的可见动作句后；不加剧本外的前导句。
+- 结构字段用英文；台词写 `<d>[Japanese] 逐字台词</d>`，`<d>` 里只放语言标签和台词原文，秒数、声线、语速写在外面；每句只出现一次，紧跟在说话人的可见动作句后；不加剧本外的前导句；`<d>` 里的省略号「……」改成逗号或删掉（字幕仍按剧本，E31）。
 - 说话人稳定 ID `(S1)`：第一次出现时在 `<d>` 外交代画内/画外和音色；同一角色全剧用同一段音色描述（写在 refs.json 的 `voice`，G21 对账），这是首帧模式下减少逐镜音色漂移的唯一办法。
 - `non_diegetic_music: N/A` 必须显式写；省略这一层小样本里出现过额外配乐。配乐在剪辑层加。
-- 无对白镜写 `He says nothing. No other voices speak words.`，否则模型会自编人声（审片时 ASR 会抓）。
-- 正文 ≤ 7000 字符；5 秒单人镜约 150–250 词写满，超 300 词多半冗余。
-- **正面描述、不留分支**：`不要进红框` → `直接进蓝框`；不出现 `or / 或 / 二选一 / 可选`（G22）。否定式动作改写成可见动作。
+- 无对白镜写 `He says nothing. No one speaks, laughs, shouts or cries out.`，否则模型会自编人声（笑声、冷哼 ASR 抓不到，按 video-prompts-general §2b 声音一行验收）（审片时 ASR 会抓）；有对白镜在最后一句 `<d>` 后写唯一台词句（video-prompts-general §2b 表的声音一行）。
+- 正文 ≤ 7000 字符，除此之外不设字数目标；video-prompts-general §2b 的封闭清单一项不能少，清单外只写本镜变化需要的内容。
+- **正面描述、不留分支**：`不要进红框` → `直接进蓝框`；不出现 `or / 或 / 二选一 / 可选`（G22）。否定式动作改写成可见动作；点名否定的唯一例外见 video-prompts-general §2b。
 - **交付文本只含要拍的内容**：不写文件名、ID、规则号、重投备注、无关否定罗列。"锁定参考图" → "衣着与起点一致"。
 - 裸写的 left/right 一律指**画面**左右；人物自身的左右带主体（"his left hand"）。
 - 摄影机一栏不能空着：锁定也要写（景别 + 机位高度 + 保持多久），空着会被读成可以自由漂移。
 - 声景是动作指令：声景里写了撞击，画面就会演出撞击。同场相邻镜底声写成一致，否则切点会"呼"一声换空间。
 
-## 2. 一镜一人与口型
+## 2. 说话对象入画与口型
 
 本地实测：近处骑手正脸不说话时，旧写法 3 次里 2 次把口型放到骑手脸上；补"骑手不说话、嘴唇紧闭"后 3/3 正确；骑手出画或背身 12/12 正确。**模型把口型放到画面里最显眼的正脸上。**所以：
 
-- 一个镜头只拍一个人或一双手；对手戏拆成单人正反打。
-- 画内确有第二张脸（只允许在 `multi_person_reason` 成立时）：`<Other> does not speak; his lips remain completely closed.`
-- 画外台词（`[OS]`）：**H3 不会生成画外人声**（实测三个 take 都没声音）。画外说的话要么改成说话人的在镜单人镜，要么另生成一个该人物当面说这句的音源镜（不进 `cut_order`），在听者镜上用 `audio_from` 垫音；听者镜正文写 `No one speaks`、嘴唇闭合。小声台词写成低声但每个字清楚、嘴唇可见，不写耳语（耳语会没声）。
+- 台词镜按 storyboard-keyframes §1：被说话的人必须入画（两人一左一右，或听者背影在前景），人数写 `exactly N`、每人一次（video-prompts-general §2b）；单人台词镜只限 §1 的例外并写 `single_reason`。口型会落到最显眼的正脸上，所以听者优先背对镜头（`seen from behind, his face never turns toward the camera`），并写明全程只有谁开口。
+- 画内有第二张看得见的脸（听者正脸、接触同框）：`<Other> does not speak; his lips remain completely closed for the whole shot.`
+- 画外台词（`[OS]`）：**H3 不会生成画外人声**（实测三个 take 都没声音）。画外说的话要么改成说话人在镜的台词镜（听者照样入画），要么另生成一个该人物当面说这句的音源镜（不进 `cut_order`），在听者镜上用 `audio_from` 垫音；听者镜正文写 `No one speaks`、嘴唇闭合。小声台词写成低声但每个字清楚、嘴唇可见，不写耳语（耳语会没声）。
 
 ## 3. 台词多、反应快
 
 项目口味，已经写进门：
 
-- 人物镜默认有一句台词；第一句在 1 秒内开口（G05）。反应类台词写 `At the same instant` / `at about a quarter of a second`；被抢、被打、被戳穿当场出声。
+- 人物镜默认有一句台词；项目为 `commercial_fast` 或决策记录写明快反应时，第一句在 1 秒内开口（G05）；其他项目的开口时机跟触发走（video-prompts-general §4）。反应类台词写 `At the same instant` / `at about a quarter of a second`；被抢、被打、被戳穿当场出声。
 - 对白预算：`发声窗口 = 镜长 − 开口前等待 − 不能并行的动作 − 其他人发声 − 末尾落点(0.5–1.0s)`。5 秒镜约 3.8 秒发声，中文约 15 字（H3 实测 4.1 字/秒），日语按 `speech_rates.ja` 估、用首批 ASR 实测校准（G04 用它算容量）。
 - 放不下时的降负载顺序（不许加速、截断、静默删字）：删装饰性运镜 → 删次要手势和环境小动作 → 加秒数（H3 到 15 秒，上限 `shot_seconds.max`；同一个人连说两句就写成一个长镜头，video-prompts-general §3b） → 让台词跨到反应镜（剪辑层 L/J-cut） → 换人说话才拆镜。台词只能回剧本阶段改。
 - **台词语种**：`<d>[Japanese]` 的语种标签必须等于 `drama.json` 的 `dialogue_lang`（ja→Japanese、zh→Chinese、en→English、ko→Korean），`<d>` 外的说话方式也写同一种语言（`says in Japanese`）；标签写错，H3 会用别的语言的口音和语调去念（G44）。
@@ -75,7 +75,7 @@ non_diegetic_music: N/A
 规则见 video-prompts-general.md §6：仅在自然存在或有叙事作用时添加环境运动；G35 只查已声明必需的描述。
 
 - 仅在环境确有变化且影响本镜时写具体变化；head 中的人物呼吸/眨眼无需用额外背景动态补齐。
-- 背景人写 `does not speak`，防 H3 冒人声或把口型挂到他身上；一镜一人的规则只管前景主体，背景虚焦路人不算第二人，但不写 `in focus`（G13）。
+- 背景人只在本场在场名单里有群演时才写，写明人数和位置（`two students far down the corridor on screen-right`）并写 `does not speak`，防 H3 冒人声或把口型挂到他身上；名单里没有群演的场写 `the corridor is otherwise empty`。说话对象不能写成背景路人来绕过人数；背景人不写 `in focus`（G13）。
 - 环境动态和 `overall_soundscape` 对上：写了"远处走过的学生"，声景就有远处的脚步和人声；写了"空调风"，声景有空调声。
 
 ## 5. 表演层
@@ -93,9 +93,9 @@ On 「回るよ」 one hand opens outward in a small shrug; after the line one c
 
 **两个信号预算**：每镜最多 2 个跨层级信号（眼神 + 呼吸、手 + 重心），至少一个是当前景别看得见的身体或声音信号；不写"五官全动"。微表情时长刻度：0.25–0.5s 闪现（鼻翼、咬肌、眼睛一瞥）；0.5–1s 视线变化、嘴角收紧、抬下巴；1–1.5s 完整转变（笑容褪去、强作镇定）；1.5–2s 面具切换（温柔转算计）。5 秒镜 = 台词发声 + 至多一次 1–1.5 秒的完整转变；面具切换单独给一镜。
 
-**情绪保护层就是憋屈 → 反击的骨架**：礼貌压住怨恨 → 停顿变尖 → 嘴角收紧 → 直接指控。一镜一人时这条弧跨多镜分布：憋屈镜只演"护层 + 一次泄漏"，底牌镜演"裂缝"，反击镜演"真实情绪变成动作"。反派破防走另一条：讥笑护住羞耻 → 笑僵 → 视线落下。
+**情绪保护层就是憋屈 → 反击的骨架**：礼貌压住怨恨 → 语气变尖 → 嘴角收紧 → 直接指控。这条弧通常跨多镜分布：憋屈镜只演"护层 + 一次泄漏"，底牌镜演"裂缝"，反击镜演"真实情绪变成动作"。反派破防走另一条：讥笑护住羞耻 → 笑僵 → 视线落下。
 
-**5 秒单人镜常用八种表演**（写成可见动作，不写比喻）：
+**5 秒人物镜常用八种表演**（写成可见动作，不写比喻）：
 
 | 用在 | 写法 |
 |---|---|
@@ -108,7 +108,7 @@ On 「回るよ」 one hand opens outward in a small shrug; after the line one c
 | 兑现段反派被打脸（尴尬） | 视线落向侧下、半笑、低头转开 |
 | 冷静反杀（复仇决心） | 表情变平静而不是狂躁；语速放慢，动作变少 |
 
-## 6. 运镜：5 秒单人镜常用八种
+## 6. 运镜：5 秒人物镜常用八种
 
 运镜词属于方言。H3 官方运镜词表 [官方]：`Push In / Pull Out`、`Zoom In / Zoom Out`、`Pan Left / Right`、`Truck Left / Right`、`Tilt Up / Down`、`Pedestal Up / Down`、`Arc Shot`、`Tracking Shot`、`Static Shot`、`Shake Slightly / Strongly`、`POV`、`Roll Clockwise / Counterclockwise`。**官方表里没有 `handheld`**；实战头部句里的 `Handheld camera with small natural breathing sway` 属于本项目在真人画风上实测通过的写法 [自测]，只在真人画风用，想换成官方词时写 `the camera shakes slightly`，先做 A/B 再替换。表外的运镜写成画面关系变化（"主体占画比慢慢变大"）。
 
@@ -150,20 +150,20 @@ On 「回るよ」 one hand opens outward in a small shrug; after the line one c
 实战项目通过审查的写法（`drama.json` 的 `video_prompt_head` 就是它）：
 
 ```text
-integrated_multimodal_description: [Shot 1] Single continuous take, no cuts, no scene change, starting exactly from the opening frame. Handheld camera with small natural breathing sway, real-time speed, realistic human behaviour with blinking, breathing and small weight shifts; the action continues for the whole take with no frozen pause. No subtitles, captions or on-screen text at any time. Her hand leaves the pen. At about half a second the woman (S1), on-screen, with a young woman's calm, clear voice, says in Japanese, evenly: <d>[Japanese] 名前は消していいです。承認は、あなたがどうぞ。</d> On 「あなたが」 her chin lifts slightly; after the line she keeps looking toward screen left, not smiling.
-overall_soundscape: quiet meeting room, the faint fan of a projector, a distant office phone.
+integrated_multimodal_description: [Shot 1] Single continuous take, no cuts, no transitions, no scene change, starting exactly from the opening frame. Real-time speed, realistic human behaviour with blinking, breathing and small weight shifts; the action continues for the whole take with no frozen pause. No subtitles, captions or on-screen text at any time. Her hand leaves the pen. At about half a second the woman (S1), on-screen, with a young woman's calm, clear voice, says in Japanese, evenly: <d>[Japanese] 名前は消していいです。承認は、あなたがどうぞ。</d> On 「あなたが」 her chin lifts slightly; after the line she keeps looking toward screen left, not smiling. These are the only words spoken in this shot, each said exactly once; nobody speaks before the first line or after the last.
+overall_soundscape: quiet meeting room, the faint fan of a projector, a distant office phone. These are the only sounds in the shot.
 non_diegetic_music: N/A
 ```
 
-**这句头部只适用于真人画风（`live_*`）和 `cg_realistic`。** 其他画风（`anime_cel`、`manhwa`、`guoman_3d`）不写 `handheld` 和 `realistic human behaviour`（它们会把画面往真人实拍拉），`video_prompt_head` 一律用 [styles.md](styles.md) §1 表里对应画风的"视频头句 + 视频保持句"拼接而成，本文件不另写一份，避免两处定稿不一致。风格句本身（起始帧用的 `Style: …`）也以 styles.md 为准。`shots_tool.py` 的默认头部是否按风格切换不归本文件管，写 `drama.json` 时按 styles.md §1 手动选。
+**这句头部只适用于真人画风（`live_*`）和 `cg_realistic`。** 头部句不写运镜（原来的 `Handheld camera with small natural breathing sway` 已移出，需要不稳感的镜在正文镜头一行写，video-prompts-general §2b 一）。其他画风（`anime_cel`、`manhwa`、`guoman_3d`）不写 `realistic human behaviour`（会把画面往真人实拍拉），`video_prompt_head` 一律用 [styles.md](styles.md) §1 表里对应画风的"视频头句 + 视频保持句"拼接而成，本文件不另写一份，避免两处定稿不一致。风格句本身（起始帧用的 `Style: …`）也以 styles.md 为准。`shots_tool.py` 的默认头部是否按风格切换不归本文件管，写 `drama.json` 时按 styles.md §1 手动选。
 
 写进 `shots.json` 时可以只写 `video_body`（从 "Her hand leaves…" 起）和 `soundscape`，`shots_tool.py build` 拼上头部和 N/A。人名：H3 正文建议用 `the woman (S1)` 而不是名字（G17 warn）；起始帧提示词里可以用名字。
 
 ## 10. 自检清单
 
 1. 三段齐全，`non_diegetic_music: N/A` 在场，`<d>[语种] …</d>` 逐字等于剧本（G09/G10）。
-2. 一镜一人；画内其他脸写 lips closed。
-3. 第一句 ≤1 秒开口；动作镜里解释性台词在动作之后、受击反应与动作同时（video-prompts-general §4 第 3 条）；容量按发声窗口算（G04/G05）。
+2. 说话对象入画（或写了过搬家测试的 `single_reason`）；video-prompts-general §2b 封闭清单齐全；不开口的可见脸写 lips closed。
+3. 开口时机符合项目口味（commercial_fast 才要求 ≤1 秒）；动作镜里解释性台词在动作之后、受击反应与动作同时（video-prompts-general §4 第 3 条）；容量按发声窗口算（G04/G05）。
 4. 起点 = 起始帧姿态；唯一动作；终点 = end_state；摄影机写了锁定或移动。
 5. 触发词 + 一个变化 + 余态；最多两个信号。
 6. 没有否定式动作、没有分支词、没有文件名/ID；左右指画面左右。
@@ -216,11 +216,11 @@ H3 官方另有只给尾帧、由模型推断开场的模式，本流程不用�
 
 ## 台词表演（情绪要写到模型听得出来）
 
-形容词+音量（`furious, fast and loud`）只会被演成「大声」。每句台词在 `<d>` 前写四层，缺一层情绪就会变平：
+形容词+音量（`furious, fast and loud`）只会被演成「大声」。每句台词在 `<d>` 前写四层，缺一层情绪就会变平；第 4 层"脸与身体"受 §5「两个信号预算」约束，只挑当前景别读得到的两个信号、写强度上限，其余交给声音层：
 
 1. **内心与原因**：`indignant and humiliated, the place he earned is being stolen in front of him`
 2. **声音质感**：`through gritted teeth, his voice cracking at the top` / `trembling with suppressed rage` / `a choked, disbelieving whisper` / `cold and slow, each word bitten off`
-3. **重音与节奏**：`stressing "我"`, `rising sharply at the end`, `a short ragged breath before the line`, `a beat of silence after`
-4. **脸与身体**：`brows knotted, eyes reddening, jaw clenched, nostrils flaring`
+3. **重音与节奏**：`stressing "我"`, `rising sharply at the end`, `said in one smooth unbroken breath, each syllable exactly once`；气息写在开口前的动作里（`he sucks in a sharp breath, then says`）；句中、句后不写 pause / beat / silence（E31：模型会在停顿处补字）
+4. **脸与身体**（挑两个）：`brows knotted`、`eyes reddening`、`jaw clenched`、`nostrils flaring`
 
-同是大声，愤怒（咬牙、破音、重音砸在关键字）、惊恐（气短、音高失控、尾音劈）、得意（慢、上扬、带笑气）、威胁（压低、每字停顿）写法完全不同。`shouts` 只在真要喊时写，而且必须同时写内心与声音质感。情绪标签（`emotion`：情绪·强度·语速·音量）是给人看的摘要，不能原样翻译成提示词。
+同是大声，愤怒（咬牙、破音、重音砸在关键字）、惊恐（气短、音高失控、尾音劈）、得意（慢、上扬、带笑气）、威胁（压低、慢而连贯、重音砸在关键字上）写法完全不同。`shouts` 只在真要喊时写，而且必须同时写内心与声音质感。情绪标签（`emotion`：情绪·强度·语速·音量）是给人看的摘要，不能原样翻译成提示词。

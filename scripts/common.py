@@ -163,13 +163,65 @@ class Project:
     def final_path(self, ep: str) -> Path:
         return self.ep_dir(ep) / "成片" / f"{ep}.mp4"
 
-    def animatic_passed(self, ep: str) -> bool:
-        """阶段 G2：审查/<EP>-预演.md 存在，且第一行非空行是「结论：PASS」（写 REVISE/不过都不放行 H）。"""
+    def fingerprints(self, ep: str) -> dict:
+        """C/E 审查绑定的输入指纹（sha256 前 12 位）：剧本指纹 = 剧本.md 原始字节；分镜指纹 = shots.json 去掉 cut_order 后的规范 JSON
+        （剪辑阶段改镜序不让分镜审查过期，改镜头内容就过期）。审查文件里写 `剧本指纹：<12位>` / `分镜指纹：<12位>`。"""
+        import hashlib
+        out = {}
+        sp = self.script_path(ep)
+        if sp.exists():
+            out["剧本"] = hashlib.sha256(sp.read_bytes()).hexdigest()[:12]
+        jp = self.shots_path(ep)
+        if jp.exists():
+            try:
+                d = json.loads(jp.read_text(encoding="utf-8"))
+                d.pop("cut_order", None)
+                out["分镜"] = hashlib.sha256(json.dumps(d, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode()).hexdigest()[:12]
+            except json.JSONDecodeError:
+                out["分镜"] = None
+        return out
+
+    def animatic_problems(self, ep: str) -> list[str]:
+        """阶段 G2 放行条件（空列表 = 通过）：首行「结论：PASS」；预演输入指纹等于按当前 shots.json 与所选起始帧重算的值；
+        预演片在；没有灰卡占位；模板【】清掉；每条 must_show 在「必拍事实」表里有「镜号 · 秒 · 看得到」一行。"""
+        from review_quality import animatic_inputs_fp   # 局部导入：review_quality 依赖 common
         p = self.review_dir / f"{ep}-预演.md"
+        fix = f"python3 scripts/review_tool.py animatic <项目> {ep}"
         if not p.exists():
-            return False
-        first = next((ln.strip() for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip()), "")
-        return re.match(r"^结论\s*[：:]\s*PASS\b", first, re.I) is not None
+            return [f"没有 审查/{ep}-预演.md：先跑 {fix}，看预演片后填写"]
+        text = p.read_text(encoding="utf-8")
+        first = next((ln.strip() for ln in text.splitlines() if ln.strip()), "")
+        out = []
+        if re.match(r"^结论\s*[：:]\s*PASS\b", first, re.I) is None:
+            out.append(f"首行不是「结论：PASS」（读到「{first[:30]}」）")
+        m = re.search(r"预演输入指纹\s*[：:]\s*([0-9a-f]{16})", text)
+        if not m:
+            out.append(f"缺「预演输入指纹」行（旧版脚本生成的预演.md）：重跑 {fix}——预演内容没变会只补指纹行、保留结论；变了会重出模板，要重新看片")
+        elif m.group(1) != animatic_inputs_fp(self, ep):
+            out.append(f"预演已过期：shots.json 或所选起始帧在预演之后改过；重跑 {fix} 并重新看片")
+        if not (self.review_dir / f"{ep}-预演.mp4").is_file():
+            out.append(f"缺预演片 审查/{ep}-预演.mp4：跑 {fix}")
+        miss = re.search(r"缺起始帧（用灰卡占位）\s*[：:]\s*(.+?)。?$", text, re.M)
+        if miss and miss.group(1).strip() not in ("无", ""):
+            out.append(f"预演里有灰卡占位（{miss.group(1).strip()}）：起始帧齐了再重跑 {fix}")
+        if "【" in text:
+            out.append("预演.md 还有模板【】没填（按 assets/templates/预演.md 逐条回答）")
+        try:
+            data = self.load_shots(ep)
+        except SystemExit:
+            data = {}
+        ids = [f.get("id") for sc in data.get("scenes") or [] for f in sc.get("must_show") or [] if isinstance(f, dict) and f.get("id")]
+        rows = [ln for ln in text.splitlines() if ln.strip().startswith("|")]
+        for mid in ids:
+            hit = [r for r in rows if re.search(rf"(?<![A-Za-z0-9]){re.escape(mid)}(?![0-9])", r)
+                   and re.search(r"S\d{2,3}", r) and re.search(r"\d+(?:\.\d+)?\s*(?:s|秒)", r)]
+            if not any("看得到" in r and "看不到" not in r and "只靠台词" not in r for r in hit):
+                out.append(f"必拍事实 {mid} 在预演.md 表里没有「镜号 · 预演第几秒 · 看得到」的一行（看不到或只靠台词就写 REVISE）")
+        return out
+
+    def animatic_passed(self, ep: str) -> bool:
+        """阶段 G2：animatic_problems 为空才放行 H（首行 PASS 只是条件之一）。"""
+        return not self.animatic_problems(ep)
 
     # ---- 数据 ----------------------------------------------------------------
     def load_refs(self) -> dict:

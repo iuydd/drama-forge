@@ -1,10 +1,10 @@
-# 分镜与冻结关键帧：单人为主、接触同框的镜头语法
+# 分镜与冻结关键帧：对话看得见对象、接触同框的镜头语法
 
 阶段 E 写 `shots.json` 的镜头字段（scene/axis、subject/facing、framing、keyframe、frame_prompt、motion、end_state、boundary）时读本文件。来源（已改写整合进本文件，不再依赖原套件）：本地短剧分镜参考（镜头手艺、生产镜头语法、调度手册、关键帧手艺、光的设计、漫剧关键帧词表、剧本到关键帧示例、场次视觉计划、覆盖方案比较、镜头修订身份、审查清单）、shuohao 的切镜手感、cinematic 的切点审计与反应优先、su 的复杂度预算与接触三态、实战项目的规则。
 
 ## 目录
 
-1. 镜头单位：对话单人正反打、接触动作双人同框
+1. 镜头单位：对话看得见对象、接触动作双人同框
 2. 从剧本到镜头：动作只落实一次
    2b. 因果交代：新人物、新物件、新事件先有来处
    2c. 一眼看懂：关键物品的来源、事件的起因经过结果
@@ -34,8 +34,8 @@
 
 ## 1. 镜头单位：对话看得见对象、接触动作双人同框
 
-- **对话必须看得见对象（2026-09-26 修订，原「对话默认单人正反打」作废，错误表 E33）**：台词镜里被说话的人必须入画——两人同框一左一右，或听者的肩/后脑/背影在前景（只露背不露脸，避免 E3 把同一人画两次）。实测单人正反打在 AI 视频里读成「对着空气说话」：生成的两镜屏幕位置、视线、光都对不上，观众建立不起两人关系。和剑灵这类只有主角看得见的角色说话，剑灵必须在画里。只有自言自语、对物件惊叹、对全场喊话且上一镜刚建立全场站位时才允许单人，写 `single_reason`。反应镜（不说话）可以单人。
-- **同场连续镜头链式出帧（E33②）**：同一场里下一镜的起始帧用上一镜视频出点那一帧作 Picture 1（导出到参考图目录 `CHAIN-<镜号>.png`，frame_refs 第一项），分工句写「Picture 1 is the last frame of the previous shot: same place, same people in the same positions and facing, same light and props; change only the camera angle and framing」；只有换场、时间跳跃才从底板重新出帧。生产顺序因此按场内镜头顺序：上一镜视频通过后再出下一镜起始帧。
+- **对话必须看得见对象（2026-09-26 修订，原「对话默认单人正反打」作废，错误表 E33）**：台词镜里被说话的人必须入画——两人同框一左一右，或听者的肩/后脑/背影在前景（只露背不露脸，不挂画中人的头肩图，避免 E3 把同一人画两次）；多人镜人数写 `exactly N`、每人一次（video-prompts-general §2b）。实测单人正反打在 AI 视频里读成「对着空气说话」：生成的两镜屏幕位置、视线、光都对不上，观众建立不起两人关系。和剑灵这类只有主角看得见的角色说话，剑灵必须在画里。只有自言自语、对全场喊话且上一镜刚建立全场站位时才允许单人，写 `single_reason`（引用剧本原句和上一镜镜号，过搬家测试）。反应镜（不说话）可以单人。机械门 G53：台词镜只写单人句又没有 `single_reason`（或不足 10 字、同一句用在两镜）报 error；多人镜可写 `in_frame` 名单，人数要等于 exactly N、每人在 `scene_state` 在场名单里。
+- **同场连续镜头链式出帧（E33②）**：同一场里下一镜的起始帧用上一镜视频出点那一帧作 Picture 1（导出到参考图目录 `CHAIN-<镜号>.png`，frame_refs 第一项），分工句写「Picture 1 is the last frame of the previous shot: keep the place, the light and the world position of every person and prop in it; change only the camera angle and framing.」，紧接着按 video-prompts-general §2b 逐人写在场名单：换机位后每人新的画左画右按轴线重新算好写死，不用 "same people / same positions" 一句带过；链式镜不用 visual-assets §7 的底板分工句（参考图取舍见 visual-assets §7）；只有换场、时间跳跃才从底板重新出帧。生产顺序因此按场内镜头顺序：上一镜视频通过后再出下一镜起始帧。
 - **接触关系必须可读**：双人同框、身份明确的手部特写，或有证据的省略均可；写明谁将什么交给谁、接触前后归属。选择双人构图时写 `multi_person` 及原因。
 - **脸要达到用途所需的可读性**：关键口型与细微表情优先近景；远景可承担画外对白，不要求所有脸达到统一比例。
 - 表情承担关键信息时保证其载体可见；遮眼可以是造型或叙事选择，须换用可读的姿态/声音。
@@ -50,7 +50,7 @@
 
 先做**动作落实表**：来源动作｜主要落实镜头｜动作前事实｜动作后事实｜其他镜头作用。每个来源动作只有一个主要落实镜头，其他镜头只加反应、细节或新理解。上一镜终点是"右手刚开始伸出"，下一镜才完成取物；上一镜已经取到，下一镜就从"已经持有"开始，不再拿一次（AI 视频最常在下一镜开头把上一镜的动作重演一遍）。
 
-剧本每场每句对白都要有镜头承载（G11）；多句台词按语义闭合点拆到多个单人镜。
+剧本每场每句对白都要有镜头承载（G11）；多句台词按语义闭合点拆镜（同一人连说合并成长镜头，§7b），每个台词镜都按 §1 让说话对象入画。
 
 - 动作落实表是责任清单，不是"一段一镜"：连续表演守得住原意时几段剧本可以合在一镜，揭示、反应、证据细节很重要时一段剧本也可以由几镜承担。
 - 同一段剧本出现在两镜里，只在第二次带来新的观众体验时成立（新增反应、此前保留的证据、对前镜的新理解）；例：前一镜交代"谁摊开了手"，后一镜才让观众看清掌心的证物——物理状态没变、信息变了，也是有效的镜头职责。
@@ -110,7 +110,7 @@ director 在写正式镜头前，比较两到三个**真正不同**的方案。�
 
 每个方案回答同一组问题：观众何时知道什么、站在谁一边、谁拥有表演空间、最强的一格画面和最后的落点、可能丢掉的空间/反应/信息、和本剧画风与模型能力是否相容。整场还要看七件事是否共同承担同一个转向：戏剧转向（什么关系、信息或选择不可逆地变了）、观众立场从哪到哪、空间压力、视觉推进、摄影节奏、反应落点、声音策略（主导声源、何时留白、声音桥）。
 
-两个方案在知情时机、对齐对象、表演空间、最强画面和落点上都一样，就是同一个方案。不固定方案数、宫格或镜头数。director 选定一个，把理由和放弃的方案各一句写进 `项目开发/决策记录.md`，再把选中的观看位置、信息时机、空间和声音策略写进正式镜头；未选的方案不留在 shots.json 里。剧本的开场与顺叙规则（SKILL.md 硬约束 6b）、画面不出字、一镜一人与接触同框照常适用，方案比较不能绕过它们。
+两个方案在知情时机、对齐对象、表演空间、最强画面和落点上都一样，就是同一个方案。不固定方案数、宫格或镜头数。director 选定一个，把理由和放弃的方案各一句写进 `项目开发/决策记录.md`，再把选中的观看位置、信息时机、空间和声音策略写进正式镜头；未选的方案不留在 shots.json 里。剧本的开场与顺叙规则（SKILL.md 硬约束 6b）、画面不出字、对话对象入画（§1）与接触同框照常适用，方案比较不能绕过它们。
 
 ## 2e. 必拍事实 must_show：剧情事实不可妥协
 
@@ -142,6 +142,7 @@ working side：摄影机常驻窗一侧
 ```
 
 - 裸写的 left/right 一律指**画面**左右；人物自身的左右带主体（his left hand）。
+- 三人以上的场，"屏幕方向"一行逐人写全（含只有主角看得见的角色），与 `scene_state.characters` 一致（E34）。
 - 越轴那一镜标 `axis_break` 并写理由，之后重新声明 working side。越轴本身不是错，没有动机又让空间读不懂才是；合法手段有：人物在同一镜内穿过轴线、中性过渡镜、用新的宽镜头重新建立方位，或导演有意制造主观错乱。
 - 轴线要写成两个可命名锚点的连线；写 `<working side>` 这类占位等于没写。判据：换一个人来拍下一镜，只读这三行能不能把机位放对。
 - 遥的镜头用窗一侧底板，三上的镜头用投影一侧底板；底板要写清画左画右各是什么（G19）。
@@ -152,7 +153,7 @@ working side：摄影机常驻窗一侧
 
 - A 镜甲在画面左看向右，B 镜乙就在画面右看向左（`facing` 互补，G25）。
 - 机位高度按身高差对应：拍高的一方略仰、拍矮的一方略俯；势均力敌用对称的高度与景别，不对称要有理由（压迫感）。
-- 过肩镜：本项目允许前景一个虚焦的肩（不露脸）作为第二人；写明前景是谁的肩、占画多少（前景肩的归属决定这一镜属于谁的视角）。出拳用过肩镜。
+- 过肩镜：前景一个虚焦的肩或后脑（不露脸）可以作为第二人。正文写明前景是谁、他和画中人在发型服装上的区别、占画多少，并写 `exactly two people, each appears once`；前景人只挂他自己的身份图或不挂，绝不挂画中人的头肩图（E3：挂了会把画中人画两次）。同一镜两次多画人，改成两人并排一左一右。出拳用过肩镜。
 - 同场同人朝向一致（G08）。
 - **视线（G43）**：对话镜里说话人默认看着对手。正反打时视线方向和对手在画面上的位置一致——对手在画右，就看画右（`eyes on the tall boy off screen-right`），眼神略偏离镜头、不看镜头。说话镜在 shots.json 写 `gaze: {"target": "三上", "direction": "left"}`（direction 用画面方向 left / right，另有 camera / down / up）；`direction` 要和本镜 `facing` 一致，和对手在本场的 `facing` 相反（对手面朝画右、在画左，说话人就看画左）。独白、回避视线、盯着物件说话、直面观众是剧情需要时写 `gaze_reason`。起始帧提示词和视频提示词都要写出视线方向和对象（`eyes on the woman off screen-left`；视频里 `keeps looking toward screen left at the woman`），G43 会对账；风格句里的 `nobody looks at the camera` 保留。
 - **同机位镜复用同一套起始帧写法**：正反打来回切时，同一场里人物、朝向、景别、机位高度都相同的镜头算同一机位。第二次及以后出现时，直接复用该机位第一次通过的镜的 `frame_prompt` 和 `frame_refs`，只改变化的那一项（表情、手、持物），不从头重写——每次重写都会让人物、背景、光一点点漂。与 §6"回溯、重复类镜头复刻原镜"同一个道理。同时写 `frame_parent: <原镜 ID>`（用父镜通过的起始帧图生图），写法见 [pipeline-contract.md](pipeline-contract.md) §4、G40。[社区][自测]
@@ -190,7 +191,7 @@ working side：摄影机常驻窗一侧
 
 ## 6. 冻结关键帧配方
 
-`keyframe`（中文）和 `frame_prompt`（英文）描述同一格画面，按顺序写：目的 → 焦点主体 → 画框（景别、机位高度、轴线哪侧）→ 地理（前中后景、入口方向）→ 边界投影（起点的位置、朝向、视线、手、持物）→ 表演瞬间（当前景别读得出的载体：视线、呼吸、姿态、持物方式，不写"愤怒"）→ 光（来源方向 + 受光结果）→ 文字（无）→ 排除。
+`keyframe`（中文）和 `frame_prompt`（英文）描述同一格画面，按顺序写：目的 → 焦点主体 → 画框（景别、机位高度、轴线哪侧）→ 在场名单（画内正好几人、逐人位置朝向；在场不入画的人在画外哪侧，video-prompts-general §2b）→ 地理（前中后景、入口方向、每人脚下或身下的实物、栏杆门崖沿的哪一侧）→ 边界投影（起点的位置、朝向、视线、手、持物）→ 表演瞬间（当前景别读得出的载体：视线、呼吸、姿态、持物方式，不写"愤怒"）→ 光（来源方向 + 受光结果）→ 文字（无）→ 排除（最多两句点名否定，§2b）。
 
 - **首帧匹配本镜起点**：不能把尚未发生的结果画进去；“微笑转愤怒”的首帧可以微笑，承接上一镜已发生的动作也可以从中段开始。
 - **首帧只写起点**：先与终点做差集，删掉本镜结果里才出现的事实（手已握住、门已开、字已亮）；出现"先、再、随后、最终"、表情从 A 到 B、推拉摇移、进出转身，都移到 motion。判据：一个静物摄影师能否一次拍下全部描述。
@@ -198,21 +199,23 @@ working side：摄影机常驻窗一侧
 - **回溯、重复类镜头复刻原镜**：时间倒回、梦境重演、"一模一样地再来一次"的镜头，与原镜同机位、同景别、同姿势、同持物（直接复用原镜 `frame_prompt` 和底板，只改变化的那一项），观众才看得出"回到了那一刻"。同时写 `frame_parent: <原镜 ID>`，写法见 [pipeline-contract.md](pipeline-contract.md) §4、G40。
 - 每个人都写身体朝向；印章字要放的一侧留空（构图偏另一侧，脑后留出空位）。
 - 可渲染检查：每人位置与间距、前中后景、视觉重点、景别、机位、光源方向、每人姿态朝向手部持物——接手的人能否照着画出来而不用自己发明事实。
-- 约 100–150 词够用；起始帧提示词 = 镜头句（景别、机位高度、焦段）→ 主体与动作（人物名 + 外观锚点、位置、朝向、持物、表情）→ 尺度锚点 → 参考图分工 → The scene is set … → Style: …，镜头句固定放第一句（§6b 正例和实战项目都是这样写的，顺序固定比长短更要紧；有 `frame_parent` 时，`The same shot as Picture 1…` 保留句放在镜头句之前）[社区][自测]（单人镜含一镜一人句，接触同框镜写 `multi_person` 和两人各自的位置朝向；都含 no text）。
+- 长短不设上限也不设目标，封闭清单（video-prompts-general §2b 表中适用于静帧的各行）一行不能少；起始帧提示词 = 镜头句（景别、机位高度、焦段）→ 在场名单 → 主体与动作（人物名 + 外观锚点、位置、朝向、持物、表情）→ 尺度锚点 → 参考图分工 → The scene is set … → Style: …，镜头句固定放第一句（§6b 正例和实战项目都是这样写的，顺序固定比长短更要紧；有 `frame_parent` 时，`The same shot as Picture 1…` 保留句放在镜头句之前）[社区][自测]（单人镜含单人固定句，多人镜写 `multi_person`、`exactly N` 和逐人位置朝向；都含 no text）。
 - **尺度锚点**：中景、全景、全身、双人镜的起始帧必须写人物与一个环境参照物的关系（`the handrail reaches his waist`、`the door frame is about a head taller than him`、`each step is about ankle height`），多人同框写相对身高；参照值见 [visual-assets.md](visual-assets.md) §12，G34 查写了没有。
-- 视觉依据在成稿后回填：从关键帧正文读出这一格里谁需要被认出；单人镜人物条目最多 1 个（画外另注），接触同框镜 2 个。
+- 视觉依据在成稿后回填：从关键帧正文读出这一格里谁需要被认出；每个露脸入画的人 1 个人物条目（画外另注），前景只露背、肩、后脑的人不挂身份图（E3）。
 
 ## 6b. 提示词详细准确：逐项写全
 
-以下是按需检查项：必需写主体、实际起点、关键变化和终点；仅补充影响本镜的空间、光、尺度和声音约束。参考图已有信息不重复堆叠，画外信息不强行描述。
+以下每项都要写到。只有与参考图完全重复的外观描述可以省；第 0、3、4、5、5b 项不省——参考图不管人数、站位、朝向、支撑和归属。画外在场者默认不写（只记 `scene_state`），需要防他闯入时按第 0 项只写名字和方位、不写外观（video-prompts-general §2b 画外在场者一行）。
 
 | 项 | 写什么 | 例 |
 |---|---|---|
+| 0 在场名单 | 画内正好几人、每人一次、各是谁；需要防闯入的画外在场者只写名字和哪侧；本场没有别人时写空无一人 | `Exactly two people, each appears once: Ren on screen-left, Mika on screen-right. Master Yan stands off screen-right and stays out of frame.` |
 | 1 主体 | 谁、年龄体形、身高、服装锁 | `a slim Japanese high-school boy about 168 cm tall, mushroom haircut, white short-sleeved school shirt` |
 | 2 动作（起点姿态） | 首帧那一刻身体在做什么（停在动作之前） | `standing still, weight on both feet, just about to turn his head` |
-| 3 位置 | 在画面左右哪侧、前景中景后景、离参照物多远 | `on screen-left in the midground, one step in front of the top stair` |
+| 3 位置 | 在画面左右哪侧、前景中景后景、离参照物多远；脚下或身下是什么实物；有栏杆、门、玻璃、崖沿时在哪一侧 | `on screen-left in the midground, one step in front of the top stair`；`outside the bars, in the corridor` |
 | 4 朝向 | 身体和脸朝哪（画面左右）、视线看哪 | `body turned three-quarters toward screen-right, eyes on the tall boy off screen-right` |
 | 5 持物 | 握持四要素：哪只手、握法（握柄 / 拇指食指捏住 / 掌心平按）、拇指在哪一侧、物件和手掌或躯干比多大；不表演的手也交代放在哪（插兜、垂在身侧、在画框下沿以外）[社区] | `his right hand grips the handle of the metal cash box from below, thumb on the near side, the box about 30 cm wide, as wide as his torso; his left hand rests flat on the lid` |
+| 5b 数量与归属 | 关键道具写 `one single` 或 `exactly N`、在谁哪只手或放在哪个实物上；已被拿走的不在原处再画一件；每只可见的手都连着看得见的身体，或写明从画框哪条边伸入 | `one single rusty sword in Gu's right hand; the crack in the rock behind him is empty` |
 | 6 表情 | 可见的肌肉状态（不写形容词） | `lips pressed tight, brows drawn together, eyes clearly visible under the fringe` |
 | 7 光 | 主光来源、方向、色温，再补一句画面上的受光结果：哪侧亮、哪侧暗、眼睛能否看清 [社区] | `soft daylight from the corridor windows on screen-right; the right side of his face is brighter, the left cheek falls into soft shadow, both eyes still readable` |
 | 8 镜头 | 景别、机位高度、焦段（焦段类词按画风换，见下） | `medium shot at eye level, 35mm, shallow depth of field` |
@@ -220,7 +223,7 @@ working side：摄影机常驻窗一侧
 | 10 环境动态（可选） | 自然存在或承担情节的环境变化；无需为了有动态添加人或物 | 风确实吹动门帘时才描述 |
 
 补充说明：
-- **手**：单人镜里看得见的手最多两只（双人接触镜每人最多两只），而且都要有事可做；写手"在做什么、握着什么"，比写"五根手指"更能让模型画对（物件本身给手指定了形状）。[社区]
+- **手**：每人看得见的手最多两只，而且都要有事可做；写手"在做什么、握着什么"，比写"五根手指"更能让模型画对（物件本身给手指定了形状）。[社区]
 - **光**：只写光位时模型常把亮面放错侧，补上受光结果更稳（小样本图片对照，未测视频）；身份图、底板的均匀照明只为看清形制，不是本镜的打光方案。同一场维持光源关系，亮度小偏差交给剪辑调色。[社区]
 - **镜头词按画风换**（第 8 项）：真人与 `cg_realistic` 用焦段和浅景深（`35mm / 50mm / 85mm, shallow depth of field`）；`anime_cel` 不写焦段、bokeh、cinematic lighting、volumetric、4k，改写成 `medium shot at eye level, flat 2D framing, background painted softly out of focus`；`manhwa` 写 `chest-up portrait framing, softly blurred glowing background`；`guoman_3d` 可写 `virtual camera, 35mm equivalent`，但不写 photograph、film grain。摄影和渲染类词会把 2D 画面往 3D、真人方向拉（[styles.md](styles.md)）。[社区]
 
@@ -232,10 +235,10 @@ The boy stands on the stairs holding the cash box, worried. The scene is set in 
 
 问题：没写身高和尺度（出图后人和护栏一样高）；没写画面哪侧、朝哪；"on the stairs"没说楼梯往上还是往下（出图台阶方向与剧情相反）；`worried` 是形容词；"keep … exactly"让模型为保底板把人缩小；没有光和镜头。
 
-**正例**：
+**正例**（不说话的反应镜；台词镜按 §1 让对象入画，用 §9 的双人模板）：
 
 ```text
-Medium shot at eye level, 35mm, shallow depth of field. A slim Japanese high-school boy about 168 cm tall with a mushroom haircut, white short-sleeved school shirt, stands on screen-left in the midground, one step in front of the top of a staircase that goes down to the floor below behind him; the metal handrail beside him reaches his waist. His body is turned three-quarters toward screen-right, eyes on someone off screen-right, eyes clearly visible under the fringe. He hugs a metal cash box about 30 cm wide against his chest with both arms, lips pressed tight, brows drawn together. Flat white daylight from the corridor windows on screen-right; the right side of his face is brighter, both eyes still readable. Picture 1 anchors the stairwell geometry, descending stairs, materials and world-space window position; camera framing follows this description. Picture 2 sets only his identity. Only one person in the frame. Style: …, no text.
+Medium shot at eye level, 35mm, shallow depth of field. A slim Japanese high-school boy about 168 cm tall with a mushroom haircut, white short-sleeved school shirt, stands on screen-left in the midground, one step in front of the top of a staircase that goes down to the floor below behind him; the metal handrail beside him reaches his waist. His body is turned three-quarters toward screen-right, eyes on the tall boy off screen-right, eyes clearly visible under the fringe. He hugs a metal cash box about 30 cm wide against his chest with both arms, lips pressed tight, brows drawn together. Flat white daylight from the corridor windows on screen-right; the right side of his face is brighter, both eyes still readable. Picture 1 anchors the stairwell geometry, descending stairs, materials and world-space window position; camera framing follows this description. Picture 2 sets only his identity. Only one person in the frame; the tall boy stands off screen-right, out of frame, and the stairwell is otherwise empty. Style: …, no text.
 ```
 
 提交前自问三句：①只看提示词，能不能画出一张位置、朝向、持物、尺度都确定的图？②有没有哪一项靠形容词（worried、epic、beautiful）？③空间方向（上楼/下楼、画左/画右）有没有写死？
@@ -276,10 +279,10 @@ Medium shot at eye level, 35mm, shallow depth of field. A slim Japanese high-sch
 
 ## 7. 景别、切点、节奏
 
-- 景别由"必须读到的信息在哪个尺度"决定，不是情绪越强越近；憋屈段守在中近景/过肩，底牌与反击才进近景、大特写。说话、表情镜的下限是中近景（脸高 ≥ 画高 1/5，见 §1）。
+- 景别由"必须读到的信息在哪个尺度"决定，不是情绪越强越近；憋屈段守在中近景/过肩，底牌与反击才进近景、大特写。说话、表情镜的下限是中近景（脸高 ≥ 画高 1/5，见 §1）。必拍事实（`kind: count`、`action`）和关键动作不能只由人物身高小于画高 1/6、关键物件长边小于画高 1/8 的镜承担：远景只建空间和站位，动作和数量交给下一镜的中景或插入镜（video-prompts-general §2b 可见性一行，E34）。
 - 一场先宽一档定位，再在工作景别上下一格来回（中景 ↔ 中近景 ↔ 近景 ↔ 特写）；不先给空景全景；切点必须带来可见变化（景别、角度、主体至少改一项；同景别同主体跳切是 AI 剪辑感，G27）。
 - 深浅相间、长短相间，避免"均匀病"；但不切得太碎（§7c 下限），同一个人的连续戏用长镜头（§7b）。
-- **反应镜头是免费的戏**：重台词之后切听者的脸 2–3 秒，不需要台词——单人正反打下最便宜的快节奏手段。但用户要"台词多、反应快"：反应镜里听者也可以有一句短反应（当场出声），不留空拍。
+- **反应镜头是免费的戏**：重台词之后切听者的脸 2–3 秒，不需要台词——最便宜的快节奏手段（不说话的反应镜可以单人，§1）。但用户要"台词多、反应快"：反应镜里听者也可以有一句短反应（当场出声），不留空拍。
 - 每集第一切要有主体在动（冷开场认领）；关键动作单独成切给一个 2 秒插入特写作重音；段尾留钩。
 - 动接动：切点选在动作中间；上一镜的推近或动作不在下一镜重来。
 
@@ -395,13 +398,13 @@ Medium shot at eye level, 35mm, shallow depth of field. A slim Japanese high-sch
 - **双人接触镜的起始帧写法（三图分工）**：参考图最多 3 张——甲的身份、乙的身份、底板（顺序按 visual-assets §7 的 A/B 结论，没测前沿用"底板在前"并相应改 Picture 编号）；道具不再单独挂图，尺寸材质写进正文。每人用"名字 + 一条最显眼的外观"称呼（`Ren, the tall boy in the black T-shirt`），不用 he/she；写明谁在画左、谁在画右、各自朝向、身高差；起始帧停在接触之前（谁的哪只手在哪、离对方多远）；最后写"每人只出现一次、画面里正好两个人"。[官方][社区]
 
   ```text
-  [景别, 机位高度, 焦段]. [甲名], the [甲最显眼的外观], stands on screen-left, [朝向]; [乙名], the [乙最显眼的外观], stands on screen-right, [朝向]; [乙名] is about [N] cm taller, [甲名]'s eyes are level with [乙名]'s chin. [接触前一刻：谁的哪只手在哪里、两人相距多远]. Picture 1 sets only the materials, colours and light of the location, as a background; camera position and framing follow this description. Picture 2 sets only [甲名]'s identity and Picture 3 sets only [乙名]'s identity: keep their faces, hairlines and builds; poses and framing follow this description. Each person appears exactly once; exactly two people in the frame. [尺度锚点句]. The scene is set … Style: …, no text.
+  [景别, 机位高度, 焦段]. [甲名], the [甲最显眼的外观], stands on screen-left, [朝向]; [乙名], the [乙最显眼的外观], stands on screen-right, [朝向]; [乙名] is about [N] cm taller, [甲名]'s eyes are level with [乙名]'s chin. [接触前一刻：谁的哪只手在哪里、两人相距多远]. Picture 1 is the real place where this happens, not a flat backdrop: both people stand on its solid ground; keep its layout, edges and landmarks; camera position and framing follow this description; do not copy any person from it. Picture 2 sets only [甲名]'s identity and Picture 3 sets only [乙名]'s identity: keep their faces, hairlines and builds; poses and framing follow this description. Each person appears exactly once; exactly two people in the frame. [尺度锚点句]. The scene is set … Style: …, no text.
   ```
-- 插入镜（`kind: hands/feet/object`）不受一镜一人句约束，但仍写 no text、写清画左画右。
+- 插入镜（`kind: hands/feet/object`）不写单人固定句，但仍写 no text、写清画左画右；手的数量写死，每只手写明是谁的、从画框哪条边伸入、主人在画外哪侧（`Gu's own right hand enters from the bottom-left edge; his body is just outside the frame on screen-left`，E35）。
 
 ## 9b. 复杂调度：竖屏多人、单房对白、证据揭示、群体、动态对象
 
-这些是思考步骤，不是镜头数量模板；对话仍默认单人正反打，接触仍同框（§1）。
+这些是思考步骤，不是镜头数量模板；对话对象必须入画，接触同框（§1）。
 
 **竖屏多人**：先画出人能怎样通行，再决定纵向画幅怎样表现关系。用前中后景、门框、台阶、桌沿建立深度；写清谁能接近证据、出口或权力位置；头像高低只在空间真实且有意义时表达地位；两人对话时仍留出第三人监听、反应或阻挡的位置（在全景或过肩前景里）。设计顺序：空间锚点与入口 → 每人的目标和筹码 → 群体注意中心 → 关键动作前后的站位 → 哪些同时反应必须留在宽镜里 → 只有丢信息时才切插入或近景。常见问题：站位只为填满画面；背景人物切镜后无故换边；重要人物一直被前景挡住而剧情并没利用这种遮挡。
 
@@ -419,7 +422,9 @@ Medium shot at eye level, 35mm, shallow depth of field. A slim Japanese high-sch
 
 ## 10. 门与自检
 
-机械门：G46 必拍事实有镜承担（error）；G47 数量事实写进起始帧；G48 能力规则重复解释；G49 场内对白镜只说不做；G42 节奏下限；G43 说话人视线；G44 台词语种与读音；G45 同一人相邻镜没写 `split_reason`；G32 `requires_setup` 的铺垫镜存在且在前（事件镜没写起因也提示）；G34 尺度锚点；G35 环境动态；G02 单人镜含一镜一人句、`multi_person` 必须写理由；G08 同场同人朝向一致；G23 锁面逐字进起始帧提示词；G24 关键帧/终点/提示词无回指词；G25 同场两人朝向互补；G26 边界链逐项一致；G27 同景别同主体跳切；G13 关键帧长度。
+机械门：G46 必拍事实有镜承担（error）；G47 数量事实写进起始帧；G48 能力规则重复解释；G49 场内对白镜只说不做；G42 节奏下限；G43 说话人视线；G44 台词语种与读音；G45 同一人相邻镜没写 `split_reason`；G32 `requires_setup` 的铺垫镜存在且在前（事件镜没写起因也提示）；G34 尺度锚点；G35 环境动态；G02 起始帧含画内人数句（单人固定句或 exactly N，multi_person 镜必须 exactly N）；G53 台词镜听者入画（单人要 `single_reason`）；G52 恶意执行预演 `adversarial_preflight`；G08 同场同人朝向一致；G23 锁面逐字进起始帧提示词；G24 关键帧/终点/提示词无回指词；G25 同场两人朝向互补；G26 边界链逐项一致；G27 同景别同主体跳切；G13 关键帧长度。
+
+例外理由（`single_reason`、`multi_person_reason`、`split_reason`、`gaze_reason`、`fast_cut_reason`、`axis_break`）按 video-prompts-general §2b 过搬家测试。
 
 reviewer 的必答问题统一在 [review-checklists.md](review-checklists.md) §E（E1 一眼看懂与覆盖、E2 职责视线与节奏、E3 起始帧、E4 视频提示词、E5 风格与连续性），按其 §0 的分级与格式写 finding（镜头 ID、证据、影响、必须达到的修订结果）。实际 take 按 quality-contract.md 看图听审，不以提示词写全代替。
 

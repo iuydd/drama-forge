@@ -2,24 +2,75 @@
   "schema": "short-drama-autopilot/refs/v1",
   "refs": {
     "IMG-HARUKA": {
-      "kind": "identity", "name": "遥 全身身份参考", "subject": "遥",
-      "controls": "脸、低马尾、瘦削体形、炭灰色西装外套", "not_controls": "姿势、表情、背景",
+      "kind": "identity",
+      "name": "遥 全身身份参考",
+      "subject": "遥",
+      "controls": "脸、低马尾、瘦削体形、炭灰色西装外套",
+      "not_controls": "姿势、表情、背景",
       "voice": "a young woman's calm, clear voice",
-      "profile": "krea2_turbo", "res": "2K", "refs": [],
-      "prompt": "Photorealistic full-body photo of one slim Japanese woman about 28, about 160 cm tall, standing against a plain light grey studio wall, facing the camera, calm neutral expression, shoulder-length black hair in a low ponytail, a charcoal grey blazer over a white shirt, dark trousers, flat shoes. Real unglamorous skin, soft even light, no text, no logo."
+      "refs": [],
+      "prompt": "Photorealistic full-body photo of one slim Japanese woman about 28, about 160 cm tall, standing against a plain light grey studio wall, facing the camera, calm neutral expression, shoulder-length black hair in a low ponytail, a charcoal grey blazer over a white shirt, dark trousers, flat shoes. Real unglamorous skin, soft even light, no text, no logo.",
+      "adversarial_preflight": [
+        {
+          "worst": "画成半身或裁掉脚，身高比例无法核对",
+          "blocked_by": "full-body photo"
+        },
+        {
+          "worst": "背景出现办公室或其他人",
+          "blocked_by": "standing against a plain light grey studio wall"
+        },
+        {
+          "worst": "衣服上出现文字或 logo",
+          "blocked_by": "no text, no logo"
+        }
+      ]
     },
     "IMG-MIKAMI": {
-      "kind": "identity", "name": "三上 全身身份参考", "subject": "三上",
-      "controls": "脸、侧分短发、微胖体形、深蓝西装", "not_controls": "姿势、表情、背景",
+      "kind": "identity",
+      "name": "三上 全身身份参考",
+      "subject": "三上",
+      "controls": "脸、侧分短发、微胖体形、深蓝西装",
+      "not_controls": "姿势、表情、背景",
       "voice": "a smooth condescending voice",
-      "profile": "krea2_turbo", "res": "2K", "refs": [],
-      "prompt": "Photorealistic full-body photo of one slightly heavy Japanese man about 45, about 175 cm tall, standing against a plain light grey studio wall, facing the camera, a faint superior smile, side-parted short hair, a dark navy suit, a gold wristwatch, black leather shoes. Real skin, soft even light, no text, no logo."
+      "refs": [],
+      "prompt": "Photorealistic full-body photo of one slightly heavy Japanese man about 45, about 175 cm tall, standing against a plain light grey studio wall, facing the camera, a faint superior smile, side-parted short hair, a dark navy suit, a gold wristwatch, black leather shoes. Real skin, soft even light, no text, no logo.",
+      "adversarial_preflight": [
+        {
+          "worst": "画成半身或裁掉脚，身高比例无法核对",
+          "blocked_by": "full-body photo"
+        },
+        {
+          "worst": "露出和善的大笑，轻蔑读不出来",
+          "blocked_by": "a faint superior smile"
+        },
+        {
+          "worst": "手表被画成两块或不见",
+          "blocked_by": "验收：左腕一块金表，数一遍"
+        }
+      ]
     },
     "IMG-PLATE-MEETING": {
-      "kind": "plate", "name": "会议室 底板", "location": "会议室",
-      "controls": "长桌、投影幕、落地窗白光、白墙", "not_controls": "人物、景别",
-      "profile": "krea2_turbo", "res": "2K", "refs": [],
-      "prompt": "Photorealistic empty location plate, candid 35mm film still, daytime: a corporate meeting room in Tokyo, a standard 2.1 m door near the camera, a long table about 75 cm high running toward a projection screen at the far end, floor-to-ceiling windows with flat white daylight on the left, a plain white wall with a projector on the right. No people. No logos, no readable text anywhere. Realistic colors, subtle film grain."
+      "kind": "plate",
+      "name": "会议室 底板",
+      "location": "会议室",
+      "controls": "长桌、投影幕、落地窗白光、白墙",
+      "not_controls": "人物、景别",
+      "refs": [],
+      "prompt": "Photorealistic empty location plate, candid 35mm film still, daytime: a corporate meeting room in Tokyo, a standard 2.1 m door near the camera, a long table about 75 cm high running toward a projection screen at the far end, floor-to-ceiling windows with flat white daylight on the left, a plain white wall with a projector on the right. No people. No logos, no readable text anywhere. Realistic colors, subtle film grain.",
+      "adversarial_preflight": [
+        {
+          "worst": "底板里出现人影或路人",
+          "blocked_by": "No people."
+        },
+        {
+          "worst": "墙上、屏幕上出现可读文字或 logo",
+          "blocked_by": "No logos, no readable text anywhere."
+        },
+        {
+          "worst": "门和桌子尺寸失真，人物放进去比例不对",
+          "blocked_by": "a standard 2.1 m door near the camera"
+        }
+      ]
     }
   }
 }

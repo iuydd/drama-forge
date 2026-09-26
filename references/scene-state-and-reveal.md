@@ -14,13 +14,19 @@
 
 ## 跨正反打连续性
 
-`boundary` 描述本镜主体可见状态；跨主体仍要记住已经发生的变化。需要机械检查时，在同一 scene 的镜头填可选 `scene_state`，键名全场保持一致：
+`boundary` 描述本镜主体可见状态；跨主体仍要记住已经发生的变化。在同一 scene 的镜头填 `scene_state`（道具归属按需写，在场名单每场必写，见下），键名全场保持一致：
 
 ```json
 {"scene":"SC01","scene_state":{"start":{"props":{"contract_owner":"甲"},"characters":{"乙":{"injury":"无"}}},"end":{"props":{"contract_owner":"乙"}}}}
 ```
 
-随后切甲的反应镜，再切乙，合同仍属于乙。G41 累积已声明的 end，检查后续显式 start；省略字段表示沿用，而非恢复默认。允许在 end 写合理变化，但脚本无法判断变化是否有动作原因，仍需审分镜。时间跳跃、梦境或回忆使用不同 scene 标识，另记其真实时间及恢复点，避免混进同一连续状态链。
+随后切甲的反应镜，再切乙，合同仍属于乙。G41 累积已声明的 end，检查后续显式 start；省略字段表示沿用，而非恢复默认。
+
+**在场名单也走 scene_state**：`characters.<名>` 写 `present`（true/false）、`where`（世界位置：门口、栏内/栏外、崖沿哪侧，不写画左画右）、`facing`（朝向谁或哪个地标，不写屏幕方向）。每场第一镜的 start 从剧本场首 `[连续性] 在场：` 行抄全员（含画外在场者，`present: true`、`where` 写他在哪）；有人离场，离场那一镜的 end 写 `present: false`——省略等于沿用，已经走掉的人会留在名单里。起始帧和视频正文的封闭清单（video-prompts-general §2b）从这里抄。
+
+```json
+{"scene":"SC03","scene_state":{"start":{"characters":{"顾长生":{"present":true,"where":"栏内","facing":"萧烈"},"萧烈":{"present":true,"where":"栏外走廊","facing":"顾长生"}}},"end":{"characters":{"萧烈":{"present":false}}}}}
+```允许在 end 写合理变化，但脚本无法判断变化是否有动作原因，仍需审分镜。时间跳跃、梦境或回忆使用不同 scene 标识，另记其真实时间及恢复点，避免混进同一连续状态链。
 
 ## 递合同示例
 

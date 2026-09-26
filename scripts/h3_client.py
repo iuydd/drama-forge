@@ -93,7 +93,17 @@ class Client:
             f.close()
 
     def _append(self, rec: dict) -> None:
-        """Persist safety-critical state before proceeding; write errors must stop submission."""
+        """Persist safety-critical state before proceeding; write errors must stop submission.
+        所有通道（H3/fal/可灵/providers）的提交都先写 submission_intent：子代理（DF_SUBAGENT=1）在这里被拒；
+        collected 记录补上产物 sha256，submitted 记录补上起始帧与完整提示词哈希（入剪前核对 take 来源）。"""
+        if rec.get("status") == "submission_intent" and os.environ.get("DF_SUBAGENT"):
+            raise SystemExit("子代理（DF_SUBAGENT=1）不提交生成任务（硬约束 9）：把要生成的内容交回主会话")
+        if rec.get("status") in ("submission_intent", "submitted"):
+            rec = {**rec, **{k: v for k, v in (getattr(self, "_submit_extra", None) or {}).items() if k not in rec}}
+        if rec.get("status") == "collected" and "sha256" not in rec:
+            out = Path(str(rec.get("out") or ""))
+            if out.is_file():
+                rec = {**rec, "sha256": hashlib.sha256(out.read_bytes()).hexdigest()}
         self.log_dir.mkdir(parents=True, exist_ok=True)
         with open(self.log_dir / "jobs.jsonl", "a", encoding="utf-8") as f:
             f.write(json.dumps({"time": _now(), **rec}, ensure_ascii=False) + "\n")
@@ -316,7 +326,13 @@ class Client:
         return jid, self.download(job, "image", out)
 
     def video(self, prompt: str, out: Path, frame: Path, **kw) -> tuple[str, Path]:
-        jid = self.submit_video(prompt, out, frame, **kw)
+        # 账本记起始帧 sha 与完整提示词 sha（可灵会截断提示词，所以记截断前的）；review_quality.provenance_issues 用它核对来源
+        self._submit_extra = {"frame_sha256": hashlib.sha256(Path(frame).read_bytes()).hexdigest(),
+                              "source_prompt_sha256": hashlib.sha256(prompt.strip().encode()).hexdigest()}
+        try:
+            jid = self.submit_video(prompt, out, frame, **kw)
+        finally:
+            self._submit_extra = None
         job = self.wait_job(jid)
         job.setdefault("id", jid)
         return jid, self.download(job, "video", out)

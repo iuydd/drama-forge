@@ -7,6 +7,7 @@
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -174,6 +175,8 @@ _SP_GOOD = """# EP001 测试
 
 ## EP001-SC001 内 · 三楼走廊 · 日
 
+[连续性] 在场：夏樹（楼梯口）、鬼塚（走廊中间）；画外：先生（楼梯下方）
+
 夏樹抱着钱箱走到楼梯口。鬼塚的运动包拉链半开，露出同款钱箱的角。
 
 鬼塚（拦路要钱｜威胁·中·慢·小）：売上、渡せよ。
@@ -184,7 +187,7 @@ _SP_GOOD = """# EP001 测试
 
 [SFX] 楼梯下方传来上楼的脚步声。
 
-[连续性] 钱箱在夏樹左臂；鬼塚包里有假箱，老师正上楼。
+[连续性] 钱箱在夏樹左臂；鬼塚包里有假箱，老师正上楼。必拍：①鬼塚包里露出同款钱箱的角 ②夏樹把钱箱换到左臂护住 ③鬼塚听到脚步声回头看楼梯
 """
 
 _SP_BAD = """开场白
@@ -215,7 +218,7 @@ def test_screenplay_lint() -> None:
     require(not f, f"合格剧本应 0 finding，实际 {[x['code'] for x in f]}")
     f = lint_text(_SP_BAD, {"夏樹", "鬼塚"})
     got = {x["code"] for x in f}
-    for code in ("SP02", "SP03", "SP04", "SP05", "SP06", "SP07", "SP08", "SP09", "SP11", "SP12"):
+    for code in ("SP02", "SP03", "SP04", "SP05", "SP06", "SP07", "SP08", "SP09", "SP11", "SP12", "SP13", "SP14"):
         require(code in got, f"坏剧本应报 {code}，实际 {sorted(got)}")
     require(len([x for x in f if x["code"] == "SP02" and x["level"] == "error"]) == 2, "SP02 error 应为重复 ID + 集号不一致两条")
     amb = [x for x in f if x["code"] == "SP08"]
@@ -223,7 +226,7 @@ def test_screenplay_lint() -> None:
     require(len([x for x in f if x["code"] == "SP09" and "取值不对" in x["msg"]]) == 1, "情绪取值「超强」应被指出")
     f = lint_text("# EP001 t\n\n## EP001-SC001 内 · 屋 · 夜\n\n第二格：一只手把杯子推过去。\n\n"
                   "甲（问｜平静·弱·中·中）：你来了。\n\n甲（问｜平静·弱·中·中）：坐。\n", None)
-    require([x["code"] for x in f] == ["SP08"], f"无清单推断应只报行首冒号行，实际 {[x['code'] for x in f]}")
+    require([x["code"] for x in f if x["code"] not in ("SP13", "SP14")] == ["SP08"], f"无清单推断应只报行首冒号行，实际 {[x['code'] for x in f]}")
     ex = here.parent / "assets" / "example"
     if (ex / "EP001" / "剧本.md").exists():
         r = subprocess.run([sys.executable, str(here / "screenplay_lint.py"), str(ex), "EP001"], capture_output=True, text=True)
@@ -278,17 +281,48 @@ def test_review_md_check() -> None:
     require(r["errors"] == 0 and r["verdict"] == "REVISE" and r["open"]["Major"] == 1, f"合格审查应 0 error：{r['issues']}")
     require("RV06" in codes(check_text(_RV_OK.replace("结论：REVISE", "结论：PASS")), "error"), "未关闭 Major 写 PASS 应报 RV06")
     deferred = _RV_OK.replace("- 状态：open", "- 状态：未决")
+    require("RV09" in codes(check_text(deferred.replace("结论：REVISE", "结论：PASS")), "error"), "首轮就记未决（没写轮次和决策记录）应报 RV09")
+    deferred = deferred.replace("- 状态：未决", "- 轮次：2\n- 决策记录：D-004\n- 状态：未决")
     require("RV06" in codes(check_text(deferred), "error"), "Major 未决后仍写 REVISE 应报 RV06")
-    require(check_text(deferred.replace("结论：REVISE", "结论：PASS"))["errors"] == 0, "未决 Major 不计入未关闭，PASS 合法")
+    require("RV09" in codes(check_text(deferred.replace("结论：REVISE", "结论：PASS")), "error"), "有未决 Major 却只写 PASS（不写未决 N）应报 RV09")
+    require(check_text(deferred.replace("结论：REVISE", "结论：PASS（未决 1）"))["errors"] == 0, "两轮未过、记了决策的非剧情 Major 可以 PASS（未决 1）")
+    plot = deferred.replace("空箱凭空出现", "必拍事实：空箱凭空出现").replace("结论：REVISE", "结论：PASS（未决 1）")
+    require("RV09" in codes(check_text(plot), "error"), "剧情事实类 Major 不能记未决")
+    blk = _RV_OK.replace("## Major · R-001", "## Blocker · R-001").replace("- 状态：open", "- 轮次：3\n- 决策记录：D-004\n- 状态：未决")
+    require("RV09" in codes(check_text(blk.replace("结论：REVISE", "结论：PASS")), "error"), "Blocker 不能记未决")
+    require("RV04" in codes(check_text(_RV_OK.replace("- 证据：SC003 之前没有交代第二个箱子。", "- 证据：-")), "error"), "Major 字段只写 - 应报 RV04")
+    require("RV11" in codes(check_text(_RV_OK + "\n### Major · R-003 · 藏起来的问题\n| R-004 | Major | 表格里的问题 |\n"), "error"), "非标准问题格式应报 RV11")
     require("RV06" in codes(check_text(_RV_OK.replace("## Major · R-001", "## Blocker · R-001")), "error"), "未关闭 Blocker 应要求 BLOCKED")
     require("RV04" in codes(check_text(_RV_OK.replace("- 证据：SC003 之前没有交代第二个箱子。\n", "")), "error"), "Major 缺证据应报 RV04")
     require("RV05" in codes(check_text(_RV_OK.replace("R-002", "R-001")), "error"), "编号重复应报 RV05")
-    require({"RV02", "RV07"} <= codes(check_text(_RV_OK.replace("keep:\n", "").replace("- 复核方式：独立 reviewer\n", "")), "warn"),
-            "缺复核方式、缺 keep 应 warn")
+    r2 = check_text(_RV_OK.replace("keep:\n", "").replace("- 复核方式：独立 reviewer\n", ""))
+    require("RV02" in codes(r2, "error") and "RV07" in codes(r2, "warn"), "缺复核方式应报 error、缺 keep 应 warn")
     require("RV01" in codes(check_text(_RV_OK.replace("结论：REVISE", "结论：APPROVE")), "error"), "非 PASS/REVISE/BLOCKED 应报 RV01")
     tpl = Path(__file__).resolve().parent.parent / "assets" / "templates" / "审查.md"
     if tpl.exists():
         require("RV08" in codes(check_text(tpl.read_text(encoding="utf-8")), "error"), "未填模板应被 RV08 拦下")
+    # 项目上下文：剧本指纹过期 → RV12；reviewer 交稿后被主会话改过 → RV10
+    import hashlib
+    import tempfile
+    from common import Project
+    from project_tool import init
+    from review_md_check import check_file
+    with tempfile.TemporaryDirectory() as td:
+        root = init(Path(td) / "p", "审查指纹", 1, "ja", "测试", 30, None, "16:9")
+        (root / "EP001" / "剧本.md").write_text(_SP_GOOD, encoding="utf-8")
+        fp = Project(root).fingerprints("EP001")["剧本"]
+        rv = root / "审查" / "EP001-审查.md"
+        rv.write_text(_RV_OK.replace("- 复核方式：独立 reviewer", f"- 复核方式：独立 reviewer\n- 剧本指纹：{fp}"), encoding="utf-8")
+        require(check_file(rv)["errors"] == 0, "指纹对得上的审查 0 error")
+        (root / "EP001" / "剧本.md").write_text(_SP_GOOD + "\n夏樹转身下楼。\n", encoding="utf-8")
+        require("RV12" in codes(check_file(rv), "error"), "剧本改过、审查指纹过期应报 RV12")
+        (root / "EP001" / "剧本.md").write_text(_SP_GOOD, encoding="utf-8")
+        ag = root / "审查" / "agents" / "20260926T000000Z-reviewer-1"
+        ag.mkdir(parents=True)
+        (ag / "written.sha256").write_text(f"{hashlib.sha256(rv.read_bytes()).hexdigest()}  审查/EP001-审查.md\n", encoding="utf-8")
+        require(check_file(rv)["errors"] == 0, "reviewer 原稿未改 0 error")
+        rv.write_text(rv.read_text(encoding="utf-8").replace("- 状态：open", "- 状态：closed").replace("结论：REVISE", "结论：PASS"), encoding="utf-8")
+        require("RV10" in codes(check_file(rv), "error"), "主会话改了 reviewer 原稿应报 RV10")
 
 
 def main(argv: list[str]) -> int:
@@ -578,6 +612,23 @@ def test_final_acceptance() -> None:
                            {"id": "EP001-S02", "scene": "EP001-SC001", "kind": "person", "subject": "夏樹", "seconds": 3, "explains_ability": True,
                             "overlay": [{"kind": "text", "text": long_text, "at": 0.2, "until": 2.8}]}]}
         pr.shots_path("EP001").write_text(json.dumps(shots, ensure_ascii=False), encoding="utf-8")
+        from review_quality import media_digest, shot_digest, text_digest
+
+        def fake_ledger(sid, take=1):   # 等同 h3_client 收回时写的账本，让来源校验对得上
+            vp_ = pr.video_path("EP001", sid, take)
+            pr.scripts_dir.mkdir(parents=True, exist_ok=True)
+            with open(pr.scripts_dir / "jobs.jsonl", "a", encoding="utf-8") as fh:
+                fh.write(json.dumps({"status": "submitted", "job": f"j-{sid}", "out": str(vp_.resolve()), "source_prompt_sha256": text_digest("")}) + "\n")
+                fh.write(json.dumps({"status": "collected", "job": f"j-{sid}", "out": str(vp_.resolve()), "sha256": media_digest(vp_)}) + "\n")
+
+        def fake_asr(sid, take=1):      # 等同 review_tool.asr 对当前文件、当前镜头跑过
+            rv_ = pr.load_review("EP001")
+            sh_ = next(x for x in pr.load_shots("EP001")["shots"] if x["id"] == sid)
+            rec_ = rv_.setdefault("shots", {}).setdefault(sid, {}).setdefault("video_takes", {}).setdefault(str(take), {"take": take})
+            rec_.update(asr_media_sha256=media_digest(pr.video_path("EP001", sid, take)), asr_shot_sha256=shot_digest(sh_),
+                        speech_diff={"status": "exact", "critical_changes": [], "similarity": 1.0})
+            pr.save_review("EP001", rv_)
+
         for sid in ("EP001-S01", "EP001-S02"):
             fp = pr.frame_path("EP001", sid, 1)
             fp.parent.mkdir(parents=True, exist_ok=True)
@@ -587,6 +638,7 @@ def test_final_acceptance() -> None:
             subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", f"testsrc2=s={W}x{H}:r=24:d=3", "-f", "lavfi",
                             "-i", "sine=frequency=330:duration=3:sample_rate=48000", "-shortest", "-c:v", "libx264", "-pix_fmt", "yuv420p",
                             "-c:a", "aac", str(vp)], check=True)
+            fake_ledger(sid)
 
         # 预演：无 TTS 时按估算留静音、画面标台词秒数；md 首行结论待填、不放行；有统计
         with patch.dict(os.environ, {"ANIMATIC_TTS": "0"}):
@@ -599,13 +651,32 @@ def test_final_acceptance() -> None:
         require(md.startswith("结论：待填") and not pr.animatic_passed("EP001"), "预演.md 首行结论待填，不放行")
         require("按估算时长留静音 1 句" in md and "EP001-S02" in md and "反应拍" in md and "MS1" in md and "解释能力" in md, md[:900])
         (pr.review_dir / "EP001-预演.md").write_text(md.replace("结论：待填", "结论：PASS", 1), encoding="utf-8")
+        probs = pr.animatic_problems("EP001")
+        require(any("MS1" in x for x in probs) and any("【" in x for x in probs), f"只改首行 PASS 不放行（必拍表没填）：{probs}")
+        filled = md.replace("结论：待填", "结论：PASS", 1).replace("【EP001-S01 · X.Xs】", "EP001-S01 · 1.5s").replace("【看得到 / 看不到 / 只靠台词】", "看得到 · 金额完整一行")
+        (pr.review_dir / "EP001-预演.md").write_text(filled, encoding="utf-8")
+        require(pr.animatic_passed("EP001"), f"首行 PASS、必拍表填齐、指纹对得上才放行：{pr.animatic_problems('EP001')}")
         with patch.dict(os.environ, {"ANIMATIC_TTS": "0"}):
             review_tool.animatic(pr, "EP001")
         require(pr.animatic_passed("EP001"), "预演内容没变时不覆盖已填结论")
+        # 旧版预演.md（没有输入指纹行）：不放行；重跑 animatic 内容没变时只补指纹行、保留结论
+        (pr.review_dir / "EP001-预演.md").write_text(re.sub(r"^预演输入指纹.*\n", "", filled, flags=re.M), encoding="utf-8")
+        require(any("预演输入指纹" in x for x in pr.animatic_problems("EP001")), "缺输入指纹的旧预演不放行并提示重跑")
+        with patch.dict(os.environ, {"ANIMATIC_TTS": "0"}):
+            review_tool.animatic(pr, "EP001")
+        require(pr.animatic_passed("EP001"), f"重跑 animatic 补上指纹行后放行：{pr.animatic_problems('EP001')}")
+        # 分镜改了（旧 PASS 过期）
+        stale = json.loads(pr.shots_path("EP001").read_text(encoding="utf-8"))
+        stale["shots"][1]["seconds"] = 4
+        pr.shots_path("EP001").write_text(json.dumps(stale, ensure_ascii=False), encoding="utf-8")
+        require(any("过期" in x for x in pr.animatic_problems("EP001")), "shots.json 改过后旧预演 PASS 过期")
+        pr.shots_path("EP001").write_text(json.dumps(shots, ensure_ascii=False), encoding="utf-8")
+        fake_asr("EP001-S01")
 
         # 审片：must_show fail 不许 ok/weak，auto 给 retake，cut_issues 拦下
         opts = dict(video_take=1, visual="pass", audio="pass", continuity="pass", evidence="synthetic fixture: offline contract", verdict="ok")
         review_tool.mark(pr, "EP001", "EP001-S02", **opts)
+        opts["speaker_face_ok"] = True   # S01 有台词：说话人口型要看过（S02 无台词不需要）
         try:
             review_tool.mark(pr, "EP001", "EP001-S01", speech_window=[0.6, 2.4], action_window=[1.0, 2.0], must_show={"MS1": "fail"}, **opts)
             raise AssertionError("must_show fail 仍被批准 ok")
@@ -634,7 +705,7 @@ def test_final_acceptance() -> None:
             def __init__(self, project):
                 pass
 
-            def words(self, paths):
+            def words(self, paths, fresh=False):
                 return {str(p): fake_words.get(Path(p).name, []) for p in paths}
 
         face = [W // 2 - 150, H - 230, 300, 220]
@@ -666,14 +737,38 @@ def test_final_acceptance() -> None:
         types = {i["type"] for i in rep["issues"]}
         require({"字幕多于声音", "疑似裁词"} <= types and "片尾静止拖尾" not in types and "叠字压脸" not in types, f"终验问题类型：{types}")
         require((pr.review_dir / "EP001-final-qa" / "contact.jpg").exists() and any(i.get("evidence") for i in rep["issues"]), "接触表与证据帧")
-        # 人工写入听审/同步（带 evidence）才改变 null；把人脸放到全画面 → 终验报压脸
+        # 人工写入听审/同步：要 evidence + 真人 listener + 当前成片 sha；asr_ok 人工值不能替代没跑的 ASR；把人脸放到全画面 → 终验报压脸
         rv = pr.load_review("EP001")
-        rv["final_qa"] = {"listen_ok": True, "evidence": "selftest: pretend a native speaker listened 0–6s"}
+        rv["final_qa"] = {"listen_ok": True, "asr_ok": True, "evidence": "selftest: pretend a native speaker listened 0–6s"}
+        pr.save_review("EP001", rv)
+        with patch("review_tool.ASR", FakeASR), patch.object(cut_mod, "FACE_HOOK", lambda v, ts: [[0, 0, W, H]]):
+            rep2 = final_qa.final_qa(pr, "EP001", use_asr=False)
+        require(rep2["listen_ok"] is None and rep2["asr_ok"] is None and rep2["conclusion"] == "REVISE", f"没绑成片 sha 的人工值不采用：{rep2['listen_ok']} {rep2['asr_ok']}")
+        rv["final_qa"].update(video_sha256=media_digest(out), listener="claude")
+        pr.save_review("EP001", rv)
+        with patch("review_tool.ASR", FakeASR), patch.object(cut_mod, "FACE_HOOK", lambda v, ts: [[0, 0, W, H]]):
+            rep2 = final_qa.final_qa(pr, "EP001", use_asr=False)
+        require(rep2["listen_ok"] is None and rep2["asr_ok"] is None, f"模型签的听审不采用、asr_ok 人工值不替代 ASR：{rep2['listen_ok']} {rep2['asr_ok']}")
+        rv["final_qa"]["listener"] = "佐藤（用户指定的母语者）"
         pr.save_review("EP001", rv)
         with patch("review_tool.ASR", FakeASR), patch.object(cut_mod, "FACE_HOOK", lambda v, ts: [[0, 0, W, H]]):
             rep2 = final_qa.final_qa(pr, "EP001", use_asr=False)
         require(rep2["listen_ok"] is True and rep2["sync_ok"] is None and rep2["asr_ok"] is None, f"人工值：{rep2['listen_ok']} {rep2['sync_ok']}")
         require(any(i["type"] == "叠字压脸" for i in rep2["issues"]), "全画面人脸时终验报叠字压脸")
+        # 草剪冒充成片、删字幕条目藏台词：都拦下
+        mp = cut_mod.overlays_path(out)
+        meta0 = mp.read_text(encoding="utf-8")
+        m1 = json.loads(meta0); m1["draft"] = True
+        mp.write_text(json.dumps(m1, ensure_ascii=False), encoding="utf-8")
+        with patch("review_tool.ASR", FakeASR), patch.object(cut_mod, "FACE_HOOK", lambda v, ts: []):
+            rep3 = final_qa.final_qa(pr, "EP001", use_asr=False)
+        require(rep3["conclusion"] == "REVISE" and any(i["type"] == "草剪冒充成片" for i in rep3["issues"]), "draft 元数据一律 REVISE")
+        m1["draft"] = False; m1["overlays"] = [o for o in m1["overlays"] if o["kind"] != "sub"]
+        mp.write_text(json.dumps(m1, ensure_ascii=False), encoding="utf-8")
+        with patch("review_tool.ASR", FakeASR), patch.object(cut_mod, "FACE_HOOK", lambda v, ts: []):
+            rep3 = final_qa.final_qa(pr, "EP001", use_asr=False)
+        require(any(i["type"] == "元数据缺台词字幕" for i in rep3["issues"]) and rep3["conclusion"] == "REVISE", "删掉字幕条目仍按 shots.json 期望台词查")
+        mp.write_text(meta0, encoding="utf-8")
 
 
 if __name__ == "__main__":

@@ -177,6 +177,29 @@ class ClientTests(unittest.TestCase):
         self.assertEqual(current.sub("profiles")["video"], "user-video")
         self.assertIsNone(current.sub("profiles")["frame"])
 
+    def test_subagent_env_blocks_any_submission(self):
+        os.environ["DF_SUBAGENT"] = "1"
+        with self.assertRaises(SystemExit) as caught:
+            self.submit()
+        self.assertIn("子代理", str(caught.exception))
+        self.client.s.post.assert_not_called()
+        self.assertEqual(self.client.ledger(), [])
+
+    def test_collected_and_submitted_records_carry_hashes(self):
+        import hashlib
+        frame = self.root / "frame.png"
+        frame.write_bytes(b"\x89PNGframe")
+        video = self.root / "V_S01_t1.mp4"
+        self.client.s.post.return_value.json.return_value = {"id": "job-v"}
+        self.client.wait_job = Mock(return_value={"id": "job-v"})
+        self.client.rget = Mock(return_value=Mock(content=b"\x00\x00\x00\x18ftypmp42fixture"))
+        self.client.video(" prompt ", video, frame, profile="p", res="768p", name="V_S01_t1")
+        sub = next(r for r in self.client.ledger() if r.get("status") == "submitted")
+        col = next(r for r in self.client.ledger() if r.get("status") == "collected")
+        self.assertEqual(sub["frame_sha256"], hashlib.sha256(frame.read_bytes()).hexdigest())
+        self.assertEqual(sub["source_prompt_sha256"], hashlib.sha256(b"prompt").hexdigest())
+        self.assertEqual(col["sha256"], hashlib.sha256(video.read_bytes()).hexdigest())
+
     def test_payload_uses_explicit_values(self):
         self.submit(profile="custom-profile", res="custom-size")
         payload = self.client.s.post.call_args.kwargs["json"]

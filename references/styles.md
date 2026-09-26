@@ -31,8 +31,8 @@
 
 - **怎么选**：先看题材，再看预算和后端。都市打脸、职场、校园、豪门默认 `live_modern`；朝堂、宅斗选 `live_period`；修仙、宗门、御剑在真人和动画之间选——要"像电视剧"选 `live_xianxia`，要大场面法术、飞行、群战而且不怕观众觉得是动画，选 `guoman_3d`；点子来自日系轻小说、校园异能选 `anime_cel`；来自韩国条漫、复仇重生、霸总爽文，要竖屏精修脸选 `manhwa`；要科幻、末日、怪物、机甲又想保留写实质感选 `cg_realistic`。判不出选 `live_modern`，写进决策记录。
 - **全剧锁定一种**：立项定下后，全剧所有身份图、底板、道具图、起始帧都用同一句 `style`，不在单集、单场、单镜里换风格（回忆、梦境也不换；需要区分就改色调和光，不改画风）。中途确实要换，只能整剧回到阶段 D 重出全部参考图，写进决策记录。
-- **风格句只放一次**：起始帧提示词的结尾 `Style: …` 就是 `drama.json.style` 原句；分镜里不再堆别的风格词。风格词不能顶替身份、地理、尺度、构图事实（[套件] 漫剧关键帧词表：事实先于审美词）。
-- **视频提示词也要带风格**（只锁起始帧不够）：图片用 `style`，视频用下表的"视频保持句"，两句互不替代。视频保持句只点名"整条镜头必须保住的画面质感"和拒绝项，不复述首帧里已经画出的外观。做法：立项时按画风选下表的视频头句，把视频保持句接在它后面，一起写进 `drama.json` 的 `video_prompt_head`，全剧不变。**非真人画风的头句和保持句只以本表为准**（video-prompts-h3 §9 只引用本表，不另写一份）。`video-prompts-h3.md` §9 的实战头句（handheld、realistic human behaviour）**只适用于 live_* 和 `cg_realistic`**；非真人画风写这两个词，会把动画往真人方向拉。[官方][社区]
+- **风格句只放一次**：起始帧提示词的结尾 `Style: …` 就是 `drama.json.style` 原句；分镜里不再堆别的风格词。风格句和视频头句只写画风质感和实时速度，不写运镜许可和特效、大气词（粒子、雾、体积光）：写进全剧固定句，就等于每一镜都许可了运镜和特效；需要时只在那一镜正文写（video-prompts-general §2b 一）。下文各画风关键词里的这类词同理。风格词不能顶替身份、地理、尺度、构图事实（[套件] 漫剧关键帧词表：事实先于审美词）。
+- **视频提示词也要带风格**（只锁起始帧不够）：图片用 `style`，视频用下表的"视频保持句"，两句互不替代。视频保持句只点名"整条镜头必须保住的画面质感"和拒绝项，不复述首帧里已经画出的外观。做法：立项时按画风选下表的视频头句，把视频保持句接在它后面，一起写进 `drama.json` 的 `video_prompt_head`，全剧不变。**非真人画风的头句和保持句只以本表为准**（video-prompts-h3 §9 只引用本表，不另写一份）。`video-prompts-h3.md` §9 的实战头句（realistic human behaviour）**只适用于 live_* 和 `cg_realistic`**；非真人画风写这个词（以及 handheld），会把动画往真人方向拉。任何画风的头句都不写运镜和特效词（G36）。[官方][社区]
 
   | preset | 视频头句（接在 `integrated_multimodal_description: [Shot 1]` 之后） | 视频保持句 |
   |---|---|---|
@@ -40,15 +40,15 @@
   | `live_period` | 同上 | `Silk and brocade move with real weight; candle and window light stay warm and motivated; faces keep real skin texture throughout.` |
   | `live_xianxia` | 同上 | `Live-action drama look throughout; the magic glow stays restrained and lights nearby faces and surfaces; faces never morph.` |
   | `cg_realistic` | 同上 | `Photoreal film-VFX look throughout; heavy objects move with weight; no game-cutscene smoothness, no rubbery motion.` |
-  | `anime_cel` | `Single continuous take, no cuts, starting exactly from the opening frame. Locked camera with animation timing: short holds between key poses, eyes blink, the mouth moves in simple shapes with the words, hair tips and clothing edges sway. No subtitles, captions or on-screen text at any time.` | `The whole take stays a 2D TV-anime frame: constant thin ink outlines, flat cel colours with one hard shadow layer, painted background unchanged; it never turns 3D or photographic.` |
-  | `manhwa` | `Single continuous take, no cuts, starting exactly from the opening frame. The camera pushes in with small amplitude at slow speed. Only small refined movements: hair strands, eyelashes, fabric edges and drifting light specks move, the mouth moves in simple shapes with the words. No subtitles, captions, speech bubbles, panel borders or on-screen text at any time.` | `The whole take stays a polished webtoon illustration: thin clean line art, soft gradient shading, luminous skin; no speech bubbles or panel borders appear.` |
-  | `guoman_3d` | `Single continuous take, no cuts, starting exactly from the opening frame. Smooth motivated camera. Stylized 3D character animation with weighty body mechanics; hair strands and silk layers follow every movement. No subtitles, captions or on-screen text at any time.` | `The whole take stays a stylized Chinese 3D animation frame: individually rendered hair strands, layered silk, consistent rim light; it never turns photographic or flat 2D.` |
+  | `anime_cel` | `Single continuous take, no cuts, no transitions, starting exactly from the opening frame. Real-time animation timing: short holds between key poses, eyes blink, the mouth moves in simple shapes with the words, hair tips and clothing edges sway. No subtitles, captions or on-screen text at any time.` | `The whole take stays a 2D TV-anime frame: constant thin ink outlines, flat cel colours with one hard shadow layer, painted background unchanged; it never turns 3D or photographic.` |
+  | `manhwa` | `Single continuous take, no cuts, no transitions, starting exactly from the opening frame. Real-time speed. Only small refined movements: hair strands, eyelashes and fabric edges move, the mouth moves in simple shapes with the words. No subtitles, captions, speech bubbles, panel borders or on-screen text at any time.` | `The whole take stays a polished webtoon illustration: thin clean line art, soft gradient shading, luminous skin; no speech bubbles or panel borders appear.` |
+  | `guoman_3d` | `Single continuous take, no cuts, no transitions, starting exactly from the opening frame. Real-time animation timing. Stylized 3D character animation with weighty body mechanics; hair strands and silk layers follow every movement. No subtitles, captions or on-screen text at any time.` | `The whole take stays a stylized Chinese 3D animation frame: individually rendered hair strands, layered silk, consistent rim light; it never turns photographic or flat 2D.` |
 
 - **起始帧镜头词按画风换**：动漫类（`anime_cel`、`manhwa`）不写焦段、bokeh、cinematic lighting、volumetric、4k 这类摄影与渲染词，它们会把 2D 拉成 3D；具体写法见 [storyboard-keyframes.md](storyboard-keyframes.md) §6b 第 8 项的补充说明。[社区]
 - **题材色调（可选，与画风正交）**：悬疑、赛博朋克这类题材改的是光、色和环境动态，不是渲染方式，不新增 preset。需要时把下面一句接在 `style` 句的色彩部分，和 `style` 一起全剧锁定。[社区][推断]
   - 悬疑惊悚：`one hard visible light source, deep shadows yet faces and clues stay readable, cold desaturated palette, high contrast`。镜头多用慢推、证据特写，手持只给慌乱的时刻；环境动态写灯管闪一下、门缝影子移动、滴水。最常见的翻车是太暗、脸和证据看不清。
   - 赛博朋克：`neon glow from off-frame signs in cyan and magenta, wet reflective ground, thin rain, signs carry only abstract shapes`。主色只用两种，第三种只给强调物；环境动态写雨丝、全息广告闪、井盖冒蒸汽。霓虹不能把脸染到认不出，招牌不出字。
-- **风格定下前先各试一镜**：候选画风在 H3 上各出 1 张起始帧 + 1 条 5 秒视频，看画风在视频里保不保得住，再锁定，结论写进决策记录。"非真人画风在 H3 上会往真人漂"目前是推断，MiniMax 自述 Hailuo 2.3 起加强了动漫、水墨类风格，以本项目实测为准。[官方][推断]
+- **风格定下前先各试一镜**：候选画风在 H3 上各出 1 张起始帧 + 1 条 5 秒视频，看画风在视频里保不保得住，再锁定；决策记录写试镜文件路径和每条视频从第几秒开始漂（没漂写"全程保住"）。没有授权出试镜时写"未试镜"，不写"已验证"。"非真人画风在 H3 上会往真人漂"目前是推断，MiniMax 自述 Hailuo 2.3 起加强了动漫、水墨类风格，以本项目实测为准。[官方][推断]
 - 机械门：`style_preset` 没写或不在七个值里报 G33（warn）。
 
 ## 1b. Look Development 试镜：把画风变成可比较的代表帧
@@ -110,7 +110,7 @@ Candid 35mm film still from a live-action TV drama, shot on location, available 
 
 关键词：`live-action TV drama still`、`shot on location`、`available light`、`35mm`、`natural film grain`、`real skin texture`、`true-to-life proportions`。
 
-**视频提示词写法**：动作写日常可演的动词（推、抢、递、坐下、站起、把纸推过去）；表情写肌肉动作并带否定限定（video-prompts-general §5）；运镜默认 `subtle handheld drift`；环境动态写路过的人、日光灯闪一下、窗帘被风吹、空调出风吹动文件角。
+**视频提示词写法**：动作写日常可演的动词（推、抢、递、坐下、站起、把纸推过去）；表情写肌肉动作并带否定限定（video-prompts-general §5）；运镜默认锁定，憋屈、被围这类要不稳感的镜在正文写 `subtle handheld drift`；环境动态写路过的人、日光灯闪一下、窗帘被风吹、空调出风吹动文件角。
 
 **声音与台词腔调**：日常口语，短句，被抢被打当场出声；配音情绪真实但不播音腔，喊叫句要喊出来（不是提高音调念）。
 
@@ -121,7 +121,7 @@ Candid 35mm film still from a live-action TV drama, shot on location, available 
 - 背景空无一人、完全静止 [自测]。
 - 过度美颜、磨皮、网红脸：写 `real unglamorous skin`，不写 `beautiful`、`flawless`。
 
-**后端注意点**：推镜会糊，需要推近的镜起始帧直接出到推完的景别 [自测]；H3 用 `base50_sol`，台词口型最好但动作容易偷懒，动作写在第一拍；Seedance 写中文自然指令、用 `@图片1` 逐项声明参考职责，时间段用整数秒 [套件]。
+**后端注意点**：推镜会糊，需要推近的镜起始帧直接出到推完的景别 [自测]；H3 的 50 步档（实测项目用的档位；用哪一档按 drama.json `profiles`，由用户定）台词口型最好但动作容易偷懒，动作写在第一拍；Seedance 写中文自然指令、用 `@图片1` 逐项声明参考职责，时间段用整数秒 [套件]。
 
 ## 4. `live_period` 真人古装 / 宫廷
 
@@ -172,7 +172,7 @@ Cinematic still from a live-action Chinese historical costume drama, practical s
 **风格句**
 
 ```text
-Cinematic still from a live-action Chinese xianxia fantasy drama, real actors in layered flowing robes, misty mountain sect architecture, soft diffused natural light with thin drifting mist, restrained practical-looking magic glow that lights nearby faces and surfaces, shallow depth of field, subtle film grain, true-to-life human proportions, nobody looks at the camera, not a video-game render, not 3D animation, not anime, no plastic skin, no text, no talisman characters, no watermark.
+Cinematic still from a live-action Chinese xianxia fantasy drama, real actors in layered flowing robes, mountain sect architecture, soft diffused natural light, any magic glow stays restrained and practical-looking and lights nearby faces and surfaces, shallow depth of field, subtle film grain, true-to-life human proportions, nobody looks at the camera, not a video-game render, not 3D animation, not anime, no plastic skin, no text, no talisman characters, no watermark.
 ```
 
 关键词：`live-action xianxia drama`、`flowing layered robes`、`drifting mist`、`spirit light`、`glowing particles`、`restrained VFX`、`magic glow casts colored light on`。
@@ -219,9 +219,9 @@ Japanese TV anime style frame, clean cel shading with two-tone hard-edged shadow
 关键词：`TV anime frame`、`cel shading`、`crisp line art`、`flat colors`、`hard-edged shadow`、`painted background`、`rim light`、`consistent character design`。
 
 **视频提示词写法：表情符号化与口型**
-- **表情符号化**：动漫的情绪靠可识别的符号动作，写具体形状：`her eyes turn into wide white circles for a beat`（震惊）、`a large sweat drop slides down the side of his head`（尴尬）、`his cheeks flush with diagonal pink lines`（害羞）、`her shoulders shoot up and her hair bristles`（炸毛）。一镜只用一个符号，不叠。
+- **表情符号化**：动漫的情绪靠可识别的符号动作，写具体形状：`her eyes turn into wide white circles for half a second`（震惊）、`a large sweat drop slides down the side of his head`（尴尬）、`his cheeks flush with diagonal pink lines`（害羞）、`her shoulders shoot up and her hair bristles`（炸毛）。一镜只用一个符号，不叠。
 - **口型**：动漫口型是开合几档，不是真人唇形；写 `simple anime mouth flaps in time with speech, three mouth shapes, eyes blink once`；不写 `realistic lip sync`（会生成出真人唇部，画风崩）。
-- **动作**：少帧感的动作要写"停顿 + 爆发"：`he freezes for a beat, then snaps his head toward screen-left`。
+- **动作**：少帧感的动作要写"停顿 + 爆发"：`he freezes for half a second, then snaps his head toward screen-left`（写具体时长不写 beat；台词句中句后不写停顿，E31）。
 - **环境动态**：窗外云慢慢移、樱花瓣飘、窗帘鼓起、黑板前粉笔灰、远处操场上奔跑的小人（虚、少）。
 - 头部、发型在转头时不变形：目标模型支持负面提示时，负向加 `off-model face, inconsistent line thickness, morphing hair`（H3 没有负面通道，不加）。
 
@@ -252,7 +252,7 @@ Japanese TV anime style frame, clean cel shading with two-tone hard-edged shadow
 **风格句**
 
 ```text
-High-end Chinese 3D animated xianxia series frame, stylized but grounded 3D characters with detailed hair strands and layered silk robes, volumetric light through drifting mist, rim light on the characters, glowing spirit particles, rich cinematic color grading, consistent head-to-body ratio of about 7.5, architecture and props at real-world scale, nobody looks at the camera, not flat 2D cel shading, not photographic live action, no plastic toy look, not low-poly, no text, no runes, no watermark.
+High-end Chinese 3D animated xianxia series frame, stylized but grounded 3D characters with detailed hair strands and layered silk robes, rim light on the characters, rich cinematic color grading, consistent head-to-body ratio of about 7.5, architecture and props at real-world scale, nobody looks at the camera, not flat 2D cel shading, not photographic live action, no plastic toy look, not low-poly, no text, no runes, no watermark.
 ```
 
 关键词：`Chinese 3D animated xianxia`、`stylized 3D characters`、`volumetric light`、`rim light`、`drifting mist`、`spirit particles`、`layered silk robes`、`cinematic color grading`。
@@ -316,7 +316,7 @@ Korean webtoon manhwa style illustration frame, polished digital painting with c
 **风格句**
 
 ```text
-Photorealistic cinematic CG frame, high-end film visual effects quality, physically based materials and global illumination, volumetric haze, realistic human proportions and real-world scale for every object, motivated light sources visible in the scene, subtle film grain and anamorphic lens character, nobody looks at the camera, not a video-game cutscene, no plastic skin, no toy-like materials, not anime, no text, no UI, no HUD, no watermark.
+Photorealistic cinematic CG frame, high-end film visual effects quality, physically based materials and global illumination, realistic human proportions and real-world scale for every object, motivated light sources visible in the scene, subtle film grain and anamorphic lens character, nobody looks at the camera, not a video-game cutscene, no plastic skin, no toy-like materials, not anime, no text, no UI, no HUD, no watermark.
 ```
 
 关键词：`photorealistic CG`、`film VFX quality`、`physically based rendering`、`global illumination`、`volumetric haze`、`anamorphic`、`motivated lighting`。
@@ -345,7 +345,7 @@ Photorealistic cinematic CG frame, high-end film visual effects quality, physica
 
 两个后端都按 [video-prompts-general.md](video-prompts-general.md) 的通则写（节拍、环境动态、表情避坑、接触同框、时序以实测为准）；以后接入别的图生视频模型也一样，只新增它的方言文件。
 
-同一剧里混用后端时，风格句不变；如果某后端让画风漂移（例如 H3 把动漫人物拍成真人），那一类镜头统一换后端，不在同一场里混。
+同一剧里混用后端时，风格句不变；如果某后端让画风漂移（例如 H3 把动漫人物拍成真人），列出受影响的镜和 2–3 个候选后端交用户定（硬约束 1b），不自己换；定了之后那一类镜头统一换，不在同一场里混。
 
 ## 11. 风格审查问题
 
@@ -468,7 +468,7 @@ G33 只认七个 preset 值。做水墨或 Q 版时，`style_preset` 借最近�
 | A 立项 | 选 preset、锁风格句与视频头句（§1）、必要时做 §1b 试镜 | 口型策略、运动预算给哪类镜、混合层分工、水墨着彩与留白策略、Q 版安全边界 |
 | D 视觉设定 | 锚点、锁、尺度（visual-assets） | 实拍的造型状态版本；二维的色块与阴影分区；三维的比例与 rig 边界；精修类的角色差异清单与背景差档；水墨的不可洇化边缘；Q 版的头身比与放大记号；异质身体的物理卡 |
 | E 分镜与提示词 | 职责、起止、接触同框（storyboard-keyframes） | 二维与精修：本镜可动层；三维：接触点、重量结果、运镜动机；水墨：会动的墨迹及其职责；Q 版：这一镜唯一的因果单位 |
-| 审查 | §11 第 1–8 问 | §11 第 9–10 问 |
+| 审查 | review-checklists §E5 第 1–8 问 | §E5 第 9 问及 §13 各形态自检 |
 
 ## 来源（2026-09-25 调研补充）
 
