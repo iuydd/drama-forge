@@ -504,7 +504,8 @@ def main() -> int:
     require((root / "EP001/剪辑单.md").exists(), "剪辑单")
     sheet_txt = (root / "EP001/剪辑单.md").read_text(encoding="utf-8")
     require("房间音 -48 dBFS 整片" in sheet_txt and "音效 1 个" in sheet_txt, "没有 beds 时整片垫房间音、sfx 叠进去")
-    require("AI 标识：有（「本片由AI生成」" in sheet_txt or "找不到字体" in sheet_txt, f"模板默认 ai_label，剪辑单记 AI 标识：{sheet_txt[-200:]}")
+    want_label = "AI 标识：无" if pr.cfg.get("ai_label") is None else "AI 标识：有"   # 模板默认 ai_label: null（用户 2026-09-26：没让加就不加）
+    require(want_label in sheet_txt or "找不到字体" in sheet_txt, f"剪辑单按 ai_label 记 AI 标识（期望「{want_label}」）：{sheet_txt[-200:]}")
     require("节奏：平均镜长" in sheet_txt and "面板：1 个，主题 tech" in sheet_txt, f"剪辑单记节奏统计与面板：{sheet_txt[-400:]}")
     passed += 1
 

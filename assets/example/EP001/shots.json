@@ -10,6 +10,32 @@
       "axis": "遥坐桌角面朝画左；三上坐主位面朝画右",
       "plates": [
         "IMG-PLATE-MEETING"
+      ],
+      "must_show": [
+        {
+          "id": "MS1",
+          "fact": "三上亲手用红笔划掉署名栏里的名字，笔被扔到桌上",
+          "shots": [
+            "EP001-S02"
+          ],
+          "kind": "action"
+        },
+        {
+          "id": "MS2",
+          "fact": "遥放下笔、不再争署名，把承认权当面推回给三上",
+          "shots": [
+            "EP001-S01"
+          ],
+          "kind": "state"
+        },
+        {
+          "id": "MS3",
+          "fact": "三上当面嘲笑外包，认定没有遥也照样运转",
+          "shots": [
+            "EP001-S03"
+          ],
+          "kind": "identity"
+        }
       ]
     },
     {
@@ -17,6 +43,16 @@
       "axis": "同 SC001",
       "plates": [
         "IMG-PLATE-MEETING"
+      ],
+      "must_show": [
+        {
+          "id": "MS4",
+          "fact": "遥点出上周已有一笔承认料汇款，三上此刻没有回答",
+          "shots": [
+            "EP001-S04"
+          ],
+          "kind": "loss"
+        }
       ]
     }
   ],
@@ -80,6 +116,9 @@
       "continuity": [
         "笔在桌上",
         "咖啡没动"
+      ],
+      "must_show_ids": [
+        "MS2"
       ]
     },
     {
@@ -110,6 +149,9 @@
       "continuity": [
         "署名被划掉",
         "红笔在桌上"
+      ],
+      "must_show_ids": [
+        "MS1"
       ]
     },
     {
@@ -170,6 +212,9 @@
       ],
       "continuity": [
         "红笔已扔在桌上"
+      ],
+      "must_show_ids": [
+        "MS3"
       ]
     },
     {
@@ -222,6 +267,9 @@
       ],
       "continuity": [
         "咖啡杯在桌上"
+      ],
+      "must_show_ids": [
+        "MS4"
       ]
     }
   ],

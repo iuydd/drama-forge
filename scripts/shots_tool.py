@@ -8,7 +8,7 @@
   shots_tool.py check-refs <项目>                 参考图门 G18–G20、G34（身份图/底板/道具图提示词、雷同、尺度锚点；头肩图 -FACE 免全身与身高、同人不比雷同）
   shots_tool.py build  <项目> <EP>                只写了 video_body/soundscape 的镜头，拼出 H3 三段 video_prompt
 
-门的编号 G00–G45（见 references/pipeline-contract.md §7），分 error / warn 两级；error 必须修，warn 由写作者判断后
+门的编号 G00–G49（见 references/pipeline-contract.md §7），分 error / warn 两级；error 必须修，warn 由写作者判断后
 可在 shot 里用 "waive": ["G05"] 明确豁免。每次 check 追加一行 脚本/gates.jsonl。
 """
 from __future__ import annotations
@@ -78,6 +78,15 @@ LANG_TAGS = {"ja": ("japanese",), "zh": ("chinese", "mandarin", "cantonese"), "e
 KANA_RE = re.compile(r"[\u3040-\u30ff]")
 HAN_RE = re.compile(r"[\u4e00-\u9fff]")
 READABLE_TEXT_RE = re.compile(r"\b(reads?|reading|text says|says ['\"]|written|lettering|letters spell|caption|subtitle|sign(?:board)? (?:that )?says|headline)\b", re.I)
+# G46/G47 必拍事实 must_show（storyboard-keyframes §2e）
+MUST_SHOW_KINDS = ("count", "action", "state", "loss", "identity")
+NUMBER_RE = re.compile(r"\d|\b(?:one|two|three|four|five|six|seven|eight|nine|ten|eleven|twelve|thirteen|fourteen|fifteen|sixteen|seventeen|eighteen|nineteen|twenty|dozen|single|pair)\b", re.I)
+# G48/G49 默认阈值；drama.json 的 gate_limits 可覆盖（screenplay §5b3、storyboard-keyframes §8c）
+GATE_LIMITS_DEFAULT = {"ability_explain_shots": 2, "ability_explain_seconds": 12.0, "recap_window": 30.0,
+                       "recap_explain_shots": 1, "talk_only_ratio": 0.5, "talk_only_min_shots": 3}
+# G49 承接对方行为、改变局面的可见动作或反应（motion 里出现任一即不算"只说不做"）
+REACT_RE = re.compile(r"接过|接住|夺|抢|推|拽|拉住|拉开|按住|按下|抓|攥|握住|松开|递|塞给|扔|摔|砸|踢|拍|指向|指着|举起|拿起|放下|放回|合上|打开|掀|撕|起身|站起|坐下|后退|退后|上前|逼近|凑近|转身|侧身|别过|回头|躲|挡|拦|扶|一摊|摊手|抬手|挥|点头|摇头|低头|僵|愣|笑容.{0,2}(?:停|收|凝|僵)|收起笑|变脸|皱眉|咬牙|瞪|避开|打断|鞠躬|跪|冲|扑|撞|让开"
+                      r"|\b(?:grab|push|shove|pull|hand(?:s|ed)? over|slam|point|stand(?:s)? up|step(?:s)? (?:back|forward)|turn(?:s)? away|nod|shake(?:s)? (?:his|her) head|freez|flinch|recoil|close(?:s)? the|open(?:s)? the)", re.I)
 
 
 def scene_state_issues(shots: list[dict]) -> list[dict]:
@@ -117,6 +126,13 @@ class Findings:
 
 def _waived(shot: dict, code: str) -> bool:
     return code in (shot.get("waive") or [])
+
+
+def _planned_use(sh: dict) -> float:
+    """计划取用秒数：motion/duty/continuity 里写的「取用约 Xs」取最小值，没写按整条 seconds（与 G42 同口径）。"""
+    txt = " ".join([str(sh.get("motion") or ""), str(sh.get("duty") or "")] + [str(x) for x in sh.get("continuity") or []])
+    vals = [float(x) for x in USE_PLAN_RE.findall(txt)]
+    return min(vals) if vals else float(sh.get("seconds") or 0)
 
 
 def check(project: Project, ep: str) -> Findings:
@@ -523,6 +539,80 @@ def check(project: Project, ep: str) -> Findings:
                 F.add("G32", "warn", sh.get("id"), f"「{item}」没有任何镜在 setup_for 里铺垫；观众看不到它从哪来（凭空出现）")
             elif min(where) >= i:
                 F.add("G32", "warn", sh.get("id"), f"「{item}」的铺垫镜 {shots[min(where)].get('id')} 在本镜之后；已声明的预先披露依赖应在本镜之前")
+    # G46 必拍事实：scenes[].must_show 每条都要有镜头 must_show_ids 承担；shots 指向的镜要存在；删镜后承担镜仍在 cut_order
+    in_cut = set(data["cut_order"]) if isinstance(data.get("cut_order"), list) and data.get("cut_order") else {s_.get("id") for s_ in shots}
+    by_sid = {s_.get("id"): s_ for s_ in shots}
+    facts: dict[str, dict] = {}
+    for sc in data.get("scenes") or []:
+        for f_ in sc.get("must_show") or []:
+            if not isinstance(f_, dict) or not f_.get("id") or not str(f_.get("fact") or "").strip():
+                F.add("G46", "error", None, f"{sc.get('id')} 的 must_show 条目要写 id 和 fact：{f_}")
+                continue
+            if f_["id"] in facts:
+                F.add("G46", "error", None, f"must_show id {f_['id']} 在本集重复")
+                continue
+            facts[f_["id"]] = {**f_, "_scene": sc.get("id")}
+            if f_.get("kind") and f_["kind"] not in MUST_SHOW_KINDS:
+                F.add("G46", "warn", None, f"{f_['id']} 的 kind「{f_['kind']}」不在 {'/'.join(MUST_SHOW_KINDS)} 里")
+            for t in f_.get("shots") or []:
+                if t not in by_sid:
+                    F.add("G46", "error", None, f"{f_['id']}「{f_['fact'][:16]}」的 shots 指向不存在的镜 {t}")
+                elif f_["id"] not in (by_sid[t].get("must_show_ids") or []):
+                    F.add("G46", "warn", t, f"{f_['id']} 的 shots 列了本镜，但本镜 must_show_ids 没写 {f_['id']}；承担关系两边写一致")
+    carriers: dict[str, list[str]] = {}
+    for sh in shots:
+        for mid in sh.get("must_show_ids") or []:
+            if mid not in facts:
+                F.add("G46", "error", sh.get("id"), f"must_show_ids 里的 {mid} 不在任何 scenes[].must_show 里")
+            else:
+                carriers.setdefault(mid, []).append(sh.get("id"))
+    for mid, f_ in facts.items():
+        who = carriers.get(mid) or []
+        if not who:
+            F.add("G46", "error", None, f"{f_['_scene']} 的必拍事实 {mid}「{f_['fact'][:20]}」没有任何镜头的 must_show_ids 承担；补镜或把它写进承担镜，不能靠台词带过")
+        elif not any(x in in_cut for x in who):
+            F.add("G46", "error", None, f"必拍事实 {mid}「{f_['fact'][:20]}」的承担镜 {who} 都不在 cut_order 里；删镜删掉了因果证据，恢复一镜或换承担镜")
+        # G47 数量类事实：承担镜的起始帧提示词要把数字写进去（数量与排布写死，目检时逐个数）
+        if f_.get("kind") == "count":
+            for x in sorted(set(who) | set(f_.get("shots") or [])):
+                sh = by_sid.get(x)
+                if sh and not _waived(sh, "G47") and not NUMBER_RE.search(sh.get("frame_prompt") or ""):
+                    F.add("G47", "warn", x, f"承担数量事实 {mid}「{f_['fact'][:20]}」，frame_prompt 里没有数字；把数量和排布写死（exactly ten boxes, five on the top row and five on the bottom row），起始帧目检逐个数")
+
+    # G48 能力规则重复解释：同集 explains_ability 镜累计超限；第二集起开头窗口内不许超过 1 镜
+    lim = {**GATE_LIMITS_DEFAULT, **(project.get("gate_limits") or {})}
+    t_cursor, early, expl = 0.0, [], []
+    for sh in shots:
+        if sh.get("id") not in in_cut:
+            continue
+        use = _planned_use(sh)
+        if sh.get("explains_ability") and not _waived(sh, "G48"):
+            expl.append((sh.get("id"), use))
+            if t_cursor < float(lim["recap_window"]):
+                early.append(sh.get("id"))
+        t_cursor += use
+    total_expl = sum(u for _, u in expl)
+    if len(expl) > int(lim["ability_explain_shots"]) or total_expl > float(lim["ability_explain_seconds"]) + 1e-6:
+        F.add("G48", "warn", None, f"本集 {len(expl)} 镜在解释/确认能力规则（{', '.join(x for x, _ in expl)}，计划约 {total_expl:.0f}s），超过 {lim['ability_explain_shots']} 镜或 {lim['ability_explain_seconds']:.0f}s；"
+              "已讲清的规则后面只留一句提醒，新角色确认 ≤1 句（screenplay §5b3）")
+    ep_no = int(m_.group(1)) if (m_ := re.match(r"EP(\d+)", ep)) else 1
+    if ep_no >= 2 and len(early) > int(lim["recap_explain_shots"]):
+        F.add("G48", "warn", None, f"第 {ep_no} 集开头 {lim['recap_window']:.0f}s 内有 {len(early)} 镜解释能力（{', '.join(early)}）；跨集回顾 ≤5 秒、最多 1 镜，观众上一集已经看过")
+
+    # G49 只说不做：场内有台词的人物镜，motion 里没有承接对方行为的动作或反应的比例过高
+    talk_by_scene: dict[str, list[tuple[str, bool]]] = {}
+    for sh in shots:
+        if sh.get("kind", "person") != "person" or not sh.get("dialogue") or sh.get("audio_from") or sh.get("id") not in in_cut:
+            continue
+        acts = bool(REACT_RE.search(str(sh.get("motion") or ""))) or _waived(sh, "G49")
+        talk_by_scene.setdefault(sh.get("scene"), []).append((sh.get("id"), acts))
+    for sc_id, rows in talk_by_scene.items():
+        if "G49" in ((scenes.get(sc_id) or {}).get("waive") or []) or len(rows) < int(lim["talk_only_min_shots"]):
+            continue
+        idle = [x for x, a in rows if not a]
+        if len(idle) / len(rows) > float(lim["talk_only_ratio"]) + 1e-9:
+            F.add("G49", "warn", None, f"{sc_id}：{len(idle)}/{len(rows)} 个对白镜只说不做（{', '.join(idle)}）；motion 里写他怎样接住对方上一个行为、做了什么改变局面（夺过、合上、后退、笑容僵住），不是轮流说明情况（storyboard-keyframes §8c）")
+
     # G33 风格锁定：drama.json 的 style_preset 七选一，全剧一种
     preset = project.get("style_preset")
     if not preset:
@@ -735,6 +825,9 @@ def render(project: Project, ep: str) -> list[Path]:
         L += ["本集说明：", *[f"- {n}" for n in data["notes"]], ""]
     for sc in data.get("scenes") or []:
         L.append(f"- 场景 {sc.get('id')}：轴线 {sc.get('axis', '未写')}；底板 {', '.join(sc.get('plates') or []) or '无'}")
+        for f_ in sc.get("must_show") or []:
+            if isinstance(f_, dict):
+                L.append(f"  - 必拍 {f_.get('id')}（{f_.get('kind', '?')}）：{f_.get('fact', '')}；承担镜 {', '.join(f_.get('shots') or []) or '未写'}")
     L.append("")
     for sh in shots:
         sid = sh["id"]
@@ -764,6 +857,8 @@ def render(project: Project, ep: str) -> list[Path]:
               f"- 连续性：{'；'.join(sh.get('continuity') or []) or '无'}",
               *([f"- 铺垫（本镜交代来处）：{'、'.join(map(str, sh['setup_for']))}"] if sh.get("setup_for") else []),
               *([f"- 需要前面已铺垫：{'、'.join(map(str, sh['requires_setup']))}"] if sh.get("requires_setup") else []),
+              *([f"- 承担必拍事实：{'、'.join(map(str, sh['must_show_ids']))}"] if sh.get("must_show_ids") else []),
+              *(["- 解释能力规则：是（G48 计数）"] if sh.get("explains_ability") else []),
               f"- 起始帧：{fpath.relative_to(project.root) if fpath else '尚未生成'}",
               ""]
     p = project.ep_dir(ep) / "分镜.md"
