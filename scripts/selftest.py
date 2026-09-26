@@ -444,6 +444,12 @@ def main() -> int:
     by["EP001-S01"]["single_reason"] = "遥在 S01 是对满桌人宣布放弃署名（剧本「名前は消していいです」），上一镜 S02 已建立全桌站位"
     sp.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
     require(("G53", "EP001-S01") not in {(f["code"], f["shot"]) for f in check(pr, "EP001").errors()}, "写了具体 single_reason 不报 G53")
+    from shots_tool import Findings as _F, loophole_findings
+    _bad = _F(); loophole_findings(_bad, "X", "[Shot 1] Locked-off camera. At 0.5 seconds she steps toward the door at screen right, then turns left. She slips and falls backward and is carried out of the frame.", 5)
+    _codes = {f["msg"][:3] for f in _bad.warns()}
+    require({"L01", "L02", "L03", "L05", "L06"} <= _codes, f"G54 该报的漏洞都报出来（实际 {sorted(_codes)}）")
+    _ok = _F(); loophole_findings(_ok, "X", "[Shot 1] Locked-off camera, no pan, no tilt, no zoom, no cuts. At 1.2 seconds her shoe shoots out across three tiles toward the vanity side of the frame in a fraction of a second and she slams down hard onto the tile.", 5)
+    require(not _ok.warns(), f"写全了的提示词不报 G54（实际 {[f['msg'][:3] for f in _ok.warns()]}）")
     sp.write_text(good_sp, encoding="utf-8")
     ep2 = root / "EP002"
     ep2.mkdir(exist_ok=True)

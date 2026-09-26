@@ -142,7 +142,7 @@ DECISION_RE = re.compile(r"\bD-\d+\b")
 FORMERLY_WAIVED_ERRORS = ("G02", "G06", "G10", "G23", "G26")
 # 只有这些 warn 门认 waive；其余门号写进 waive 一律不生效并报 G51
 WAIVABLE_GATES = {"G03", "G05", "G08", "G13", "G17", "G21", "G27", "G29", "G30", "G31", "G32", "G34", "G35",
-                  "G36", "G38", "G40", "G42", "G43", "G44", "G45", "G47", "G48", "G49"}
+                  "G36", "G38", "G40", "G42", "G43", "G44", "G45", "G47", "G48", "G49", "G54"}
 DECISION_ROW_RE = re.compile(r"^\|\s*(D-\d+)\s*\|", re.M)   # 决策记录表里真实的一行（模板占位【D-001】不算）
 
 
@@ -276,6 +276,59 @@ def waive_findings(F: "Findings", shots: list[dict], scenes: list[dict], project
                 w["_ok"] = True
                 waived.append([oid, gate, reason, dec])
     F.waived = waived
+
+
+# G54 提示词漏洞机械检查：每条对应 references/prompt-loopholes.md 的编号；只报 warn，逐条改或按总则 7 豁免
+_LR_RE = re.compile(r"\b(left|right)\b", re.I)
+_LR_OK_RE = re.compile(r"(screen[- ]|\b(?:his|her|their|its|my)\s+(?:\w+\s+)?|\b(?:has|had|have|just|already|was|were)\s+)$", re.I)
+_MOVE_RE = re.compile(r"\b(skid\w*|stumbl\w*|slip(?:s|ped|ping)?|toppl\w*|lung(?:e|es|ing)|(?:she|he|they|body|feet|shoe|foot)\s+(?:\w+\s+)?slid(?:e|es|ing)?)\b", re.I)
+_QTY_RE = re.compile(r"\b(\d+(?:\.\d+)?|half|one|two|three|four|five|a few|a)[\s-]*(?:a\s+)?(cm|centimet\w*|met(?:re|er)s?|m|tiles?|steps?|strides?|paces?|inch\w*|body lengths?|arm'?s? lengths?|hand'?s? width)\b|\b\d+(?:\.\d+)?\s*(?:feet|foot)\b", re.I)
+_PHYS_RE = re.compile(r"\b(fall(?:s|ing)?\s+(?:backward|forward|down|over|off|flat|hard)|fell\b|slip(?:s|ped)\b(?!\s+(?:out|in|into|through|away|past))|skid\w*|trip(?:s|ped)\b|collaps\w*|toppl\w*|knock\w*\s+(?:over|down)|(?<!mist )(?<!smoke )(?<!light )(?<!fog )spill(?:s|ed|ing)?\b|crash(?:es|ed)?\s+(?:into|onto|down))", re.I)
+_SPEED_RE = re.compile(r"\b(fast|sudden\w*|abrupt\w*|instant\w*|fraction of a second|less than|violent\w*|hard|at once|in under|within \d|snap\w*|whip\w*)\b", re.I)
+_IMPACT_RE = re.compile(r"\b(land\w*|hit\w*|smash\w*|slam\w*|thud\w*|bounc\w*|splash\w*|crash\w*|onto)\b", re.I)
+_EXIT_RE = re.compile(r"\b(out of (?:the )?frame|leav\w* the frame|exit\w* the frame|out of shot)\b", re.I)
+_WINDOW_RE = re.compile(r"(?:^|[.;]\s+)(?:At|From|Between|By)\s+(?:about\s+)?\d+(?:\.\d+)?\s*(?:s\b|sec)", re.I)
+
+
+def loophole_findings(F: "Findings", sid: str, vp: str, seconds) -> None:
+    """G54：把攻防里反复出现、能用规则查的漏洞在分镜门里查掉（L01–L06，见 references/prompt-loopholes.md）。"""
+    text = re.sub(r"<d>.*?</d>", "", vp or "", flags=re.S)
+    body = text.split("overall_soundscape:")[0]
+    if not body.strip():
+        return
+    bad_lr = [m.group(1) for m in _LR_RE.finditer(body) if not _LR_OK_RE.search(body[max(0, m.start() - 24):m.start()])
+              and not re.match(r"\s*(?:edge|side|third|half|corner)?\s*of (?:the )?(?:frame|screen|image)", body[m.end():m.end() + 30], re.I)]
+    if bad_lr:
+        F.add("G54", "warn", sid, f"L01 方向写了裸 {sorted(set(w.lower() for w in bad_lr))}：人物对着镜头时左右会读反，改用画面里的实物做参照（朝门、背对洗手台）；非写不可写 screen-left 并在同一句写人物朝向")
+    low = body.lower()
+    if re.search(r"locked|static shot|tripod|holds a static", low):
+        miss = [w for w in ("pan", "tilt", "zoom", "cut") if not re.search(rf"\bno {w}s?\b|\bno [a-z ,]*\b{w}s?\b", low)]
+        if miss:
+            F.add("G54", "warn", sid, f"L02 写了锁机位但没封住 {miss}：锁定写全 no pan, no tilt, no shake, no reframing, no zoom, no cuts，模型会借机摇镜代替人物动作")
+    elif not re.search(r"\bcamera\b|\bshot\b", low):
+        F.add("G54", "warn", sid, "L02 摄影机一栏没写：锁定也要写（景别 + 机位高度 + no pan, no tilt, no zoom, no cuts）")
+    if _MOVE_RE.search(body) and not _QTY_RE.search(body):
+        F.add("G54", "warn", sid, "L03 有位移动作（滑、摔、推、拖、踢）但没有可量的距离：写成 across three tiles / half a metre / one full stride，否则模型只挪几厘米交差")
+    windows = len(_WINDOW_RE.findall(body))
+    try:
+        sec = float(seconds or 0)
+    except (TypeError, ValueError):
+        sec = 0
+    crowded = [s_.strip()[:60] for s_ in re.split(r"(?<=\.)\s+", body)
+               if re.match(r"(At|From|Between|By)\s+(about\s+)?\d", s_.strip())
+               and not re.search(r"\b(says|asks|shouts|whispers|replies|mutters|calls out|speaks)\b", s_)
+               and len(re.findall(r",\s*(?:and|then)\s|;\s|\bthen\b|\bwhile\b", s_)) >= 3]
+    if (sec and windows > sec) or crowded:
+        F.add("G54", "warn", sid, f"L04 时间窗里塞了多个动作（{windows} 个时间窗 / {sec:g} 秒{'；' + crowded[0] + '…' if crowded else ''}）：一条视频一个主动作、每个时间窗一个动作，多写的里面最难的会被丢掉")
+    if _PHYS_RE.search(body):
+        need = [n for n, r_ in (("速度/失控", _SPEED_RE), ("落地/撞击", _IMPACT_RE)) if not r_.search(body)]
+        if need:
+            F.add("G54", "warn", sid, f"L05 有物理动作（摔、滑、撞、掉、泼）但没写 {need}：按常识写多快、是否失控、怎么落地，否则模型用慢而可控的动作交差（滑倒拍成坐下）")
+    for m in _EXIT_RE.finditer(body):
+        sent = body[max(0, body.rfind(".", 0, m.start()) + 1):body.find(".", m.end()) if body.find(".", m.end()) > 0 else len(body)]
+        if not re.search(r"\b(edge|side|to the|toward|towards|through|past|beyond|bottom|top|up|down)\b", sent, re.I):
+            F.add("G54", "warn", sid, f"L06 终点句「{m.group(0)}」没写路径：写明从画框哪条边、以什么方式离开，否则模型让人走出去交差")
+            break
 
 
 def adversarial_findings(F: "Findings", owner: str | None, items, sources: list[str], *, code: str = "G52") -> None:
@@ -567,6 +620,8 @@ def check(project: Project, ep: str) -> Findings:
             plain = re.sub(r"<d>.*?</d>", "", body, flags=re.S)
             if re.search(r"\b(?:either|or else|alternatively)\b|\(or\b|\bor\b(?=[^.]*\b(?:maybe|possibly|optionally)\b)|或者|二选一|任选|可选", plain, re.I) and not sh.get("alternatives_ok"):
                 F.add("G22", "warn", sid, f"{label} 里像是留了分支（or / 或者 / 可选）；提示词要定稿，不给模型二选一")
+        if vp and not _waived(sh, "G54"):
+            loophole_findings(F, sid, vp, sh.get("seconds"))
 
         # G12 后期叠加
         for ov in sh.get("overlay") or []:

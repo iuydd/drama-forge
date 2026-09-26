@@ -308,6 +308,7 @@ take 从 1 起，只增不删；哪个 take 进成片由 `review.json` 决定，
 | G51 | warn | 豁免写法：旧写法 `"waive": ["G05"]`、缺 reason（≥8 字）或 decision（D-xxx）、豁免任何不在可豁免 warn 门清单里的门号（含全部 error 门）、decision 在 `项目开发/决策记录.md` 的表里没有这一行——这些豁免都不生效并逐条报出（总则第 7 条） |
 | G52 | error/warn | 恶意执行预演 `adversarial_preflight`（镜头与参考图，video-prompts-general §2b 五）：少于 3 条报 warn（`produce.py` 提交前按缺失拒绝提交）；worst 重复、缺 blocked_by、blocked_by 既不是当前提示词里的原句也不以「验收：」开头报 error |
 | G53 | error | 对话看得见对象（SKILL 11c）：有镜内台词的人物镜只写单人句又没写 `single_reason`（或少于 10 字）；同一句 `single_reason` 用在两镜；多人镜 `in_frame` 人数与 exactly N 不一致、名单里有不在 `scene_state` 在场名单的人；没写 `in_frame` 时 exactly N 多于在场人数 |
+| G54 | warn | 提示词漏洞机械检查（SKILL 11d）：逐镜查 video_prompt，按 references/prompt-loopholes.md 已升级的条目报 L01 裸写左右、L02 锁机位没写全、L03 位移没距离、L04 时间窗塞多个动作、L05 物理动作没写速度或落地、L06 出画没写路径；逐条改，确属误报按总则 7 豁免 |
 
 `shots_tool.py check-refs` 跑 G18–G20 和 G34 的参考图部分；其余在 `check`。预演粗剪（阶段 G2）和成片终验（阶段 J）不是编号门：预演按 §1 `<EP>-预演.md` 那一行查；成片终验按阶段表 J 的完成标准查（edit-and-delivery §7b）。逐条答案由模型判，不过就写「结论：REVISE」，不许写 PASS 放行。G31–G53 里的 warn：写作者判断后可以按 §4 的 `waive` 对象豁免；它们挡的是"没写"，写得对不对由目检（production-and-review §4b 细节与比例清单、§10 听感）和 reviewer 判。每次 check 追加 `脚本/gates.jsonl`（哪些门响了），无人值守时靠它看哪条规则最常被违反。
 
