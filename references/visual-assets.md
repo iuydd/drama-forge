@@ -295,7 +295,9 @@ AI 生成的底板常见"建筑上不可能"的空间：门后面还有一扇门
 
 提示词八段顺序：用途与主体 → 稳定锚点 → 版本差异 → 构图与尺度 → 材质色彩光 → 背景/空场 → 文字与功能 → 排除与保留。正文不带 JSON 键名、权重语法、模型控制词；审美词落到可观察的选择；不假精确（来源写二十多岁就不写 23 岁）。
 
-起始帧提示词的参考图分工句（实战验证过的写法）：`Picture 1 sets only the location and the lighting, as a soft out-of-focus background; do not copy any person from it. Picture 2 sets only the person's identity: keep exactly her face, hairline, skin and build; her pose, expression, clothing, framing and action follow this description, not Picture 2.` `frame_refs` 的顺序就是 Picture 编号。
+起始帧提示词的参考图分工句（2026-09-26 修订）：`Picture 1 is the real place where this happens, not a flat backdrop: the people stand inside this three-dimensional space, on its ground. Keep its layout exactly: where the solid ground is, where the edge and the drop are, where the stairs, walls, doors and landmarks stand. Every foot rests on solid ground that exists in Picture 1; nobody stands over empty space unless this description says they are falling. The camera position and framing follow this description; do not copy any person from it. Picture 2 sets only the person's identity: keep exactly her face, hairline, skin and build; her pose, expression, clothing, framing and action follow this description, not Picture 2.` `frame_refs` 的顺序就是 Picture 编号。
+
+**禁止把底板写成背景**（as a soft out-of-focus background / as a background）：模型会把人当成贴在背景板前的一层，不管脚下有没有地，人会站在云上、站位在镜头间乱跳（错误表 E30）。底板一律写成「人物所在的真实三维空间」，并写明地面、边缘、落差、地标在哪；人物站的位置必须落在底板里真实存在的地面上，写人物位置前先看底板图那一侧是地还是空。
 
 分工句的补充写法：
 - **分工句里点名**（`Ren is the boy from Picture 2`），全文都用这个名字，不连续用 he/his 指代超过两句；代词多了模型分不清指谁。句子顺序按 [storyboard-keyframes.md](storyboard-keyframes.md) §6（镜头句 → 主体与动作 → 尺度锚点 → 参考图分工 → 场景 → Style）。[官方]
