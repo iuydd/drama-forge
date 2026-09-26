@@ -18,6 +18,9 @@
 
 用法：
   python3 comfy_studio.py [--port 8190] [--comfy http://127.0.0.1:8188] [--state-dir DIR]
+ComfyUI 启动命令（--fp32-vae 必须带；缺了会拒绝启动）：
+  python main.py --use-pytorch-cross-attention --gpu-only --fp32-vae --listen 127.0.0.1 --port 8188
+  bf16 的 Wan VAE 在 MPS 上连跑多个 qwen21 任务时会偶发编码出 NaN，出图全黑；fp32 VAE 下连跑 7 张无一出黑，还更快。
 依赖：ComfyUI 已启动、模型文件就位（文件名见下面 MODELS，可用环境变量改）；qwen21 任意宽高比需要
 EmptyQwenImage21Latent 节点（没有时退回编码节点自带的 latent）。
 """
@@ -290,6 +293,10 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--comfy", default=os.environ.get("COMFY_URL", "http://127.0.0.1:8188"))
     ap.add_argument("--state-dir", default=os.path.expanduser("~/.drama-forge/comfy_studio"))
     a = ap.parse_args(argv)
+    comfy_argv = requests.get(a.comfy.rstrip("/") + "/system_stats", timeout=10).json()["system"]["argv"]
+    if "--fp32-vae" not in comfy_argv:
+        print("ComfyUI 没带 --fp32-vae 启动：bf16 VAE 在 MPS 上会偶发出全黑图。按本文件开头的命令重启 ComfyUI。", flush=True)
+        return 2
     studio = Studio(a.comfy, Path(a.state_dir))
     srv = ThreadingHTTPServer(("127.0.0.1", a.port), make_handler(studio, os.environ.get("COMFY_STUDIO_TOKEN")))
     print(f"comfy_studio on http://127.0.0.1:{a.port} -> ComfyUI {a.comfy}", flush=True)
