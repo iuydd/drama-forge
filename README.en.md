@@ -4,14 +4,14 @@
 
 An agent skill for Claude Code, Codex, and similar tools that turns a premise into a complete, high-energy AI short drama with minimal human intervention.
 
-DramaForge combines ideas distilled from six public short-drama skill sets with production scripts and the G00–G45 automated checks. It is a single skill that covers development (premise, genre cards, long-form series), adaptation (novels and multi-episode drafts), screenplay writing and revision, visual assets and reference-image prompts, storyboards and frozen keyframes, video prompts (H3, Seedance), production (the H3 gateway and official APIs, voice, music), review, retakes, editing, stage reviews, and multi-project oversight. The former eleven-skill short-drama suite has been merged into it. See the [credits](#credits) for the source projects.
+DramaForge combines ideas distilled from six public short-drama skill sets with production scripts and the G00–G49 automated checks. It is a single skill that covers development (premise, genre cards, long-form series), adaptation (novels and multi-episode drafts), screenplay writing and revision, visual assets and reference-image prompts, storyboards and frozen keyframes, video prompts (H3, Seedance), production (the H3 gateway and official APIs, voice, music), review, retakes, editing, stage reviews, and multi-project oversight. The former eleven-skill short-drama suite has been merged into it. See the [credits](#credits) for the source projects.
 
 ```text
 Premise (or novel / multi-episode draft → source analysis + adaptation contract) → series brief → episode beats → screenplay → visual assets → storyboard and frozen keyframes
-→ opening frames → video → ASR, contact-sheet, and visual review → retakes → edited episode
+→ opening frames → rough animatic (temp dialogue, action and reaction beats) → video → ASR, contact-sheet, and visual review (must-show facts per shot) → retakes → edited episode → final QA on the delivered MP4
 ```
 
-Story and payoff take priority over image polish. Production runs one generation job at a time, keeps every take, and records decisions in the project log.
+Story and payoff take priority over image polish. Each scene lists must-show facts (counts, who did what, resulting state, the antagonist's concrete loss, identity) that no line of dialogue can stand in for (checks G46–G47); repeated ability explanations and talk-only scenes are flagged (G48–G49). Final QA re-checks the delivered file for split numbers, captions over faces, cut-in dialogue and frozen tails, and records audio as three separate results: ASR match, listened, and lip sync, with unverified items reported as unverified. Production runs one generation job at a time, keeps every take, and records decisions in the project log.
 
 ## Install
 
@@ -58,7 +58,7 @@ Existing projects retain the `short-drama-autopilot/*/v1` schema identifiers. Th
 | Path | Purpose |
 |---|---|
 | `SKILL.md` | Agent entry point: hard rules, stages A0–J, and an index of deeper references |
-| `references/pipeline-contract.md` | Directory layout, IDs, JSON fields, checks G00–G45, unnumbered lint scripts, and defaults |
+| `references/pipeline-contract.md` | Directory layout, IDs, JSON fields, checks G00–G49, unnumbered lint scripts, and defaults |
 | `references/runtime-boundaries.md` | Authorization scope, cost limits, and recovery of uncertain submissions |
 | `references/market-hits.md`, `premise-novelty.md` | Market reference and premise novelty scoring |
 | `references/story-engine.md` | Commercial short-drama story and payoff design |
@@ -80,6 +80,7 @@ Existing projects retain the `short-drama-autopilot/*/v1` schema identifiers. Th
 | `scripts/shots_tool.py` | Validate and render shots |
 | `scripts/produce.py`, `h3_client.py`, `providers.py` | Generation through the H3 gateway or official APIs, with a shared job ledger |
 | `scripts/review_tool.py`, `review_quality.py` | Contact sheets, ASR, reports, review marks, and cut eligibility |
+| `scripts/final_qa.py` | Final QA on the delivered MP4: text layout, subtitle-vs-ASR line check, key-term mismatches, loudness, tail freeze |
 | `scripts/cut.py` | ffmpeg editing |
 | `scripts/hub_tool.py` | Overview, export, delivery measurement, and color matching |
 | `scripts/screenplay_lint.py`, `visual_lint.py`, `review_md_check.py` | Screenplay, prompt, and review-file lint |

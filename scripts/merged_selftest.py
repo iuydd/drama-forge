@@ -510,5 +510,171 @@ def test_episode_intake() -> None:
         require(verify_index(index, source)["verified"] is False, "source drift")
 
 
+# ---- 导演执行与成片验收 lane：预演、文字排版避脸、台词边界、成片终验 ------------------------------------
+def test_final_acceptance() -> None:
+    """cut.py 金额/专名不断行、长文字分屏、叠字避脸（注入人脸框）、入点保护、字幕按取用区间裁剪、片尾不拖尾、overlays.json；
+    review_quality 声音三分项与 must_show；review_tool 预演（临时对白、镜号、动作起止、反应拍、结论待填）；final_qa 终验产物。"""
+    import os
+    from unittest.mock import patch
+    from PIL import Image, ImageFont
+    import cut as cut_mod
+    import final_qa
+    import review_tool
+    from common import SHOTS_SCHEMA, Project
+    from project_tool import init
+    from review_quality import audio_status, cut_issues, fmt_audio, take_quality
+
+    # 金额/数字/专名不断行（纯函数）
+    font_path = cut_mod.find_font(cut_mod.FONT_DEFAULTS["sub"])
+    if font_path:
+        f = ImageFont.truetype(font_path, 50)
+        text = "今月の売上は¥3,000,000を超えて夏樹が一位になった"
+        for maxw in (260, 330, 420, 520):
+            lines = cut_mod.wrap_lines(text, f, maxw, ["夏樹"])
+            require(any("¥3,000,000" in ln for ln in lines), f"金额被拆行（{maxw}px）：{lines}")
+            require(any("夏樹" in ln for ln in lines), f"专名被拆行（{maxw}px）：{lines}")
+            require("".join(lines) == text, "折行丢字")
+            require(not any(ln[:1] in "、。！？」" for ln in lines[1:]), f"行首是句读：{lines}")
+        require(cut_mod.protected_tokens("三百万円と¥3,000,000、十件", []) == ["三百万円", "¥3,000,000", "十件"],
+                f"不可拆词：{cut_mod.protected_tokens('三百万円と¥3,000,000、十件', [])}")
+        require(len(cut_mod.paginate(["a", "b", "c", "d", "e"])) == 3, "超过两行按两行一屏分屏")
+    else:
+        print("  (跳过折行断言：没有中日文字体)")
+
+    # 入点保护：入点切进句首语气词 / 落在词中间 → 前移到词前 0.1s；出点落在词中间 → 后移；杂音不保护
+    words = [(0.2, 0.45, "あれ？"), (0.6, 1.5, "その金額は"), (1.5, 2.4, "三百万です")]
+    a, b, notes = cut_mod.guard_word_edges(words, 0.5, 2.0, 3.0, "あれその金額は三百万です")
+    require(abs(a - 0.1) < 1e-6 and abs(b - 2.5) < 1e-6 and len(notes) == 2, f"入点/出点保护：{a} {b} {notes}")
+    a2, _, n2 = cut_mod.guard_word_edges([(0.3, 0.5, "えーと")], 0.55, 2.0, 3.0, "その金額は")
+    require(a2 == 0.55 and not n2, "不属于本镜台词的杂音不去保护")
+    lines_, warns = cut_mod.trim_subtitles(words, [{"sub": "あれ？その金額は三百万です", "text": "あれ？その金額は三百万です"}], 0.55, 3.0)
+    require(lines_[0]["sub"] == "その金額は三百万です" and warns and "句首" in warns[0], f"字幕去掉不在区间内的句首：{lines_} {warns}")
+    lines_, warns = cut_mod.trim_subtitles(words, [{"sub": "What? That amount", "text": "あれ？その金額は三百万です"}], 0.55, 3.0)
+    require(lines_[0]["sub"] == "What? That amount" and "人工" in warns[0], "字幕是译文时不硬删，记警告要人工改")
+
+    # 声音三分项：旧 audio pass 只算识别通过；null 显示未验证
+    st = audio_status({"checks": {"audio": "pass"}})
+    require(st == {"asr_ok": True, "listen_ok": None, "sync_ok": None}, f"旧字段兼容：{st}")
+    require(fmt_audio(st) == "识别 通过；听审 未验证；同步 未验证", fmt_audio(st))
+    require(audio_status({"asr_ok": True, "listen_ok": False})["listen_ok"] is False, "listen_ok 人工写入")
+
+    if not (shutil.which("ffmpeg") and shutil.which("ffprobe")):
+        print("  (跳过剪辑/预演/终验实跑：没有 ffmpeg)")
+        return
+    with tempfile.TemporaryDirectory() as td:
+        root = init(Path(td) / "剧Q", "终验", 1, "ja", "测试", 10, None, "16:9")
+        cfg = json.loads((root / "drama.json").read_text(encoding="utf-8"))
+        cfg.update(readings={"夏樹": "なつき"}, ai_label=None, room_tone_db=None)
+        (root / "drama.json").write_text(json.dumps(cfg, ensure_ascii=False), encoding="utf-8")
+        pr = Project(root)
+        W, H = int(pr.get("width")), int(pr.get("height"))
+        line = "あれ？その金額は¥3,000,000です。"
+        long_text = "规则说明：每挨一拳到账一百万，到账金额¥3,000,000会实时显示在屏幕右上角，夏樹必须在三秒内确认否则作废，此规则全剧有效"
+        shots = {"schema": SHOTS_SCHEMA, "episode": "EP001",
+                 "scenes": [{"id": "EP001-SC001", "must_show": [{"id": "MS1", "fact": "屏幕上金额 ¥3,000,000 完整可读", "shots": ["EP001-S01"], "kind": "count"}]}],
+                 "shots": [{"id": "EP001-S01", "scene": "EP001-SC001", "kind": "person", "subject": "夏樹", "seconds": 3, "must_show_ids": ["MS1"],
+                            "planned_action_window": [1.0, 2.0], "dialogue": [{"speaker": "夏樹", "text": line, "at": 0.2, "reading": {"夏樹": "なつき"}}],
+                            "overlay": [{"kind": "text", "text": "到账 ¥3,000,000", "at": 0.5, "until": 2.5}]},
+                           {"id": "EP001-S02", "scene": "EP001-SC001", "kind": "person", "subject": "夏樹", "seconds": 3, "explains_ability": True,
+                            "overlay": [{"kind": "text", "text": long_text, "at": 0.2, "until": 2.8}]}]}
+        pr.shots_path("EP001").write_text(json.dumps(shots, ensure_ascii=False), encoding="utf-8")
+        for sid in ("EP001-S01", "EP001-S02"):
+            fp = pr.frame_path("EP001", sid, 1)
+            fp.parent.mkdir(parents=True, exist_ok=True)
+            Image.new("RGB", (W, H), (90, 110, 140)).save(fp)
+            vp = pr.video_path("EP001", sid, 1)
+            vp.parent.mkdir(parents=True, exist_ok=True)
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", f"testsrc2=s={W}x{H}:r=24:d=3", "-f", "lavfi",
+                            "-i", "sine=frequency=330:duration=3:sample_rate=48000", "-shortest", "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                            "-c:a", "aac", str(vp)], check=True)
+
+        # 预演：无 TTS 时按估算留静音、画面标台词秒数；md 首行结论待填、不放行；有统计
+        with patch.dict(os.environ, {"ANIMATIC_TTS": "0"}):
+            amp4, ajpg, amiss = review_tool.animatic(pr, "EP001")
+        from common import ffprobe_duration
+        md = (pr.review_dir / "EP001-预演.md").read_text(encoding="utf-8")
+        require(not amiss and abs(ffprobe_duration(amp4) - 6.0) < 0.15 and ajpg.exists(), f"预演时长 ≈ 6s：{ffprobe_duration(amp4)}")
+        streams = final_qa.stream_durations(amp4)
+        require("audio" in streams and abs(streams["audio"] - 6.0) < 0.2, f"预演带临时对白音轨：{streams}")
+        require(md.startswith("结论：待填") and not pr.animatic_passed("EP001"), "预演.md 首行结论待填，不放行")
+        require("按估算时长留静音 1 句" in md and "EP001-S02" in md and "反应拍" in md and "MS1" in md and "解释能力" in md, md[:900])
+        (pr.review_dir / "EP001-预演.md").write_text(md.replace("结论：待填", "结论：PASS", 1), encoding="utf-8")
+        with patch.dict(os.environ, {"ANIMATIC_TTS": "0"}):
+            review_tool.animatic(pr, "EP001")
+        require(pr.animatic_passed("EP001"), "预演内容没变时不覆盖已填结论")
+
+        # 审片：must_show fail 不许 ok/weak，auto 给 retake，cut_issues 拦下
+        opts = dict(video_take=1, visual="pass", audio="pass", continuity="pass", evidence="synthetic fixture: offline contract", verdict="ok")
+        review_tool.mark(pr, "EP001", "EP001-S02", **opts)
+        try:
+            review_tool.mark(pr, "EP001", "EP001-S01", speech_window=[0.6, 2.4], action_window=[1.0, 2.0], must_show={"MS1": "fail"}, **opts)
+            raise AssertionError("must_show fail 仍被批准 ok")
+        except ValueError as err:
+            require("must_show" in str(err), str(err))
+        review_tool.mark(pr, "EP001", "EP001-S01", **{**opts, "verdict": "retake"}, speech_window=[0.6, 2.4], action_window=[1.0, 2.0], must_show={"MS1": "fail"})
+        require(review_tool.auto(pr, "EP001")["shots"]["EP001-S01"]["verdict"] == "retake", "auto 在 must_show fail 时给 retake")
+        require(any("must_show fail" in x for x in cut_issues(pr, "EP001", pr.load_shots("EP001"), pr.load_review("EP001"))), "cut_issues 拦 must_show fail")
+        review_tool.mark(pr, "EP001", "EP001-S01", speech_window=[0.6, 2.4], action_window=[1.0, 2.0], must_show={"MS1": "pass"}, listen_ok=None, **opts)
+        rec = pr.load_review("EP001")["shots"]["EP001-S01"]["video_takes"]["1"]
+        require(not take_quality(pr.video_path("EP001", "EP001-S01", 1), pr.load_shots("EP001")["shots"][0], rec), "识别通过、听审未验证可以入剪")
+        require(audio_status(rec["assessment"]) == {"asr_ok": True, "listen_ok": None, "sync_ok": None}, f"mark 写三分项：{rec['assessment']}")
+        rp = review_tool.report(pr, "EP001").read_text(encoding="utf-8")
+        require("听审 未验证" in rp and "MS1 通过" in rp, "审片报告显示三分项与 must_show")
+        edit_rev = pr.load_review("EP001")
+        edit_rev["shots"]["EP001-S01"]["video_takes"]["1"]["edit"] = {"in": 0.5, "out": 2.8, "mode": "fixed"}
+        pr.save_review("EP001", edit_rev)
+
+        # 剪辑：注入 ASR 词级时间与人脸框（字幕默认位置压脸 → 换位）
+        v1 = pr.video_path("EP001", "EP001-S01", 1)
+        fake_words = {v1.name: [(0.2, 0.45, "あれ？"), (0.6, 1.4, "その金額は"), (1.4, 2.4, "300万です")]}
+
+        class FakeASR:
+            py = "fake"
+
+            def __init__(self, project):
+                pass
+
+            def words(self, paths):
+                return {str(p): fake_words.get(Path(p).name, []) for p in paths}
+
+        face = [W // 2 - 150, H - 230, 300, 220]
+        with patch("review_tool.ASR", FakeASR), patch.object(cut_mod, "FACE_HOOK", lambda v, ts: [face]):
+            out = cut_mod.cut(pr, "EP001")
+        sheet = (pr.ep_dir("EP001") / "剪辑单.md").read_text(encoding="utf-8")
+        require("入点 0.50→0.10（保住句首「あれ？」）" in sheet, f"入点保护写进剪辑单：{sheet[:1200]}")
+        require("识别 通过；听审 未验证；同步 未验证" in sheet and "MS1「" in sheet, "剪辑单显示三分项与必须拍清楚")
+        require("能力解释镜（explains_ability）：1 镜" in sheet and "避脸结果：" in sheet, "剪辑单统计能力解释镜与避脸结果")
+        meta = json.loads(cut_mod.overlays_path(out).read_text(encoding="utf-8"))
+        subs = [o for o in meta["overlays"] if o["kind"] == "sub"]
+        require(subs and subs[0]["position"] != "bottom" and subs[0]["face_overlap"] is False, f"字幕避开人脸：{subs}")
+        money = [o for o in meta["overlays"] if o["kind"] == "text" and "¥3,000,000" in o["full_text"]]
+        require(all(any("¥3,000,000" in ln for ln in o["lines"]) for o in money if "¥3,000,000" in "".join(o["lines"])), f"金额不断行：{money}")
+        pages = [o for o in meta["overlays"] if o["kind"] == "text" and o["full_text"] == long_text]
+        require(len(pages) >= 2 and all(len(o["lines"]) <= 2 for o in pages) and pages[0]["page"] == [1, len(pages)], f"长文字分屏：{pages}")
+        require(meta["segments"][0]["in"] == 0.1 and meta["segments"][0]["boundary_notes"], f"segments 记切点：{meta['segments'][0]}")
+        real = ffprobe_duration(out)
+        require(real <= meta["duration"] + 0.1, f"片尾不拖尾：实长 {real}，剪辑 {meta['duration']}")
+
+        # 终验：成片 ASR 只识别到后半句 → 字幕多于声音 / 疑似裁词；listen/sync 为 null；首行 REVISE
+        fake_words[out.name] = [(1.0, 1.8, "その金額は")]
+        with patch("review_tool.ASR", FakeASR), patch.object(cut_mod, "FACE_HOOK", lambda v, ts: [face]):
+            rep = final_qa.final_qa(pr, "EP001")
+        jq = json.loads((pr.review_dir / "EP001-final-qa.json").read_text(encoding="utf-8"))
+        mdq = (pr.review_dir / "EP001-final-qa.md").read_text(encoding="utf-8")
+        require(jq["listen_ok"] is None and jq["sync_ok"] is None and jq["asr_ok"] is False, f"三分项：{jq['asr_ok']} {jq['listen_ok']} {jq['sync_ok']}")
+        require(mdq.startswith("结论：REVISE") and "未验证，需人工" in mdq, mdq[:400])
+        types = {i["type"] for i in rep["issues"]}
+        require({"字幕多于声音", "疑似裁词"} <= types and "片尾静止拖尾" not in types and "叠字压脸" not in types, f"终验问题类型：{types}")
+        require((pr.review_dir / "EP001-final-qa" / "contact.jpg").exists() and any(i.get("evidence") for i in rep["issues"]), "接触表与证据帧")
+        # 人工写入听审/同步（带 evidence）才改变 null；把人脸放到全画面 → 终验报压脸
+        rv = pr.load_review("EP001")
+        rv["final_qa"] = {"listen_ok": True, "evidence": "selftest: pretend a native speaker listened 0–6s"}
+        pr.save_review("EP001", rv)
+        with patch("review_tool.ASR", FakeASR), patch.object(cut_mod, "FACE_HOOK", lambda v, ts: [[0, 0, W, H]]):
+            rep2 = final_qa.final_qa(pr, "EP001", use_asr=False)
+        require(rep2["listen_ok"] is True and rep2["sync_ok"] is None and rep2["asr_ok"] is None, f"人工值：{rep2['listen_ok']} {rep2['sync_ok']}")
+        require(any(i["type"] == "叠字压脸" for i in rep2["issues"]), "全画面人脸时终验报叠字压脸")
+
+
 if __name__ == "__main__":
     raise SystemExit(main(sys.argv))

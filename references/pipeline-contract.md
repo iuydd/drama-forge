@@ -6,11 +6,11 @@
 
 1. 目录布局
 2. ID 与命名
-3. 阶段表（A–J，含 G2 静帧预演）
+3. 阶段表（A–J，含 G2 预演粗剪）
 4. `shots.json` 字段
 5. `参考图/refs.json` 字段
 6. `审查/<EP>-review.json` 字段
-7. 机械门 G00–G45
+7. 机械门 G00–G49
 8. 自动决策规则
 9. 续跑、中止与收回
 10. 硬约束
@@ -29,12 +29,17 @@
   参考图/refs.json  IMG-*.png       身份图、底板、道具图（全剧共用）
   EP001/剧本.md 视觉设定.md shots.json 分镜.md 图片提示词.md 视频提示词.md 剪辑单.md
   EP001/起始帧/F_<sid>_t<n>.png   视频/V_<sid>_t<n>.mp4   配音/   成片/EP001.mp4
+  EP001/成片/EP001.overlays.json   cut.py 写的成片元数据（schema drama-forge/overlays/v1，字段见 §6 末尾），final_qa.py 读它；草剪写在 审查/<EP>-草剪.overlays.json
   审查/<EP>-审查.md               reviewer 子代理的剧本/分镜审查（写作阶段；格式与分级见 review-checklists §0，骨架 assets/templates/审查.md，review_md_check.py 查结构）
   审查/<EP>-grade.json             可选：逐镜接镜调色参数（hub_tool.py grade，edit-and-delivery §5b），输出 成片/<EP>_graded.mp4
   审查/<EP>-sheets/<sid>_t<n>.jpg  接触表（2 帧/秒）
   审查/<EP>-asr.json <EP>-review.json <EP>-审片.md
-  审查/<EP>-预演.mp4 <EP>-预演.jpg     静帧预演片和 1fps 接触表（review_tool.py animatic）
-  审查/<EP>-预演.md                 模型看完预演写的结论，首行「结论：PASS / REVISE」；不是 PASS 不进阶段 H（project_tool next、produce.py all 都查首行）
+  审查/<EP>-预演.mp4 <EP>-预演.jpg     预演粗剪（按计划取用时长、带临时对白草音或字幕、标动作起止与反应拍）和 1fps 接触表（review_tool.py animatic）
+  审查/<EP>-预演.md                 animatic 生成（首行「结论：待填…」+ `预演指纹：…` + 自动统计 + 逐镜表），模型看完预演把首行改成「结论：PASS / REVISE」，并按模板 assets/templates/预演.md 在下面补逐条答案；不是 PASS 不进阶段 H（project_tool next、produce.py all 都查首行）；指纹行不删——预演内容没变时重跑保留已填结论，变了重出模板、旧文件挪到 <EP>-预演.prev.md
+  审查/<EP>-预演-temp/              预演临时读稿（本地 TTS，文件名带 _temp），只听节奏，不进成片
+  审查/<EP>-final-qa.json <EP>-final-qa.md   final_qa.py 从最终 MP4 写的机读终验（文字排版、台词与字幕逐句比对、声音测量、片尾）；md 首行「结论：PASS / REVISE」由脚本判，重跑会覆盖，不手改（edit-and-delivery §7b）
+  审查/<EP>-final-qa/               终验证据帧与接触表 contact.jpg
+  审查/<EP>-成片终验.md             模型写的成片终验结论（模板 assets/templates/成片终验.md）：必拍事实看图、脚本结果汇总、已知问题与用户确认；首行「结论：PASS / REVISE」是阶段 J 的完成标准
   脚本/ids.log jobs.jsonl asr_cache.json prompts/<EP>/*.txt
   STOP                             出现即停（当前任务做完后）
 ```
@@ -67,12 +72,12 @@ take 从 1 起，只增不删；哪个 take 进成片由 `review.json` 决定，
 | E 分镜与提示词 | 剧本 + 视觉设定 + refs | `EPxxx/shots.json` → render 三份 md | `shots_tool.py check` 0 error | 修 error；warn 逐条判断，豁免写 `waive` | 0 error |
 | F 参考图 | refs.json | `参考图/IMG-*.png` | 模型目检：身份、服装、无字、单人、正面全身 | `produce.py refs --retake` 最多 3 次 | 全部通过目检 |
 | G 起始帧 | shots.json + 参考图 | `起始帧/F_*_t*.png` | 模型逐张目检：一人、朝向、持物、构图留空、无字、身份像参考图 | `--retake`，最多 max_takes | 每镜有通过的 take，`review.json` 记 frame_take |
-| G2 静帧预演 | 通过的起始帧 + shots.json 镜序 + 情绪集纲 | `审查/<EP>-预演.mp4`、`<EP>-预演.jpg`、`<EP>-预演.md` | 模型看 1fps 接触表逐条答：情节点看得到/只靠台词/看不到；相邻镜景别角度主体至少变一项；能力规则与每场地点来由读得出；回溯镜与原镜同构图；总长与 `target_seconds` 的差（production-and-review §3b） | 有"看不到"或复述不出 → 回 E 改分镜或回 G 重出起始帧 | 写了 `<EP>-预演.md` 且首行是「结论：PASS」（脚本查这一行，结论由模型判）；金丝雀一镜之外的视频都在这之后提交 [社区][自测] |
+| G2 预演粗剪 | 通过的起始帧 + shots.json 镜序与计划取用 + 台词表 + 情绪集纲 | `审查/<EP>-预演.mp4`（带临时对白草音或字幕、动作起止与反应拍标记）、`<EP>-预演.jpg`、`<EP>-预演.md` | 模型按时间看完逐条答：情节点看得到/只靠台词/看不到；每条 `must_show` 在哪一镜第几秒看得到（只靠台词不算过）；对白说不完就切、重要信息后缺反应拍、只说不做的段落；能力规则是否重复解释（G48 口径）；相邻镜景别角度主体至少变一项；回溯镜同构图；总长与 `target_seconds` 的差（production-and-review §3b） | 有"看不到"、必拍事实只靠台词或复述不出 → 回 E 改分镜或回 G 重出起始帧 | `<EP>-预演.md` 首行「结论：PASS」（脚本查首行，结论由模型判）、下面有逐条答案，预演片存在；金丝雀一镜之外的视频都在这之后提交 [社区][自测] |
 | H 视频 | 起始帧与提示词 | 视频 take | ASR 差异提供线索，仍需听审 | 授权范围内诊断后重拍 | 有候选素材 |
-| I 审片 | 视频、接触表、听审 | 每 take assessment/edit/verdict | visual/audio/continuity 通过且指纹有效 | 失败退回相应阶段 | 详见 [质量契约](quality-contract.md) |
-| J 剪辑 | review.json + shots.json | `成片/EPxxx.mp4`、`剪辑单.md` | 时长在目标 ±30%；响度 −16 LUFS；`ai_label` 有值时前 3 秒可见 AI 生成标识，剪辑单记"AI 标识：有/无（理由）" | 超长 → 回 I 收紧取用；过短 → 记录、不硬凑 | 成片存在 |
+| I 审片 | 视频、接触表、听审 | 每 take assessment/edit/verdict、每镜 `must_show_check`、声音三项 | visual/audio/continuity 通过且指纹有效；`must_show_check` 无 fail（脚本强制）、无 unverified（审片人核掉，脚本只显示"未验证"）；`asr_ok` / `listen_ok` / `sync_ok` 分开记，null 如实为"未验证" | 必拍事实 fail → 重拍、改分镜或回剧本，不许以"台词能解释/观众数不出来"放行（production-and-review §5c） | 详见 [质量契约](quality-contract.md) |
+| J 剪辑 | review.json + shots.json | `成片/EPxxx.mp4`、`成片/EPxxx.overlays.json`、`剪辑单.md`、`审查/<EP>-final-qa.json`、`<EP>-final-qa.md`、`<EP>-成片终验.md` | 删镜/改剪点前做因果自检（edit-and-delivery §2d，G46 查承担镜仍在 cut_order）；时长在目标 ±30%；响度 −16 LUFS；`ai_label` 有值时前 3 秒可见 AI 生成标识，剪辑单记"AI 标识：有/无（理由）"；成片终验逐项验必拍事实、文字排版（数字专名不断行、不压脸眼、长文字分屏）、台词边界（入点不切进台词或语气词、字幕 = 成片可听内容）、切点、片尾无拖尾停帧、声音三项（edit-and-delivery §7b） | 超长 → 回 I 收紧取用；过短 → 记录、不硬凑；终验不过 → 排版类改叠加重出成片，台词边界类放宽剪点或回剧本，剧情事实类回生产 | 成片存在，`final_qa.py` 已对交付文件跑过（`final-qa.md` 首行 PASS，退出码 0），且 `成片终验.md` 首行「结论：PASS」；或 `成片终验.md` 写「结论：REVISE」并列明已知问题与用户确认（剧情事实类缺陷不能靠用户确认放行） |
 
-写作阶段（A0–E）可以多集并行；生产阶段（F–H，含 G2）全项目串行，一次只有一个任务在飞。G2 不花生成的钱，只用已有起始帧拼片。
+写作阶段（A0–E）可以多集并行；生产阶段（F–H，含 G2）全项目串行，一次只有一个任务在飞。G2 不花生成的钱，只用已有起始帧和临时对白拼片。
 
 ## 4. `shots.json` 字段
 
@@ -82,10 +87,17 @@ take 从 1 起，只增不删；哪个 take 进成片由 `review.json` 决定，
   "episode": "EP001",
   "notes": ["本集拍法说明，写进分镜.md 开头"],
   "cut_order": ["EP001-S01", "EP001-S02"], // 可选：叙述/剪辑顺序；省略镜须有 drop 理由或作为已审音源
-  "scenes": [{"id": "EP001-SC001", "axis": "谁面朝画左/画右", "plates": ["IMG-PLATE-..."]}],
+  "scenes": [{"id": "EP001-SC001", "axis": "谁面朝画左/画右", "plates": ["IMG-PLATE-..."],
+              "must_show": [{"id": "MS1", "fact": "箱内正好十件，上五下五", "shots": ["EP002-S05"], "kind": "count"}],
+                                        // 必拍事实（storyboard-keyframes §2e，来自剧本该场 [连续性] 的「必拍：」）：每场 3–5 条，只看画面也必须读到；
+                                        // kind = count | action | state | loss | identity；id 在本集唯一；shots 是计划承担镜（G46 查存在、G47 查数量写进起始帧）
+              "waive": []}],             // 场级豁免，目前只认 G49
   "shots": [{
     "id": "EP001-S01", "scene": "EP001-SC001", "title": "中文短标题",
     "kind": "person",                 // person | hands | feet | object | insert | plate | empty
+    "must_show_ids": ["MS1"],          // 本镜承担哪些必拍事实；每条 must_show 至少一镜承担且该镜在 cut_order 里，否则 G46 error
+    "explains_ability": false,         // 本镜在解释/确认能力规则；同集超过 2 镜或 12 秒、第二集起开头 30 秒内超过 1 镜报 G48（screenplay §5b3）
+    "critical_terms": ["素手で"],       // 可选：本镜关键能力词、金额等必须听对的词；cut.py 折行不拆，final_qa.py 识别分歧单列「需母语者确认」
     "duty": "这一镜的戏剧职责（情绪步骤：受气/底牌/反击/押注/兑现/新问题）",
     "script_anchor": ["剧本原句"],     // 承载了剧本哪几句
     "subject": "遥", "facing": "left", // left | right | camera；同场同人必须一致，改向写 axis_break + 理由
@@ -153,7 +165,10 @@ take 从 1 起，只增不删；哪个 take 进成片由 `review.json` 决定，
 "line_max": {"zh": 15, "ja": 20, "en": 10},  // 单句上限：zh/ja 按可发声字数，en 按词；超了报 G37，拆成两句、中间插对方反应（screenplay §4"短"，为的是句数多、反应快）
 "shot_seconds": {"default": 5, "min": 4, "max": 15},   // H3 duration 4–15 整数秒；同一个人的连续戏合并成长镜头，上限取 max（旧项目的 max 10 按需改大，改动记决策记录）
 "pace": {"dialogue_min": 2.5, "dialogue_tail": 0.8, "reaction_min": 1.5, "insert_min": 1.5, "scene_avg_min": 2.5},   // 节奏下限（G42、cut.py 剪辑单）；只设下限
-"readings": {"夏樹": "なつき", "売上": "うりあげ"},   // 全剧专名读音；ASR 比对按它归一，配音前按它校对（单句读音写 dialogue[].reading）
+"gate_limits": {"ability_explain_shots": 2, "ability_explain_seconds": 12, "recap_window": 30, "recap_explain_shots": 1,
+                "talk_only_ratio": 0.5, "talk_only_min_shots": 3},   // 可选，缺省即此值：G48 能力解释上限与跨集开头窗口、G49 只说不做比例
+"readings": {"夏樹": "なつき", "売上": "うりあげ"},   // 全剧专名读音；ASR 比对按它归一，配音前按它校对（单句读音写 dialogue[].reading）；cut.py 折行时把这些词当整体不拆，final_qa.py 把它们当关键词核对
+"final_qa": {"asr_min": 0.8},  // 可选：成片终验逐句识别召回下限（final_qa.py --asr-min 可临时覆盖）
 "overlays": {"stamp": {…},
              "panel": {"theme": "tech", "accent": [0, 229, 255], "position": "top_left", "width": 0.36, "title": "SYSTEM",
                        "enter": 0.32, "enter_mode": "scale", "type_cps": 22, "glass": true, "glow": 16, "scanlines": true,
@@ -190,15 +205,27 @@ take 从 1 起，只增不删；哪个 take 进成片由 `review.json` 决定，
 ```jsonc
 {"episode":"EP001","shots":{"EP001-S01":{
   "frame_take":2,"video_take":1,"verdict":"pending_review","locked":false,
+  "must_show_check":{"MS1":"pass"},      // 镜级镜像：mark --must-show 同时写进当前 take 和这里；读的时候以 take 级为准，镜级只在它属于当前 video_take 时才算
   "video_takes":{"1":{
     "heard":"识别文本", "speech_diff":{"status":"needs_listening"},
     "edit":{"mode":"fixed","in":0.3,"out":4.6,"speed":1},
+    "assessment":{"checks":{…},"evidence":{…},
+                  "asr_ok":true,"listen_ok":null,"sync_ok":null},   // 声音三项：识别正确 / 听感自然 / 口型同步；null = 未验证，报告显示「未验证」，不得汇总成"通过"
+    "must_show_check":{"MS1":"pass"},    // 本镜 must_show_ids 逐条 pass|fail|unverified；有 fail：mark 拒绝 ok/weak，auto 给 retake，choose_best 不选，正式剪辑拒绝
     "verdict":"pending_review"
   }}
-}}}
+}},
+ "final_qa":{"asr_ok":null,"listen_ok":true,"sync_ok":true,"evidence":"谁、在成片哪几秒听/看了什么"}}
+                                         // 可选：成片终验的人工补验；必须带非空 evidence，final_qa.py 才用它覆盖脚本给不出的 null
 ```
 
-用 mark 完成检查后脚本写入 assessment 的 checks、evidence、media_sha256、shot_sha256、reviewed_at、speed 及实测窗口。不可复制示例证据或假装已听审。
+声音三项在 take 的 `assessment` 里，用 `review_tool.py mark … --asr-ok true|false|null --listen-ok … --sync-ok …` 写；必拍事实用 `--must-show MS1=pass|fail|unverified`（可重复）。入剪只要求 `asr_ok` 为 true；`listen_ok` 或 `sync_ok` 为 false 时拦下，为 null 时放行但审片报告、剪辑单、终验处处显示"未验证"。旧记录只有 `checks.audio` 时：`pass` 只算 `asr_ok: true`（旧"audio pass"实际只是 ASR 通过），`fail` 算 `asr_ok: false`，`listen_ok` / `sync_ok` 一律 null，绝不从旧字段推成通过。`must_show_check` 的 `unverified` 脚本目前不拦剪（只显示"未验证"），审片规则仍要求承担镜在正式剪辑前核成 pass（production-and-review §5）。
+
+用 mark 完成检查后脚本写入 assessment 的 checks、evidence、media_sha256、shot_sha256、reviewed_at、speed 及实测窗口。不可复制示例证据或假装已听审。`must_show_check` 与声音三项的判定规则见 production-and-review §5、§5c。
+
+`成片/<EP>.overlays.json`（cut.py 写，schema `drama-forge/overlays/v1`）：`duration`；`segments[]` 每段镜号、take、成片起止、取用 in/out、台词边界注记（入点前移/出点后移）、字幕裁剪警告；`overlays[]` 每条叠字的种类（字幕/后期字/面板/印章字）、时段、文字、实际渲染的行 `lines`、不可拆词 `protected`、位置 `rect` / `position`、人脸检查结果、警告。重剪就重写；final_qa.py 发现它记录的片长与成片差超过 0.5 秒报 error。
+
+`审查/<EP>-final-qa.json`（final_qa.py 写）：`schema`、`episode`、`video`、`video_sha256`、`duration`、`conclusion`（PASS / REVISE）、`asr_ok` / `listen_ok` / `sync_ok`（脚本只能给 `asr_ok`；另两项为 null，除非 review.json 顶层 `final_qa` 带 evidence 写入）、`manual`（用了哪些人工值）、`asr_min`、`issues[]`（`t`、`end`、`type`、`severity` = error / warn / confirm、`detail`、`evidence` 证据帧）、`text`（叠字数、断行、超两行未分屏、压脸、人脸检查状态）、`speech`（逐句字幕原文、听到的内容、问题）、`audio`（LUFS、LRA、峰值、削波、片尾静止/静音、流时长）、`contact_sheet`。必拍事实看图、已知问题和用户确认不在这里，写 `审查/<EP>-成片终验.md`（edit-and-delivery §7b）。
 
 ## 7. 机械门
 
@@ -250,8 +277,12 @@ take 从 1 起，只增不删；哪个 take 进成片由 `review.json` 决定，
 | G43 | warn | 视线：有台词的人物镜没写 `gaze`；`gaze.direction` 与本镜 `facing` 矛盾，或与对手在本场的 `facing` 同向（两人看同一侧）；看镜头 / 目标不是同场人物却没写 `gaze_reason`；起始帧或视频提示词没写视线方向或方向不一致；提示词让人物看镜头（否定式 nobody looks at the camera 不算）（storyboard-keyframes §4）[自测] |
 | G44 | warn | 台词语种与读音：`dialogue[].lang` ≠ `dialogue_lang` 且无 `lang_reason`；`<d>[语种]` 标签与 `dialogue_lang` 不符；日语台词一个假名都没有（像中文）、中文台词混入假名；日语台词里的汉字专名（剧本人物名）没有 `dialogue[].reading` 也不在 `readings`（screenplay §4c、production-and-review §10）[自测] |
 | G45 | warn | 同一人不拆两镜：同场相邻两镜主体相同、中间没有别人的镜头或插入镜，且后一镜没写 `split_reason`；默认合并成一个长镜头，时长按内容定、上限 `shot_seconds.max`（storyboard-keyframes §7b）[自测] |
+| G46 | error/warn | 必拍事实（storyboard-keyframes §2e）：`scenes[].must_show` 条目缺 id/fact、id 重复、`shots` 指向不存在的镜、镜头 `must_show_ids` 里有未登记的 id、某条事实没有任何镜的 `must_show_ids` 承担、承担镜全部不在 `cut_order` 里（删镜删掉了因果证据）报 error；`kind` 不在五类里、`shots` 列了某镜而该镜 `must_show_ids` 没写这条报 warn [自测：外部审查] |
+| G47 | warn | 数量事实：`kind: count` 的承担镜 `frame_prompt` 没写出事实里的数字（阿拉伯数字，或跟量词的中文数字如「十件」「五份」，接受英文数词 ten/five）；事实里没有可解析的数字时，frame_prompt 至少要有一个数字（storyboard-keyframes §6b 道具布局镜）[自测：外部审查] |
+| G48 | warn | 能力规则重复解释：同集（按 cut_order）`explains_ability` 镜超过 `gate_limits.ability_explain_shots`（默认 2）或计划取用合计超过 `ability_explain_seconds`（默认 12 秒）；第二集起开头 `recap_window`（默认 30 秒）内超过 `recap_explain_shots`（默认 1）镜（screenplay §5b3）[自测：外部审查] |
+| G49 | warn | 只说不做：同场有台词的人物镜（不含 audio_from、不在 cut_order 的）≥ `talk_only_min_shots`（默认 3）且超过 `talk_only_ratio`（默认一半）的 motion 里没有承接对方行为的动作或反应词（夺、合上、推回、后退、僵住……）；有意保持不动的镜写 `waive: ["G49"]`，整场豁免写在 scene 的 `waive`（storyboard-keyframes §8c）[自测：外部审查] |
 
-`shots_tool.py check-refs` 跑 G18–G20 和 G34 的参考图部分；其余在 `check`。静帧预演（阶段 G2）不是编号门，由 `project_tool.py next` 和 `produce.py all` 检查 `审查/<EP>-预演.md` 存在且首行是「结论：PASS」；逐条答案由模型判，不过就写「结论：REVISE」，不许写 PASS 放行。G31–G45 里的 warn：写作者判断后可豁免，但豁免理由要写进决策记录；它们挡的是"没写"，写得对不对由目检（production-and-review §4b 细节与比例清单、§10 听感）和 reviewer 判。每次 check 追加 `脚本/gates.jsonl`（哪些门响了），无人值守时靠它看哪条规则最常被违反。
+`shots_tool.py check-refs` 跑 G18–G20 和 G34 的参考图部分；其余在 `check`。预演粗剪（阶段 G2）和成片终验（阶段 J）不是编号门：`project_tool.py next` 和 `produce.py all` 检查 `审查/<EP>-预演.md` 存在且首行是「结论：PASS」；成片终验看 `审查/<EP>-final-qa.md` 首行（edit-and-delivery §7b）。逐条答案由模型判，不过就写「结论：REVISE」，不许写 PASS 放行。G31–G49 里的 warn：写作者判断后可豁免，但豁免理由要写进决策记录；它们挡的是"没写"，写得对不对由目检（production-and-review §4b 细节与比例清单、§10 听感）和 reviewer 判。每次 check 追加 `脚本/gates.jsonl`（哪些门响了），无人值守时靠它看哪条规则最常被违反。
 
 error 必须清零；warn 逐条判断，明确豁免写在 shot 的 `waive`。门只能证明"没犯这些错"，不能证明戏好；戏好坏由 reviewer 子代理按 [review-checklists.md](review-checklists.md) 判。
 
@@ -288,7 +319,10 @@ error 必须清零；warn 逐条判断，明确豁免写在 shot 的 `waive`。�
 | 成片超长 | 先删同向重复反应镜，再收紧出点 | 不删兑现镜 |
 | 剧本审查两轮后仍有 Major | 按 reviewer 的修订建议直接改，记录未决 | 不停下等人 |
 | 可生成性预算 | 每集有台词的角色 ≤ 4、首场有名有姓的人物 ≤ 3；每集主场景 ≤ 3（多出的复用底板）；接触同框镜每场 ≤ 3（超限改剧情、减少接触动作，不把多出的接触拆成单人镜凑数）；不写要多人同框才读得懂的群戏；金手指文字走后期叠加 | 立项写进系列简报，超了先改点子（story-engine §1）；豁免记决策 |
-| 静帧预演不过 | 回 E 改分镜（换景别、补起因镜、回溯镜复刻原镜），或回 G 重出那几镜起始帧，再拼一次预演 | 不因"视频也许会动起来"放行（production-and-review §3b） |
+| 预演不过 | 回 E 改分镜（换景别、补起因镜、回溯镜复刻原镜、补承接动作），或回 G 重出那几镜起始帧，再拼一次预演 | 不因"视频也许会动起来"放行（production-and-review §3b） |
+| 必拍事实没成立（数量错、关键动作没拍出、反派损失没落到画面） | 重拍；两次不过改分镜（换承担镜、拆插入镜、双人同框）；仍不行回剧本改这条事实并同步台词和下游引用 | 不许以"台词能解释/观众数不出来"放行，不许用延长镜头、旁白、字幕替代（production-and-review §5c） |
+| 能力规则讲了不止一次 | 保留讲清的那一次，其余改成一句提醒或删掉；跨集开头只留 ≤5 秒回顾 | G48；改动写决策记录（screenplay §5b3） |
+| 成片终验不过 | 排版类改叠加参数重出成片；台词边界类放宽剪点或回剧本删句重出字幕；片尾停帧收紧叠字时长；剧情事实类回生产 | 交付前必须有 `final-qa.md`；有已知问题写 REVISE 并取得用户确认（edit-and-delivery §7b） |
 | 起始帧参考图 | 默认 2 张（底板 + 身份），接触同框 3 张，不超过 3 张 | 中近景以上绑 `-FACE`；同机位反复出现用 `frame_parent` |
 | AI 生成标识 | `ai_label: null`（默认不叠） | 用户明确要求才写文字，cut.py 叠在前 3 秒右上角 |
 | 新的模型行为结论 | 先记 `项目开发/模型观察.md`（观察、N 次里几次、能判断什么、混杂因素） | 同一写法有效 ≥ 3 次才升级成 skill references 里的规则；单次改善只记录 [社区][推断] |
@@ -312,9 +346,10 @@ error 必须清零；warn 逐条判断，明确豁免写在 shot 的 `waive`。�
 7. 能力规则/装置条款先改系列简报再进剧本；剧中不得先写出契约里没有的能力。
 8. 在用户已授权范围内连续执行，常规决定写入决策记录；模型/档位/尺寸缺失、触及预算、STOP/DEADLINE、提交结果未知或真实创作分叉时暂停依赖工作。具体边界见 runtime-boundaries.md。
 9. 维持项目画风、物理空间与角色状态。世界内因果成立，观众获知顺序服从叙事；环境运动按需。详见 scene-state-and-reveal.md 与 quality-contract.md。
-10. 视频提交前必过静帧预演（阶段 G2）；预演按 shots.json 镜序拼，不调换先后。
+10. 视频提交前必过预演粗剪（阶段 G2，带临时对白与节奏标记）；预演按 shots.json 镜序拼，不调换先后。
 11. 台词是目标语言母语者的日常口语；配音语言参数、参考音频语言都等于台词语言；专名按 reading 校对（screenplay §4c、production-and-review §10）。
 12. 每个事件交代起因、每个关键物品交代来源（storyboard-keyframes §2c）；说话人看着说话对象（§4）；系统面板走 `overlays.panel` 样式（styles.md §12）。
+13. 必拍事实不可妥协（storyboard-keyframes §2e、production-and-review §5c）；每集交付前从最终 MP4 做成片终验（edit-and-delivery §7b）；声音结论分 `asr_ok` / `listen_ok` / `sync_ok` 三项如实写，未验证不写成通过。
 
 ## 11. 来源（2026-09-25 调研补充的条目）
 
@@ -324,4 +359,5 @@ error 必须清零；warn 逐条判断，明确豁免写在 shot 的 `waive`。�
 - AI 生成显式标识：《人工智能生成合成内容标识办法》https://www.cac.gov.cn/2025-03/14/c_1743654684782215.htm
 - 可生成性预算：飞书 OpenClaw 漫剧流程的选题五维 https://www.feishu.cn/content/article/7643731845971987667
 - 画风漂移诱因词、头肩身份图、参考图数量、单句长度：分别见 styles.md、visual-assets.md、screenplay.md 文末来源
+- G46–G49、预演粗剪、成片终验、声音三项：2026-09-26 用户转来的外部深度审查（7 个成片、235 个剪辑镜头；鉴宝 EP002 道具数量与认输表演、谎话 EP002 金额断行遮脸、挨拳 EP001 入点切进语气词与能力重复解释）[自测]
 - G42–G45、面板样式、台词本地化与配音口音、事件起因：2026-09-26 用户看完「按一下回到十秒前」EP001 后的反馈（`按一下回到十秒前/审查/EP001-复盘.md`：日语配音口音、镜头 1–2 秒一切、空箱凭空出现）[自测]

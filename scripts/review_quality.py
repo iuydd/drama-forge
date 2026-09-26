@@ -16,6 +16,64 @@ from common import norm
 
 CHECKS = ("visual", "audio", "continuity")
 EDIT_KEYS = ("in", "out", "mode", "speed")
+AUDIO_KEYS = ("asr_ok", "listen_ok", "sync_ok")
+MUST_SHOW_VALUES = ("pass", "fail", "unverified")
+
+
+def audio_status(assessment: dict | None) -> dict:
+    """声音结论三分项：asr_ok（识别正确）、listen_ok（听感自然）、sync_ok（口型/音画同步）；None = 未验证。
+    旧字段兼容：只有 checks.audio 时，pass 只算 asr_ok=True（旧 audio pass 实际只是 ASR 通过），fail 算 asr_ok=False；
+    listen_ok / sync_ok 没有人工写入就是 None，绝不从旧字段推成通过。"""
+    a = assessment or {}
+    legacy = (a.get("checks") or {}).get("audio")
+    out = {"asr_ok": {"pass": True, "fail": False}.get(legacy), "listen_ok": None, "sync_ok": None}
+    for key in AUDIO_KEYS:
+        if a.get(key) is not None:
+            out[key] = bool(a[key])
+    return out
+
+
+def fmt_audio(status: dict) -> str:
+    """null 如实显示为「未验证」，不汇总成「通过」。"""
+    names = {"asr_ok": "识别", "listen_ok": "听审", "sync_ok": "同步"}
+    val = {True: "通过", False: "不过", None: "未验证"}
+    return "；".join(f"{names[k]} {val[status.get(k)]}" for k in AUDIO_KEYS)
+
+
+def must_show_facts(data: dict) -> list[dict]:
+    """shots.json scenes[].must_show 的事实，附上承担镜：fact.shots 与写了 must_show_ids 的镜取并集。"""
+    carriers: dict[str, list[str]] = {}
+    for sh in data.get("shots") or []:
+        for mid in sh.get("must_show_ids") or []:
+            carriers.setdefault(mid, []).append(sh["id"])
+    out = []
+    for sc in data.get("scenes") or []:
+        for fact in sc.get("must_show") or []:
+            if not isinstance(fact, dict) or not fact.get("id"):
+                continue
+            shots = list(dict.fromkeys(list(fact.get("shots") or []) + carriers.get(fact["id"], [])))
+            out.append({"id": fact["id"], "fact": fact.get("fact", ""), "kind": fact.get("kind"), "scene": sc.get("id"), "shots": shots})
+    return out
+
+
+def must_show_coverage(data: dict, cut_ids: list[str]) -> list[dict]:
+    """每条必须拍清楚的事实，哪些承担镜还在片里。承担镜全被删 = 因果证据被删掉了。"""
+    kept = set(cut_ids)
+    return [{**f, "in_cut": [s for s in f["shots"] if s in kept]} for f in must_show_facts(data)]
+
+
+def must_show_state(entry: dict, take) -> dict:
+    """某个 take 的 must_show_check：优先 video_takes[n].must_show_check；否则镜级 must_show_check（仅当它属于这个 take）。"""
+    rec = (entry.get("video_takes") or {}).get(str(take)) or {}
+    if isinstance(rec.get("must_show_check"), dict):
+        return dict(rec["must_show_check"])
+    if isinstance(entry.get("must_show_check"), dict) and entry.get("video_take") in (take, None):
+        return dict(entry["must_show_check"])
+    return {}
+
+
+def must_show_failed(entry: dict, take) -> list[str]:
+    return sorted(k for k, v in must_show_state(entry, take).items() if v == "fail")
 
 
 def media_digest(path: Path) -> str:
@@ -80,8 +138,16 @@ def take_quality(path: Path, shot: dict, rec: dict, *, audio_only: bool = False)
     if assessment.get("media_sha256") != media_digest(path) or assessment.get("shot_sha256") != shot_digest(shot):
         return ["missing_or_stale_review"]
     problems = []
+    audio = audio_status(assessment)
     for key in (("audio",) if audio_only else CHECKS):
-        if (assessment.get("checks") or {}).get(key) != "pass":
+        if key == "audio":
+            if audio["asr_ok"] is not True:
+                problems.append("audio_not_passed")
+            if audio["listen_ok"] is False:
+                problems.append("listen_failed")
+            if audio["sync_ok"] is False:
+                problems.append("sync_failed")
+        elif (assessment.get("checks") or {}).get(key) != "pass":
             problems.append(f"{key}_not_passed")
     if not str(assessment.get("evidence") or "").strip():
         problems.append("missing_evidence")
@@ -105,6 +171,10 @@ def cut_issues(project, ep: str, data: dict, review: dict) -> list[str]:
     if not order or len(order) != len(set(order)):
         problems.append("cut_order is empty or duplicated")
     audio_sources = {item.get("shot") for sid in order if sid in shots for item in shots[sid].get("audio_from") or []}
+    kept = [sid for sid in order if sid in shots and ((review.get("shots") or {}).get(sid) or {}).get("verdict") != "drop"]
+    for fact in must_show_coverage(data, kept):
+        if fact["shots"] and not fact["in_cut"]:
+            problems.append(f"{fact['id']}: 必须拍清楚的事实「{fact['fact']}」的承担镜 {','.join(fact['shots'])} 全部被删，因果证据丢了")
     for sid in set(shots) - set(order) - audio_sources:
         omission = (review.get("shots") or {}).get(sid) or {}
         if omission.get("verdict") != "drop" or not omission.get("note"):
@@ -132,6 +202,9 @@ def cut_issues(project, ep: str, data: dict, review: dict) -> list[str]:
             problems.append(f"{sid}: verdict is not bound to selected take")
         if entry.get("verdict") == "weak" and not assessment.get("acceptance_reason"):
             problems.append(f"{sid}: weak needs explicit acceptance of noncritical defect")
+        failed_ms = must_show_failed(entry, take)
+        if failed_ms:
+            problems.append(f"{sid}: must_show fail {','.join(failed_ms)}（必须拍清楚的事实没拍出来：retake 或回剧本/分镜改，不能靠台词或延长镜头补）")
         edit = rec.get("edit") or {}
         if not math.isfinite(float(edit.get("speed") or 1.0)) or not 0.5 <= float(edit.get("speed") or 1.0) <= 2:
             problems.append(f"{sid}: invalid speed")

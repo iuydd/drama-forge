@@ -128,6 +128,36 @@ def _waived(shot: dict, code: str) -> bool:
     return code in (shot.get("waive") or [])
 
 
+_CN_DIGIT = {"零": 0, "一": 1, "二": 2, "两": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9}
+_EN_NUM = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve",
+           "thirteen", "fourteen", "fifteen", "sixteen", "seventeen", "eighteen", "nineteen", "twenty"]
+
+
+def _fact_numbers(fact: str) -> list[int]:
+    """必拍事实里写到的数量：阿拉伯数字，或后面跟量词的中文数字（十件、五份），去重保序。"""
+    out: list[int] = []
+    for m in re.finditer(r"\d+|[零一二两三四五六七八九十]+(?=\s*[件个份张只把枚块人位名条根本支盒箱袋颗瓶杯次道])", fact):
+        t = m.group(0)
+        if t.isdigit():
+            n = int(t)
+        elif "十" in t:
+            a, _, b = t.partition("十")
+            n = (_CN_DIGIT.get(a, 1) if a else 1) * 10 + (_CN_DIGIT.get(b, 0) if b else 0)
+        elif len(t) == 1:
+            n = _CN_DIGIT[t]
+        else:
+            continue
+        if n not in out:
+            out.append(n)
+    return out
+
+
+def _prompt_has_number(prompt: str, n: int) -> bool:
+    if re.search(rf"(?<!\d){n}(?!\d)", prompt):
+        return True
+    return n < len(_EN_NUM) and re.search(rf"\b{_EN_NUM[n]}\b", prompt, re.I) is not None
+
+
 def _planned_use(sh: dict) -> float:
     """计划取用秒数：motion/duty/continuity 里写的「取用约 Xs」取最小值，没写按整条 seconds（与 G42 同口径）。"""
     txt = " ".join([str(sh.get("motion") or ""), str(sh.get("duty") or "")] + [str(x) for x in sh.get("continuity") or []])
@@ -574,10 +604,15 @@ def check(project: Project, ep: str) -> Findings:
             F.add("G46", "error", None, f"必拍事实 {mid}「{f_['fact'][:20]}」的承担镜 {who} 都不在 cut_order 里；删镜删掉了因果证据，恢复一镜或换承担镜")
         # G47 数量类事实：承担镜的起始帧提示词要把数字写进去（数量与排布写死，目检时逐个数）
         if f_.get("kind") == "count":
+            nums = _fact_numbers(str(f_["fact"]))
             for x in sorted(set(who) | set(f_.get("shots") or [])):
                 sh = by_sid.get(x)
-                if sh and not _waived(sh, "G47") and not NUMBER_RE.search(sh.get("frame_prompt") or ""):
-                    F.add("G47", "warn", x, f"承担数量事实 {mid}「{f_['fact'][:20]}」，frame_prompt 里没有数字；把数量和排布写死（exactly ten boxes, five on the top row and five on the bottom row），起始帧目检逐个数")
+                if not sh or _waived(sh, "G47"):
+                    continue
+                fp_ = sh.get("frame_prompt") or ""
+                miss = [n for n in nums if not _prompt_has_number(fp_, n)] if nums else ([] if NUMBER_RE.search(fp_) else ["数量"])
+                if miss:
+                    F.add("G47", "warn", x, f"承担数量事实 {mid}「{f_['fact'][:20]}」，frame_prompt 里没写出 {miss}；把数量和排布写死（exactly ten boxes, five on the top row and five on the bottom row），起始帧目检逐个数")
 
     # G48 能力规则重复解释：同集 explains_ability 镜累计超限；第二集起开头窗口内不许超过 1 镜
     lim = {**GATE_LIMITS_DEFAULT, **(project.get("gate_limits") or {})}

@@ -302,6 +302,61 @@ def main() -> int:
     require("语种疑似不符" in speech_diff("売上、渡せよ。", "卖上交出来")["critical_changes"], "日语台词被整句识别成中文要标语种疑似不符")
     passed += 1
 
+    # G46 必拍事实覆盖 / G47 数量写进起始帧 / G48 能力重复解释 / G49 只说不做
+    F0 = check(pr, "EP001")
+    require(not {f["code"] for f in F0.items} & {"G46", "G47", "G48", "G49"}, f"示例应不触发 G46–G49：{[f for f in F0.items if f['code'] in ('G46', 'G47', 'G48', 'G49')]}")
+    nb = json.loads(good_sp)
+    by = {s_["id"]: s_ for s_ in nb["shots"]}
+    scn = {s_["id"]: s_ for s_ in nb["scenes"]}
+    by["EP001-S02"]["must_show_ids"] = []                                   # MS1 没有镜承担
+    scn["EP001-SC002"]["must_show"][0]["shots"] = ["EP001-S09"]             # 指向不存在的镜
+    by["EP001-S03"]["must_show_ids"] = ["MS3", "MS9"]                       # 未登记的事实
+    scn["EP001-SC002"]["must_show"].append({"id": "MS5", "fact": "桌上正好十份文件，左五份右五份", "shots": ["EP001-S04"], "kind": "count"})
+    by["EP001-S04"]["must_show_ids"] = ["MS4", "MS5"]
+    sp.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    Fm = check(pr, "EP001")
+    em = [(f["shot"], f["msg"]) for f in Fm.errors() if f["code"] == "G46"]
+    require(any("MS1" in m and "没有任何镜头" in m for _, m in em) and any("EP001-S09" in m for _, m in em) and any(s_ == "EP001-S03" and "MS9" in m for s_, m in em),
+            f"必拍事实无镜承担、shots 指向不存在的镜、must_show_ids 未登记要报 G46 error：{em}")
+    g47 = [f["msg"] for f in Fm.warns() if f["code"] == "G47" and f["shot"] == "EP001-S04"]
+    require(g47 and "10" in g47[0] and "5" in g47[0], f"数量事实的承担镜 frame_prompt 没写出数字要报 G47（年龄 28 不算）：{g47}")
+    by["EP001-S04"]["frame_prompt"] += " Exactly ten folders lie on the table, five on the left and five on the right."
+    by["EP001-S02"]["must_show_ids"] = ["MS1"]
+    nb["cut_order"] = ["EP001-S03", "EP001-S01", "EP001-S04"]               # 删掉 S02：MS1 的唯一承担镜被删
+    sp.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    Fm = check(pr, "EP001")
+    require(not any(f["code"] == "G47" for f in Fm.warns()), "数字写进起始帧后不报 G47")
+    require(any(f["code"] == "G46" and "cut_order" in f["msg"] and "MS1" in f["msg"] for f in Fm.errors()), "承担镜被删出 cut_order 要报 G46 error（删镜删掉因果证据）")
+    nb = json.loads(good_sp)
+    by = {s_["id"]: s_ for s_ in nb["shots"]}
+    for k in ("EP001-S01", "EP001-S03", "EP001-S04"):
+        by[k]["explains_ability"] = True
+    by["EP001-S04"]["scene"] = "EP001-SC001"
+    by["EP001-S03"]["motion"] = "约 0.5 秒开口嘲讽，笑出声；约 3.2 秒再说第二句；说完笑容不变。"
+    by["EP001-S04"]["motion"] = "约 0.6 秒开口，语气像随口一问；说完看着画左等答案。"
+    sp.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    Fa = check(pr, "EP001")
+    require(any(f["code"] == "G48" and "3 镜" in f["msg"] for f in Fa.warns()), f"同集解释能力超过 2 镜要报 G48：{[f for f in Fa.warns() if f['code'] == 'G48']}")
+    require(not any(f["code"] == "G48" and "开头" in f["msg"] for f in Fa.warns()), "第一集不查跨集开头回顾")
+    require(any(f["code"] == "G49" and "EP001-SC001" in f["msg"] and "3/3" in f["msg"] for f in Fa.warns()), f"场内对白镜都只说不做要报 G49：{[f for f in Fa.warns() if f['code'] == 'G49']}")
+    by["EP001-S04"]["motion"] = "她把杯子推回三上面前；约 0.6 秒开口；说完看着画左等答案。"
+    by["EP001-S03"]["waive"] = ["G49"]
+    sp.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    require(not any(f["code"] == "G49" for f in check(pr, "EP001").warns()), "补了承接动作或豁免后不报 G49")
+    sp.write_text(good_sp, encoding="utf-8")
+    ep2 = root / "EP002"
+    ep2.mkdir(exist_ok=True)
+    for f_ in ("剧本.md", "视觉设定.md", "shots.json"):
+        (ep2 / f_).write_text((root / "EP001" / f_).read_text(encoding="utf-8").replace("EP001", "EP002"), encoding="utf-8")
+    n2 = json.loads((ep2 / "shots.json").read_text(encoding="utf-8"))
+    for s_ in n2["shots"]:
+        s_["explains_ability"] = s_["id"] in ("EP002-S03", "EP002-S01")   # cut_order 里第 2、3 镜，都在开头 30 秒内
+    (ep2 / "shots.json").write_text(json.dumps(n2, ensure_ascii=False), encoding="utf-8")
+    w48 = [f["msg"] for f in check(pr, "EP002").warns() if f["code"] == "G48"]
+    require(len(w48) == 1 and "开头" in w48[0], f"第二集起开头 30 秒内解释能力超过 1 镜要报 G48（总量未超不另报）：{w48}")
+    shutil.rmtree(ep2)
+    passed += 1
+
     broken = json.loads((root / "EP001/shots.json").read_text(encoding="utf-8"))
     broken["shots"][0]["video_prompt"] = broken["shots"][0]["video_prompt"].replace("承認は、あなたがどうぞ。", "承認はどうぞ。")
     broken["shots"][2]["facing"] = "left"

@@ -100,10 +100,10 @@ python3 scripts/produce.py all    <项目> EP001 --asr
 **产物**（`review_tool.py animatic` 生成；脚本没做到的项按下面手工补齐，缺一项不算预演）：
 
 1. `审查/<EP>-预演.mp4`：按 `cut_order`（未提供时按 shots 顺序），每镜时长 = 计划取用（motion/duty/continuity 里的「取用约 Xs」，没写按 `seconds`，与 G42 同口径），不调换先后。
-2. **临时对白**：每句台词在它的计划时点（`dialogue[].at`）出现，二选一或都做：临时配音音轨（任何已授权的草音 TTS，只用来听节奏，不进成片），或把台词烧成帧上字幕（本机 ffmpeg 常没有 drawtext/libass，用 Pillow 先把字画到起始帧副本上再编码）。
-3. **节奏标记**：画面一角标镜号；`planned_action_window` 区间内标「动作 起–止」；反应镜（有 `reaction_first`、无台词的人物镜，或 duty 写反应的镜）标「反应」；承担 `must_show_ids` 的镜标事实 ID（MS1…）。
+2. **临时对白**：每句台词在它的计划时点（`dialogue[].at`）出现，底部画说话人和台词。音轨按这个顺序取：① 已有配音 `配音/<sid>_<n>.wav`（单句镜也认 `配音/<sid>.wav`）；② 本地 TTS（macOS `say`，选与台词语言匹配的声音），文件放 `审查/<EP>-预演-temp/`、文件名带 `_temp`，只听节奏、不进成片；③ 都没有就按估算时长留静音，画面标「[台词 x.x 秒]」。`--no-tts` 或环境变量 `ANIMATIC_TTS=0` 跳过第 ② 步。字靠 Pillow 画到起始帧副本上再编码（本机 ffmpeg 常没有 drawtext/libass）；没找到中日文字体时画面上没有字，md 会提示只能对照逐镜表看。
+3. **节奏标记**：画面一角标镜号和计划时长；`planned_action_window` 区间内标「动作 起–止」（进行时红色高亮）；反应镜（有 `reaction_first`、无台词的人物镜，或 duty 写反应的镜）标「反应」；承担 `must_show_ids` 的镜标事实 ID（MS1…）；`explains_ability` 镜标「解释能力」；最后一句说完加 `pace.dialogue_tail` 超过计划时长的镜标「台词装不下」。
 4. `审查/<EP>-预演.jpg`：1fps 接触表。
-5. `审查/<EP>-预演.md`：用模板 `assets/templates/预演.md`。首行「结论：PASS」或「结论：REVISE」（`project_tool next` 与 `produce.py all` 只认这一行）；第二行「预演片：审查/<EP>-预演.mp4 · 时长 Xs · N 镜 · 对白方式（草音/字幕）」。预演片和 md 都不删、不覆盖（重做另存 `-预演-v2`），成片交付时要能找到它们。
+5. `审查/<EP>-预演.md`：animatic 自动写，首行「结论：待填…」，下面是 `预演指纹：…`、预演片与临时对白来源、自动统计（总长与目标差、台词装不下的镜、没有反应拍的场、带台词人物镜比例、能力解释镜与连续解释段、必拍事实的承担镜是否在片中、缺起始帧）和逐镜表。模型看完预演，把首行改成「结论：PASS」或「结论：REVISE」（`project_tool next` 与 `produce.py all` 只认这一行，「待填」不放行），再把模板 `assets/templates/预演.md` 的逐条答案段落补在下面；不要整份换成模板，指纹行删了会被当成内容变了。重跑 animatic 时：预演内容（指纹）没变就不动已填结论；变了就重出模板，旧文件挪到 `<EP>-预演.prev.md`。预演片和接触表每次重出会覆盖，要保留旧版先手动改名（例 `<EP>-预演-v1.mp4`）；交付时要能找到当前这一版和它的结论。
 
 **逐条回答**（有一条不过就写 REVISE）：
 - 按情绪集纲复述每个情节点，每条标"看得到 / 只靠台词 / 看不到"；
@@ -183,14 +183,14 @@ python3 scripts/produce.py all    <项目> EP001 --asr
 
 **关键情节点缺失必须处理**：先核实区间，再在授权内修提示词或分镜；take 用尽仍缺不能记 weak 进入正式片。记录失败与后续修复，最多输出明确标注的草剪。
 
-**逐镜核对必拍事实**：本镜 `must_show_ids` 里的每条事实，在当前 take 的接触表上看到了没有，写进 `review.json` 该镜的 `must_show_check`：`{"MS1": "pass|fail|unverified"}`（pass 写在哪一秒看到；数量类写逐个数的结果）。有一条 `fail`，verdict 只能是 `retake`，或回剧本/分镜改（§5c）；不许是 `ok` 或 `weak`。`unverified`（加密抽帧也看不清）不能进正式剪辑，先加密抽帧或看原片确认。
+**逐镜核对必拍事实**：本镜 `must_show_ids` 里的每条事实，在当前 take 的接触表上看到了没有，用 `review_tool.py mark <项目> <EP> <SID> … --must-show MS1=pass --must-show MS2=fail` 写进当前 take 的 `video_takes[n].must_show_check`（同时镜像到镜级 `must_show_check`）：`{"MS1": "pass|fail|unverified"}`，pass 的证据（在哪一秒看到；数量类写逐个数的结果）写进 evidence。有一条 `fail`：mark 拒绝批 `ok` / `weak`，`auto` 给 retake，`choose_best` 不选这个 take，正式剪辑拒绝；只能重拍，或回剧本/分镜改（§5c）。`unverified`（加密抽帧也看不清）脚本目前不拦剪，只在审片报告、剪辑单、预演里显示"未验证"——所以这一步靠审片人守住：承担镜进正式剪辑前先加密抽帧或看原片，核成 pass 或 fail。
 
 **声音结论拆三项**，不合并成一个"audio pass"：
-- `asr_ok`（true/false）：ASR 与剧本逐字比对的结果，只说明"识别出来的字对"；
+- `asr_ok`（true/false/null）：ASR 与剧本逐字比对的结果，只说明"识别出来的字对"；没跑 ASR 就是 null；
 - `listen_ok`（true/false/null）：真的听过，情绪、口音、句尾语调、说话人对（§10 听感五问）；没听就是 null；
 - `sync_ok`（true/false/null）：口型与声音对齐、台词落在说话人脸上；没核就是 null。
 
-null 如实显示为"未验证"，任何汇总（审片表、剪辑单、交付说明）都不能把它写成"通过"。关键能力词、专名（例「素手で」）ASR 有分歧时 `asr_ok` 记 false 并写分歧原文，交母语听审确认，不因为"大意对"记 true。旧记录里的 `checks.audio: pass` 如果只是 ASR 通过，改成 `asr_ok: true, listen_ok: null`。
+用 `mark … --asr-ok true|false|null --listen-ok … --sync-ok …` 写进 take 的 `assessment`。入剪只要求 `asr_ok` 为 true；`listen_ok` 或 `sync_ok` 为 false 时拦下；为 null 时放行，但审片报告的"声音"列、剪辑单、终验都显示"未验证"。null 如实显示为"未验证"，任何汇总（审片表、剪辑单、交付说明）都不能把它写成"通过"。审片报告另有"必须拍清楚"一列；关键词识别分歧标"需母语者确认"。关键能力词、专名（例「素手で」）ASR 有分歧时 `asr_ok` 记 false 并写分歧原文，交母语听审确认，不因为"大意对"记 true。旧记录只有 `checks.audio: pass` 时，脚本一律按 `asr_ok: true`、`listen_ok` / `sync_ok` 为 null 读（旧"audio pass"实际只是 ASR 通过）；旧的 `--audio pass` 参数也只等于 `--asr-ok true`。
 
 `review_tool.py auto` 为未审或失效 take 写 pending_review，仅保留当前有效的已有审批。正式成片要求明确 mark 的三项通过与证据；详见 [审片与剪辑准入](quality-contract.md)。
 
