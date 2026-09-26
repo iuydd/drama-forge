@@ -23,14 +23,15 @@ DEFAULTS = {
     "fps": 24,
     "episodes": 6,
     "target_seconds": 120,
-    "shot_seconds": {"default": 5, "min": 4, "max": 10},
-    "profiles": {"ref": "krea2_turbo", "frame": "qwen21", "video": "fasth3",
-                 "ref_res": "2K", "frame_res": "1K", "video_res": "768p"},
+    "shot_seconds": {"default": 5, "min": 4, "max": 15},   # H3 duration 4–15 整数秒；同一人连续动作/台词合并成长镜头（G45）
+    "profiles": {"ref": None, "frame": None, "video": None,
+                 "ref_res": None, "frame_res": None, "video_res": None},
     "one_person_clause": "Only one person in the frame.",
     "no_text_clause": "no text",
     "forbidden_words": [],
     "speech_rates": {"ja": 5.0, "zh": 4.0, "en": 2.5, "ko": 4.5},
-    "dialogue_start_max": 1.0,
+    "craft_profile": "general",
+    "dialogue_start_max": None,
     "video_dialect": "minimax-h3",
     "video_prompt_keys": ["integrated_multimodal_description", "overall_soundscape", "non_diegetic_music"],
     "loudness": -16.0,
@@ -39,6 +40,10 @@ DEFAULTS = {
     "overlays": {},
     "fonts": {},
     "beds": {},
+    "room_tone_db": -48.0,
+    # 节奏下限（G42、cut.py 剪辑单）：对白镜 ≥ max(dialogue_min, 说完 + dialogue_tail)；反应镜 ≥ reaction_min；
+    # 插入/冲击镜短于 insert_min 要写 fast_cut_reason；同场平均镜长 ≥ scene_avg_min。只设下限，不设上限。
+    "pace": {"dialogue_min": 2.5, "dialogue_tail": 0.8, "reaction_min": 1.5, "insert_min": 1.5, "scene_avg_min": 2.5},
 }
 
 # 剧本行：`角色（提示）：台词` / `角色：台词`；生产标签 `[SFX] …`
@@ -157,6 +162,14 @@ class Project:
 
     def final_path(self, ep: str) -> Path:
         return self.ep_dir(ep) / "成片" / f"{ep}.mp4"
+
+    def animatic_passed(self, ep: str) -> bool:
+        """阶段 G2：审查/<EP>-预演.md 存在，且第一行非空行是「结论：PASS」（写 REVISE/不过都不放行 H）。"""
+        p = self.review_dir / f"{ep}-预演.md"
+        if not p.exists():
+            return False
+        first = next((ln.strip() for ln in p.read_text(encoding="utf-8").splitlines() if ln.strip()), "")
+        return re.match(r"^结论\s*[：:]\s*PASS\b", first, re.I) is not None
 
     # ---- 数据 ----------------------------------------------------------------
     def load_refs(self) -> dict:

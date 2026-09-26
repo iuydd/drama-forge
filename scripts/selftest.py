@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """离线自测：起一个假的 H3 中转，把 init → 门 → 渲染 → 参考图/起始帧/视频 → 审片 → 剪辑 整条链跑一遍。
-不联网、不用真 token。需要 ffmpeg/ffprobe 与 Pillow；有 faster-whisper 环境时顺带测 ASR（ASR_MODEL=tiny）。"""
+不联网、不用真 token。需要 ffmpeg/ffprobe 与 Pillow；显式设 SELFTEST_ASR=1 时才测 ASR（需已缓存 ASR_MODEL=tiny）。"""
 from __future__ import annotations
 
+import argparse
 import io
 import json
 import os
@@ -30,16 +31,20 @@ def require(cond: bool, msg: str) -> None:
 
 # ---- 假中转 --------------------------------------------------------------------
 class Mock:
-    def __init__(self, tmp: Path):
+    def __init__(self, tmp: Path, media: bool = True):
         from PIL import Image
         buf = io.BytesIO()
         Image.new("RGB", (64, 36), (30, 60, 120)).save(buf, "PNG")
         self.png = buf.getvalue()
-        vid = tmp / "mock.mp4"
-        subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=0x203050:s=336x192:d=3:r=24", "-f", "lavfi",
-                        "-i", "sine=frequency=440:duration=3", "-shortest", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", str(vid)],
-                       check=True)
-        self.mp4 = vid.read_bytes()
+        if media:
+            vid = tmp / "mock.mp4"
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=0x203050:s=336x192:d=3:r=24", "-f", "lavfi",
+                            "-i", "sine=frequency=440:duration=3", "-shortest", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", str(vid)],
+                           check=True)
+            self.mp4 = vid.read_bytes()
+        else:
+            # Header-only fixture for transport tests; never decode or claim it is playable media.
+            self.mp4 = b"\x00\x00\x00\x18ftypmp42" + b"transport-fixture"
         self.jobs: dict[str, dict] = {}
         self.n = 0
         self.posts = 0
@@ -72,7 +77,7 @@ def make_handler(mock: Mock):
             if p == "/api/status":
                 return self._json({"running": 0, "queued": 0})
             if p == "/api/config":
-                return self._json({"profiles": {"image": ["qwen21", "krea2_turbo"], "video": ["fasth3"]}})
+                return self._json({"profiles": {"image": ["qwen21", "krea2_turbo"], "video": ["base50_sol"]}})
             if p.startswith("/api/jobs/"):
                 parts = p.split("/")
                 jid = parts[3]
@@ -107,8 +112,17 @@ def make_handler(mock: Mock):
 
 
 def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--no-media", action="store_true", help="run contracts/transport/recovery only; skip video decoding, ASR and cutting")
+    args = parser.parse_args()
+    from client_selftest import run_tests
+    run_tests()
+    import unittest
+    from quality_selftest import QualityTests
+    quality = unittest.TextTestRunner().run(unittest.defaultTestLoader.loadTestsFromTestCase(QualityTests))
+    require(quality.wasSuccessful(), "quality regressions")
     tmp = Path(tempfile.mkdtemp(prefix="sda_selftest_"))
-    mock = Mock(tmp)
+    mock = Mock(tmp, media=not args.no_media)
     srv = HTTPServer(("127.0.0.1", 0), make_handler(mock))
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     os.environ["H3_API"] = f"http://127.0.0.1:{srv.server_port}"
@@ -118,8 +132,8 @@ def main() -> int:
     passed = 0
 
     from project_tool import init, next_step, status
-    from common import Project
-    from shots_tool import check, coverage, render
+    from common import Project, ffprobe_duration
+    from shots_tool import check, check_refs, coverage, render
     import produce
     import review_tool
     import cut as cut_mod
@@ -132,13 +146,160 @@ def main() -> int:
     for f in ("剧本.md", "视觉设定.md", "shots.json"):
         shutil.copy(ASSETS / "example/EP001" / f, root / "EP001" / f)
     pr = Project(root)
+    require(all(value is None for value in pr.cfg["profiles"].values()), "新项目不能继承旧项目生产档位")
+    pr.cfg["profiles"] = {"ref": "krea2_turbo", "frame": "qwen21", "video": "base50_sol",
+                          "ref_res": "2K", "frame_res": "1K", "video_res": "768p"}
+    (root / "drama.json").write_text(json.dumps(pr.cfg, ensure_ascii=False), encoding="utf-8")
+    pr.cfg["line_max"] = {"zh": 15, "ja": 20, "en": 10}  # explicit test fixture preference
     require(next_step(pr).startswith("阶段 A"), "系列简报还是模板时 next 指向阶段 A")
+    passed += 1
+    # 立项新颖度：系列简报填了但没有 ≥6 候选 / 爽感打分 → next 带 warn（不拦）；补齐后 warn 消失
+    brief = root / "项目开发/系列简报.md"
+    tmpl = brief.read_text(encoding="utf-8")
+    brief.write_text("# 系列简报\n\n## 一句话\n\n主角能看见谁在说谎。\n", encoding="utf-8")
+    nx = next_step(pr)
+    require(not nx.startswith("阶段 A") and nx.count("[warn] 立项") == 3, f"缺候选、缺打分、用了饱和设定各一条 warn：{nx}")
+    require("新在哪里" in nx and "本质区别" not in nx, f"饱和设定只提示写清新在哪里，不因关键词判不合格：{nx}")
+    rows = "".join(f"| {i} | 钩子{i} | 画面 | 兑现 | 秘密/时钟/见证者 | 区别 | 法 {i} | 12 |\n" for i in range(1, 7))
+    brief.write_text("# 系列简报\n\n## 一句话\n\n杂役睡了三百年，醒来辈分压全宗。\n\n## 立项候选\n\n"
+                     "| # | 钩子 | 画面 | 兑现 | 三件套 | 区别 | 生成法 | 分 |\n|---|---|---|---|---|---|---|---|\n" + rows +
+                     "\n## 爽感打分\n\n| 项 | 分 | 依据 |\n|---|---|---|\n| A1★ | 2 | EP001 |\n| **总分** | 38/50 | 开工 |\n", encoding="utf-8")
+    require("[warn] 立项" not in next_step(pr), f"≥6 候选且有打分时不再 warn：{next_step(pr)}")
+    brief.write_text(tmpl, encoding="utf-8")
+    require(next_step(pr).startswith("阶段 A"), "恢复模板后 next 回到阶段 A")
     passed += 1
 
     F = check(pr, "EP001")
     require(not F.errors(), f"示例 shots.json 应无 error：{F.errors()}")
     codes = {f["code"] for f in F.warns()}
     require("G11" not in codes or all("对白" in f["msg"] for f in F.warns() if f["code"] == "G11"), "示例覆盖了全部场景")
+    require(not codes & {"G31", "G32", "G33", "G34", "G35"}, f"示例应不触发 G31–G35：{codes}")
+    require("G23" not in codes, f"示例视频提示词已带锁面，不应报 G23 warn：{[f for f in F.warns() if f['code'] == 'G23']}")
+    passed += 1
+
+    # G31 台词情绪 / G32 因果铺垫 / G33 风格锁定 / G34 尺度锚点 / G35 环境动态
+    sp = root / "EP001/shots.json"
+    good_sp = sp.read_text(encoding="utf-8")
+    nb = json.loads(good_sp)
+    nb["cut_order"] = [sh["id"] for sh in nb["shots"]]  # explicit dependency-order fixture
+    nb["shots"][0]["dialogue"][0].pop("emotion", None)
+    nb["shots"][1]["requires_setup"] = ["空箱"]
+    nb["shots"][3]["setup_for"] = ["空箱"]
+    nb["shots"][2]["requires_setup"] = ["EP001-S09", "红笔"]
+    nb["shots"][1]["environment_motion_required"] = True
+    nb["shots"][1]["video_prompt"] = nb["shots"][1]["video_prompt"].replace(" Dust drifts slowly in the window light above the table.", "")
+    nb["shots"][2]["framing"] = "中景，主位，三上一人，面朝画右"
+    sp.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    old_preset = pr.cfg.get("style_preset")
+    pr.cfg["style_preset"] = "watercolor"
+    Fn = check(pr, "EP001")
+    w = {(f["code"], f["shot"]) for f in Fn.warns()}
+    msgs = [f["msg"] for f in Fn.warns() if f["code"] == "G32"]
+    require(("G31", "EP001-S01") in w, "台词没写 emotion 要报 G31")
+    require(("G32", "EP001-S02") in w and any("之后" in m for m in msgs), f"铺垫镜在本镜之后要报 G32：{msgs}")
+    require(sum(1 for c, s in w if c == "G32" and s == "EP001-S03") == 1 and any("不存在" in m for m in msgs) and any("凭空" in m for m in msgs),
+            f"铺垫镜不存在、铺垫名字没人 setup 要报 G32：{msgs}")
+    require(("G33", None) in w, "style_preset 不在风格库要报 G33")
+    require(("G34", "EP001-S03") in w, "中景起始帧没写尺度锚点要报 G34")
+    require(("G35", "EP001-S02") in w, "视频提示词没有环境动态要报 G35")
+    nb["shots"][2]["frame_prompt"] += " The table top is at his mid-thigh height, the door frame is about a head taller than him."
+    nb["shots"][3].pop("setup_for"); nb["shots"][0]["setup_for"] = ["空箱"]
+    sp.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    pr.cfg.pop("style_preset", None)
+    w2 = {(f["code"], f["shot"]) for f in check(pr, "EP001").warns()}
+    require(("G34", "EP001-S03") not in w2 and ("G32", "EP001-S02") not in w2, f"写了尺度锚点、铺垫在前就不报：{w2}")
+    require(("G33", None) in w2, "没写 style_preset 要报 G33")
+    if old_preset is not None:
+        pr.cfg["style_preset"] = old_preset
+    sp.write_text(good_sp, encoding="utf-8")
+    passed += 1
+
+    # G36 画风漂移词 / G37 单句超长 / G38 参考图数量与头肩图 / G39 AI 标识 / G40 同机位父帧
+    require(not {f["code"] for f in check(pr, "EP001").warns()} & {"G36", "G37", "G38", "G39", "G40"}, "示例应不触发 G36–G40")
+    nb = json.loads(good_sp)
+    nb["shots"][0]["frame_prompt"] += " 85mm, bokeh, no volumetric haze."
+    nb["shots"][1]["frame_refs"] = ["IMG-PLATE-MEETING", "IMG-HARUKA", "IMG-MIKAMI", "IMG-HARUKA-FACE"]
+    nb["shots"][2]["frame_parent"] = "EP001-S04"
+    nb["shots"][3]["frame_parent"] = "EP001-S01"
+    sp.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    rp0 = root / "参考图/refs.json"; refs_before = rp0.read_text(encoding="utf-8")
+    rj = json.loads(refs_before)
+    hk = rj["refs"]["IMG-HARUKA"]
+    rj["refs"]["IMG-HARUKA-FACE"] = {**hk, "refs": ["IMG-HARUKA"], "voice": None,
+                                     "prompt": hk["prompt"].replace("full-body", "head-and-shoulders").replace("Full-body", "Head-and-shoulders")}
+    rp0.write_text(json.dumps(rj, ensure_ascii=False), encoding="utf-8")
+    saved = {k: pr.cfg.get(k) for k in ("style_preset", "ai_label", "line_max")}
+    pr.cfg["style_preset"] = "anime_cel"; pr.cfg.pop("ai_label", None); pr.cfg["line_max"] = {"ja": 5}
+    Fg = check(pr, "EP001")
+    wg = [(f["code"], f["shot"], f["msg"]) for f in Fg.warns()]
+    eg = {(f["code"], f["shot"]) for f in Fg.errors()}
+    g36 = [m for c, s_, m in wg if c == "G36" and s_ == "EP001-S01"]
+    require(g36 and "85mm" in g36[0] and "bokeh" in g36[0] and "volumetric" not in g36[0], f"动漫画风起始帧摄影词报 G36、否定式不算：{g36}")
+    require(any(c == "G36" and s_ is None and "handheld" in m.lower() for c, s_, m in wg), "动漫画风沿用真人视频头句要报 G36")
+    require(any(c == "G37" for c, _, _ in wg), "单句超过 line_max 要报 G37")
+    g38 = [m for c, s_, m in wg if c == "G38" and s_ == "EP001-S02"]
+    require(any("4 张" in m for m in g38) and any("职责重叠" in m for m in g38), f"参考图超 3 张、全身图和头肩图同绑要报 G38：{g38}")
+    require(any(c == "G39" for c, _, _ in wg), "drama.json 没写 ai_label 要报 G39")
+    require(("G40", "EP001-S03") in eg, "frame_parent 指向后面的镜要报 G40 error")
+    require(any(c == "G40" and s_ == "EP001-S04" for c, s_, _ in wg), "frame_parent 不同主体要报 G40 warn")
+    Frf = check_refs(pr)
+    require(not any(f["code"] == "G20" for f in Frf.errors()), "同一人物的全身图和头肩图不报 G20")
+    require(not any(f["shot"] == "IMG-HARUKA-FACE" and ("全身" in f["msg"] or f["code"] == "G34") for f in Frf.warns()), "头肩图免全身、身高 warn")
+    for k, v in saved.items():
+        if v is None:
+            pr.cfg.pop(k, None)
+        else:
+            pr.cfg[k] = v
+    rp0.write_text(refs_before, encoding="utf-8")
+    sp.write_text(good_sp, encoding="utf-8")
+    passed += 1
+
+    # G42 节奏下限 / G43 视线 / G44 台词语种与读音 / G45 同人相邻不拆 / G32 事件起因
+    require(not {f["code"] for f in check(pr, "EP001").warns()} & {"G42", "G43", "G44", "G45"}, "示例应不触发 G42–G45")
+    nb = json.loads(good_sp)
+    by = {s_["id"]: s_ for s_ in nb["shots"]}
+    by["EP001-S02"]["motion"] += "取用约 1.0s。"
+    by["EP001-S04"]["motion"] += "取用约 1.2s。"
+    by["EP001-S01"].pop("gaze")
+    by["EP001-S01"]["frame_prompt"] += " She looks straight into the camera."
+    by["EP001-S03"]["gaze"] = {"target": "遥", "direction": "left"}
+    by["EP001-S03"]["frame_prompt"] += " Nobody looks at the camera."
+    by["EP001-S04"]["gaze"] = {"target": "三上", "direction": "right"}
+    by["EP001-S01"]["dialogue"][0]["lang"] = "zh"
+    by["EP001-S03"]["video_prompt"] = by["EP001-S03"]["video_prompt"].replace("[Japanese]", "[Chinese]", 1)
+    by["EP001-S04"]["dialogue"][0]["text"] = "三上さん、承認料は？"
+    by["EP001-S03"]["title"] = "三上撞翻杯子"
+    sp.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    Fp = check(pr, "EP001")
+    wp = [(f["code"], f["shot"], f["msg"]) for f in Fp.warns()]
+    has = lambda c, s_, word="": any(c == c_ and s_ == sh_ and word in m for c_, sh_, m in wp)
+    require(has("G42", "EP001-S02", "fast_cut_reason") and has("G42", "EP001-S04", "对白镜") and has("G42", None, "EP001-SC002"),
+            f"插入镜过短无理由、对白镜过短、同场平均镜长过短要报 G42：{[x for x in wp if x[0] == 'G42']}")
+    require(has("G43", "EP001-S01", "没写 gaze") and has("G43", "EP001-S03", "同一侧") and has("G43", "EP001-S04", "facing") and has("G43", "EP001-S04", "不一致"),
+            f"缺 gaze、视线与 facing 矛盾、与对手看同一侧要报 G43：{[x for x in wp if x[0] == 'G43']}")
+    require(not has("G43", "EP001-S03", "看镜头"), "否定式 nobody looks at the camera 不算看镜头")
+    by["EP001-S01"]["gaze"] = {"target": "三上", "direction": "left"}
+    sp.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    require(any(f["code"] == "G43" and f["shot"] == "EP001-S01" and "看镜头" in f["msg"] for f in check(pr, "EP001").warns()), "提示词让人物看镜头要报 G43")
+    require(has("G44", "EP001-S01", "lang=zh") and has("G44", "EP001-S03", "chinese") and has("G44", "EP001-S04", "三上"),
+            f"lang 不一致、语种标签错、专名缺读音要报 G44：{[x for x in wp if x[0] == 'G44']}")
+    require(has("G32", "EP001-S03", "起因"), "事件镜没写起因要报 G32")
+    by["EP001-S02"]["fast_cut_reason"] = "冲击剪辑：红笔划下那一下的重音"
+    by["EP001-S04"]["dialogue"][0]["reading"] = {"三上": "みかみ"}
+    by["EP001-S03"]["requires_setup"] = ["EP001-S03"]   # 起因就在本镜里先发生
+    nb["cut_order"] = ["EP001-S02", "EP001-S03", "EP001-S01", "EP001-S04"]
+    by["EP001-S04"]["scene"] = "EP001-SC001"
+    sp.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    wp = [(f["code"], f["shot"], f["msg"]) for f in check(pr, "EP001").warns()]
+    require(not has("G42", "EP001-S02") and not has("G44", "EP001-S04", "三上") and not has("G32", "EP001-S03"),
+            f"写了 fast_cut_reason、reading、镜内起因就不报：{[x for x in wp if x[0] in ('G42', 'G44', 'G32')]}")
+    require(has("G45", "EP001-S04", "长镜头") and not has("G27", "EP001-S04"), f"同场同人相邻要报 G45（不再重复报 G27）：{[x for x in wp if x[0] in ('G45', 'G27')]}")
+    by["EP001-S04"]["split_reason"] = "从中近景切到近景，强调她放下杯子的那一刻"
+    sp.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
+    require(not any(c == "G45" for c, _, _ in [(f["code"], f["shot"], f["msg"]) for f in check(pr, "EP001").warns()]), "写了 split_reason 不报 G45")
+    sp.write_text(good_sp, encoding="utf-8")
+    from review_quality import speech_diff
+    require("语种疑似不符" in speech_diff("売上、渡せよ。", "卖上交出来")["critical_changes"], "日语台词被整句识别成中文要标语种疑似不符")
     passed += 1
 
     broken = json.loads((root / "EP001/shots.json").read_text(encoding="utf-8"))
@@ -148,9 +309,11 @@ def main() -> int:
     broken["shots"][3]["dialogue"][0]["text"] = "承認料、先週お振込みでしたよね。承認料、先週お振込みでしたよね。承認料、先週お振込みでしたよね。"
     broken["shots"][2]["frame_prompt"] += " He grins or maybe smirks."
     broken["shots"][3]["frame_prompt"] = broken["shots"][3]["frame_prompt"].replace("charcoal grey blazer", "grey blazer")
+    broken["shots"][0]["video_prompt"] = broken["shots"][0]["video_prompt"].replace(" in a charcoal grey blazer", "")
     broken["shots"][3]["end_state"] = "同上，遥等答案。"
     broken["shots"][3]["scene"] = "EP001-SC001"
     broken["shots"][3]["framing"] = broken["shots"][0]["framing"]
+    broken["shots"][3]["split_reason"] = "自测：写了拆镜理由但景别没变，仍是跳切（G27）"
     broken["shots"][0]["boundary"] = {"end": {"hands": "右手离开笔", "held": "无", "facing": "left"}}
     broken["shots"][3]["boundary"] = {"start": {"hands": "右手端咖啡杯", "held": "咖啡杯", "facing": "left"}}
     broken["shots"][2]["facing"] = "left"
@@ -167,9 +330,10 @@ def main() -> int:
     wcodes = {(f["code"], f["shot"]) for f in Fb.warns()}
     require(("G22", "EP001-S03") in wcodes, "分支词要报 G22")
     require(("G23", "EP001-S04") in ecodes, "锁面缺失要报 G23")
+    require(("G23", "EP001-S01") in wcodes and ("G23", "EP001-S01") not in ecodes, "视频提示词缺锁面要报 G23 warn（不升 error）")
     require(("G24", "EP001-S04") in ecodes, "回指词要报 G24")
     require(("G26", "EP001-S04") in ecodes, f"边界链不接要报 G26：{ecodes}")
-    require(("G27", "EP001-S04") in wcodes, "同景别跳切要报 G27")
+    require(("G27", "EP001-S04") in wcodes and ("G45", "EP001-S04") not in wcodes, "写了 split_reason 却同景别，报 G27 跳切、不报 G45")
     require(any(c == "G25" for c, _ in wcodes), "同场朝向不互补要报 G25")
     require(("G21", "EP001-S03") in wcodes, "音色描述缺失要报 G21")
     require(("G04", "EP001-S04") in ecodes, "台词装不下要报 G04")
@@ -178,7 +342,7 @@ def main() -> int:
     bp.write_text(good, encoding="utf-8")
     passed += 1
 
-    from shots_tool import check_refs, build_video_prompt
+    from shots_tool import build_video_prompt
     Fr = check_refs(pr)
     require(not Fr.errors(), f"示例 refs.json 应无 error：{Fr.errors()}")
     bad_refs = json.loads((root / "参考图/refs.json").read_text(encoding="utf-8"))
@@ -189,6 +353,8 @@ def main() -> int:
     Frb = check_refs(pr)
     rcodes = {f["code"] for f in Frb.errors()}
     require("G20" in rcodes and "G19" in rcodes, f"雷同身份图报 G20、底板没写 No people 报 G19：{rcodes}")
+    require(("G34", "IMG-PLATE-MEETING") in {(f["code"], f["shot"]) for f in Frb.warns()}, "底板没写尺度参照要报 G34")
+    require(not any(f["code"] == "G34" for f in Fr.warns()), "示例参考图写了身高和尺度，不报 G34")
     rp_.write_text(good_refs, encoding="utf-8")
     vp = build_video_prompt(pr, {"video_body": "He nods. <d>[Japanese] はい。</d>", "soundscape": "rain"})
     require(vp.startswith("integrated_multimodal_description:") and "\noverall_soundscape: rain\nnon_diegetic_music: N/A" in vp, "骨架拼装")
@@ -232,11 +398,45 @@ def main() -> int:
     require(len(frame_job["payload"]["images"]) == 2, "起始帧带底板+身份图两张参考")
     passed += 1
 
+    # 同机位父帧：frame_parent 的通过帧作 Picture 1，frame_refs 顺延
+    fp_sp = json.loads(bp.read_text(encoding="utf-8"))
+    fp_sp["shots"][3]["frame_parent"] = "EP001-S01"
+    bp.write_text(json.dumps(fp_sp, ensure_ascii=False), encoding="utf-8")
+    n_before = mock.n
+    produce.produce_frames(pr, "EP001", ["EP001-S04"], retake=True)
+    job = mock.jobs[f"image-{mock.n}"]
+    require(mock.n == n_before + 1 and len(job["payload"]["images"]) == 1 + len(fp_sp["shots"][3].get("frame_refs") or []),
+            f"frame_parent 多挂一张父帧：{len(job['payload']['images'])}")
+    bp.write_text(good, encoding="utf-8")
+
+    if not args.no_media:
+        # 阶段 G2 静帧预演：起始帧齐了但没写 预演.md 时 next 指向 G2；animatic 出预演片与接触表
+        dev = root / "项目开发"
+        brief_bak, beat_bak = (dev / "系列简报.md").read_text(encoding="utf-8"), (dev / "情绪集纲.md").read_text(encoding="utf-8")
+        (dev / "系列简报.md").write_text("# 系列简报\n\n自测已填。\n", encoding="utf-8")
+        (dev / "情绪集纲.md").write_text("| 集 | 行 |\n|---|---|\nEP001 | 自测 |\n", encoding="utf-8")
+        for v in pr.ep_dir("EP001").joinpath("视频").glob("*.mp4"):
+            v.rename(v.with_suffix(".bak"))
+        require(next_step(pr).startswith("阶段 G2"), f"起始帧齐、没有预演记录时 next 指向 G2：{next_step(pr)}")
+        amp4, ajpg, amiss = review_tool.animatic(pr, "EP001")
+        want = sum(float(x["seconds"]) for x in json.loads(bp.read_text(encoding="utf-8"))["shots"])
+        require(not amiss and abs(ffprobe_duration(amp4) - want) < 0.3 and ajpg.exists(), f"预演片时长 ≈ 各镜 seconds 之和 {want}：{ffprobe_duration(amp4)}")
+        (pr.review_dir / "EP001-预演.md").write_text("结论：REVISE\n情节点 3 看不到\n", encoding="utf-8")
+        require(next_step(pr).startswith("阶段 G2"), f"预演结论不是 PASS 时 next 仍停在 G2：{next_step(pr)}")
+        require(not pr.animatic_passed("EP001"), "预演结论 REVISE 不放行")
+        (pr.review_dir / "EP001-预演.md").write_text("\n结论：PASS\n情节点全部看得到\n", encoding="utf-8")
+        require(next_step(pr).startswith("阶段 H"), f"预演结论 PASS 后 next 指向 H：{next_step(pr)}")
+        for v in pr.ep_dir("EP001").joinpath("视频").glob("*.bak"):
+            v.rename(v.with_suffix(".mp4"))
+        (dev / "系列简报.md").write_text(brief_bak, encoding="utf-8"); (dev / "情绪集纲.md").write_text(beat_bak, encoding="utf-8")
+        passed += 1
+
+
     # 先收回再重投：手动提交一个起始帧任务但不下载，再跑 produce → 应收回而不是重新 POST
     sh5 = json.loads((root / "EP001/shots.json").read_text(encoding="utf-8"))["shots"][0]
     posts_before = mock.posts
     jid_pending = c.submit_image(sh5["frame_prompt"], pr.frame_path("EP001", "EP001-S01", 3), profile="qwen21", res="1K",
-                                 seed=1, refs=[pr.ref_png(r) for r in sh5["frame_refs"]], name="F_EP001-S01_t3")
+                                 seed=pr.seed("EP001-S01", "frame", 3), refs=[pr.ref_png(r) for r in sh5["frame_refs"]], name="F_EP001-S01_t3")
     require(c.pending("F_EP001-S01_t3")["job"] == jid_pending, "账本能找到未收回的任务")
     # 让 S01 的 take 序号走到 3：先造 take2 占位文件
     pr.frame_path("EP001", "EP001-S01", 2).write_bytes(mock.png)
@@ -254,9 +454,16 @@ def main() -> int:
     (root / "STOP").unlink()
     passed += 1
 
+    if args.no_media:
+        srv.shutdown()
+        srv.server_close()
+        shutil.rmtree(tmp, ignore_errors=True)
+        print(f"{passed} contract/transport self-tests passed (media/ASR/edit skipped)")
+        return 0
+
     made = review_tool.sheets(pr, "EP001")
     require(len(made) == 4 and made[0].suffix == ".jpg", "接触表")
-    asr_py = review_tool.asr_python()
+    asr_py = review_tool.asr_python() if os.environ.get("SELFTEST_ASR") == "1" else None
     if asr_py:
         os.environ["ASR_MODEL"] = os.environ.get("ASR_MODEL", "tiny")
         res = review_tool.asr_all(pr, "EP001")
@@ -264,23 +471,89 @@ def main() -> int:
         require(res["EP001-S02_t1"]["hit"] is None, "无台词镜 hit 为空")
         print("  ASR 用", asr_py, "模型", os.environ["ASR_MODEL"])
     else:
-        print("  ASR 跳过（没有 faster-whisper 环境）")
+        print("  ASR 跳过（未设置 SELFTEST_ASR=1 或没有 faster-whisper 环境）")
     rv = review_tool.auto(pr, "EP001")
     require(all("verdict" in e for e in rv["shots"].values()), "auto 给每镜 verdict")
-    review_tool.mark(pr, "EP001", "EP001-S02", **{"in": 0.5}, out=2.5, mode="fixed", verdict="ok", note="取中段")
+    def approve_fixture(sid, **kw):
+        # Synthetic media contract fixture, not a claim of human/artistic approval.
+        opts = dict(visual="pass", audio="pass", continuity="pass",
+                    evidence="synthetic selftest fixture: injected approval for cut contract", verdict="ok")
+        shot = next(x for x in pr.load_shots("EP001")["shots"] if x["id"] == sid)
+        if shot.get("dialogue"):
+            opts["speech_window"] = [0.3, 2.5]
+        opts.update(kw)
+        return review_tool.mark(pr, "EP001", sid, **opts)
+    approve_fixture("EP001-S02", **{"in": 0.5}, out=2.5, mode="fixed", note="取中段")
     require(pr.load_review("EP001")["shots"]["EP001-S02"]["locked"], "mark 锁定")
     rp = review_tool.report(pr, "EP001")
     require(rp.exists() and "EP001-S02" in rp.read_text(encoding="utf-8"), "审片报告")
     passed += 1
 
     for sid in ("EP001-S01", "EP001-S03", "EP001-S04"):
-        review_tool.mark(pr, "EP001", sid, verdict="ok", mode="full")
+        approve_fixture(sid, mode="full")
+    shots_v = json.loads(bp.read_text(encoding="utf-8"))
+    (root / "音效").mkdir(exist_ok=True)
+    shutil.copy(tmp / "mock.mp4", root / "音效/click.mp4")
+    shots_v["shots"][0]["sfx"] = [{"file": "音效/click.mp4", "at": 0.5, "gain_db": -6}]
+    bp.write_text(json.dumps(shots_v, ensure_ascii=False), encoding="utf-8")
+    approve_fixture("EP001-S01", mode="full")  # shot sfx edit invalidates its prior evidence
     out = cut_mod.cut(pr, "EP001")
     require(out is not None and out.exists(), "成片输出")
-    from common import ffprobe_duration
     d = ffprobe_duration(out)
     require(9.5 < d < 11.5, f"成片时长 ≈ 3×2.8 + 2.0 = 10.4，实际 {d:.2f}")
     require((root / "EP001/剪辑单.md").exists(), "剪辑单")
+    sheet_txt = (root / "EP001/剪辑单.md").read_text(encoding="utf-8")
+    require("房间音 -48 dBFS 整片" in sheet_txt and "音效 1 个" in sheet_txt, "没有 beds 时整片垫房间音、sfx 叠进去")
+    require("AI 标识：有（「本片由AI生成」" in sheet_txt or "找不到字体" in sheet_txt, f"模板默认 ai_label，剪辑单记 AI 标识：{sheet_txt[-200:]}")
+    require("节奏：平均镜长" in sheet_txt and "面板：1 个，主题 tech" in sheet_txt, f"剪辑单记节奏统计与面板：{sheet_txt[-400:]}")
+    passed += 1
+
+    # 面板渲染：合成背景上叠一条面板；面板前后像素不同（面板存在），入场帧与中间帧不同（有动画）
+    pd = cut_mod.panel_demo(tmp / "panel_test.png", "tech")
+    require(pd["frame"].exists() and pd["before_vs_mid"] > 1.0 and pd["enter_vs_mid"] > 0.5,
+            f"面板帧存在且有入场动画：前/中 {pd['before_vs_mid']:.2f}，入场/中 {pd['enter_vs_mid']:.2f}")
+    for th in ("xianxia", "scroll"):
+        pd2 = cut_mod.panel_demo(tmp / f"panel_{th}.png", th)
+        require(pd2["before_vs_mid"] > 1.0, f"{th} 面板主题能渲染：{pd2['before_vs_mid']:.2f}")
+    require(cut_mod.panel_sfx(cut_mod.panel_cfg({}), tmp) is not None, "面板入场音效能程序生成")
+    passed += 1
+
+    # 运动能量：前 1s 静止、1–3s 方块移动、3–4s 静止
+    syn = pr.video_path("EP001", "EP001-S02", 3)
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "lavfi", "-i", "color=c=black:s=320x180:d=4:r=24", "-f", "lavfi",
+                    "-i", "color=c=white:s=60x60:d=4:r=24", "-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo",
+                    "-filter_complex", "[0][1]overlay=x='if(lt(t,1),20,if(lt(t,3),20+(t-1)*110,240))':y=60:shortest=1[v]",
+                    "-map", "[v]", "-map", "2:a", "-t", "4", "-c:v", "libx264", "-pix_fmt", "yuv420p", "-c:a", "aac", str(syn)], check=True)
+    mv = review_tool.motion_all(pr, "EP001", ["EP001-S02"])["EP001-S02_t3"]
+    require(len(mv["motion"]) == 16 and max(mv["motion"][:3]) < 0.2 and min(mv["motion"][5:11]) > 1.0, f"运动曲线每 0.25s 一格、静止段近零：{mv['motion']}")
+    require(abs(mv["action_start"] - 1.0) <= 0.25 and abs(mv["action_end"] - 3.0) <= 0.25 and 1.0 <= mv["action_peak"] <= 3.0,
+            f"动作起止 ≈ 1.0–3.0s：{mv}")
+    rv3 = pr.load_review("EP001")["shots"]["EP001-S02"]["video_takes"]["3"]
+    require(rv3.get("action_end") == mv["action_end"] and rv3.get("motion"), "motion 写进 review.json 的 video_takes")
+    orig_curve = review_tool.motion_curve
+    review_tool.motion_curve = lambda *a, **k: (_ for _ in ()).throw(AssertionError("缓存未命中"))
+    try:
+        review_tool.motion_all(pr, "EP001", ["EP001-S02"])
+    finally:
+        review_tool.motion_curve = orig_curve
+    passed += 1
+
+    # 动作保护：固定区间保护已审 take 的动作；修改计划后须重审；mode=action
+    approve_fixture("EP001-S02", video_take=3, **{"in": 0.0}, out=0.8, mode="fixed", action_window=[mv["action_start"], mv["action_end"]])
+    cut_mod.cut(pr, "EP001", dry=True)
+    row = next(x for x in (root / "EP001/剪辑单.md").read_text(encoding="utf-8").splitlines() if "| EP001-S02 |" in x)
+    want_out = min(ffprobe_duration(syn) - 0.1, mv["action_end"] + 0.2)
+    require(f"0.00–{want_out:.2f}（fixed）" in row and "取用因已审动作/对白保护" in row, f"fixed 出点因动作延长：{row}")
+    shots_v["shots"][1]["planned_action_window"] = [1.0, 2.0]
+    bp.write_text(json.dumps(shots_v, ensure_ascii=False), encoding="utf-8")
+    approve_fixture("EP001-S02", video_take=3, action_window=[1.0, 2.0])
+    cut_mod.cut(pr, "EP001", dry=True)
+    row = next(x for x in (root / "EP001/剪辑单.md").read_text(encoding="utf-8").splitlines() if "| EP001-S02 |" in x)
+    require("0.00–2.20（fixed）" in row and "reviewed_take" in row, f"仅使用本 take 实测区间：{row}")
+    review_tool.mark(pr, "EP001", "EP001-S02", out=None, mode="action")
+    cut_mod.cut(pr, "EP001", dry=True)
+    row = next(x for x in (root / "EP001/剪辑单.md").read_text(encoding="utf-8").splitlines() if "| EP001-S02 |" in x)
+    require("0.00–2.20（action）" in row, f"mode=action 出点 = 动作结束 + 0.2：{row}")
     passed += 1
 
     from cut import align_phrases
@@ -297,6 +570,7 @@ def main() -> int:
     passed += 1
 
     srv.shutdown()
+    srv.server_close()
     shutil.rmtree(tmp, ignore_errors=True)
     print(f"{passed} self-tests passed")
     return 0

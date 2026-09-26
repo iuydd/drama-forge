@@ -6,20 +6,20 @@
       "controls": "脸、低马尾、瘦削体形、炭灰色西装外套", "not_controls": "姿势、表情、背景",
       "voice": "a young woman's calm, clear voice",
       "profile": "krea2_turbo", "res": "2K", "refs": [],
-      "prompt": "Photorealistic full-body photo of one slim Japanese woman about 28 standing against a plain light grey studio wall, facing the camera, calm neutral expression, shoulder-length black hair in a low ponytail, a charcoal grey blazer over a white shirt, dark trousers, flat shoes. Real unglamorous skin, soft even light, no text, no logo."
+      "prompt": "Photorealistic full-body photo of one slim Japanese woman about 28, about 160 cm tall, standing against a plain light grey studio wall, facing the camera, calm neutral expression, shoulder-length black hair in a low ponytail, a charcoal grey blazer over a white shirt, dark trousers, flat shoes. Real unglamorous skin, soft even light, no text, no logo."
     },
     "IMG-MIKAMI": {
       "kind": "identity", "name": "三上 全身身份参考", "subject": "三上",
       "controls": "脸、侧分短发、微胖体形、深蓝西装", "not_controls": "姿势、表情、背景",
       "voice": "a smooth condescending voice",
       "profile": "krea2_turbo", "res": "2K", "refs": [],
-      "prompt": "Photorealistic full-body photo of one slightly heavy Japanese man about 45 standing against a plain light grey studio wall, facing the camera, a faint superior smile, side-parted short hair, a dark navy suit, a gold wristwatch, black leather shoes. Real skin, soft even light, no text, no logo."
+      "prompt": "Photorealistic full-body photo of one slightly heavy Japanese man about 45, about 175 cm tall, standing against a plain light grey studio wall, facing the camera, a faint superior smile, side-parted short hair, a dark navy suit, a gold wristwatch, black leather shoes. Real skin, soft even light, no text, no logo."
     },
     "IMG-PLATE-MEETING": {
       "kind": "plate", "name": "会议室 底板", "location": "会议室",
       "controls": "长桌、投影幕、落地窗白光、白墙", "not_controls": "人物、景别",
       "profile": "krea2_turbo", "res": "2K", "refs": [],
-      "prompt": "Photorealistic empty location plate, candid 35mm film still, daytime: a corporate meeting room in Tokyo, a long table running toward a projection screen at the far end, floor-to-ceiling windows with flat white daylight on the left, a plain white wall with a projector on the right. No people. No logos, no readable text anywhere. Realistic colors, subtle film grain."
+      "prompt": "Photorealistic empty location plate, candid 35mm film still, daytime: a corporate meeting room in Tokyo, a standard 2.1 m door near the camera, a long table about 75 cm high running toward a projection screen at the far end, floor-to-ceiling windows with flat white daylight on the left, a plain white wall with a projector on the right. No people. No logos, no readable text anywhere. Realistic colors, subtle film grain."
     }
   }
 }

@@ -5,10 +5,10 @@
   shots_tool.py render <项目> <EP>               生成 分镜.md / 图片提示词.md / 视频提示词.md 和 脚本/prompts/<EP>/*.txt
   shots_tool.py coverage <项目> <EP>             剧本每句对白 / 每场是否有镜头承载
 
-  shots_tool.py check-refs <项目>                 参考图门 G18–G20（身份图/底板/道具图提示词、雷同）
+  shots_tool.py check-refs <项目>                 参考图门 G18–G20、G34（身份图/底板/道具图提示词、雷同、尺度锚点；头肩图 -FACE 免全身与身高、同人不比雷同）
   shots_tool.py build  <项目> <EP>                只写了 video_body/soundscape 的镜头，拼出 H3 三段 video_prompt
 
-门的编号 G00–G27（见 references/pipeline-contract.md §7），分 error / warn 两级；error 必须修，warn 由写作者判断后
+门的编号 G00–G45（见 references/pipeline-contract.md §7），分 error / warn 两级；error 必须修，warn 由写作者判断后
 可在 shot 里用 "waive": ["G05"] 明确豁免。每次 check 追加一行 脚本/gates.jsonl。
 """
 from __future__ import annotations
@@ -44,9 +44,61 @@ def log_gates(project: Project, ep: str, findings: "Findings", scope: str) -> No
 
 REQUIRED_SHOT = ("id", "scene", "title", "duty", "keyframe", "frame_prompt", "motion", "video_prompt", "seconds", "end_state")
 INSERT_KINDS = {"insert", "hands", "feet", "object", "plate", "empty"}
+STYLE_PRESETS = ("live_modern", "live_period", "live_xianxia", "anime_cel", "guoman_3d", "manhwa", "cg_realistic")  # references/styles.md
+# G34 尺度锚点：人物与现实参照物的关系、厘米身高、相对身高
+SCALE_RE = re.compile(r"\b(?:reach(?:es|ing)?|comes? up to|level with|up to (?:his|her|their))\b[^.]{0,40}\b(?:waist|hips?|chest|knees?|shoulders?|chin|thighs?|ankles?|eyes?|head)\b"
+                      r"|\b\d+(?:\.\d+)?\s*(?:cm|centimet(?:re|er)s?|m|met(?:re|er)s?)\b(?:\s+(?:tall|high|wide|long|deep))?"
+                      r"|\b(?:a|half a|about a) head (?:taller|shorter)\b|\b(?:taller|shorter) than\b|\b(?:waist|knee|ankle|chest|shoulder|hip|thigh)[- ](?:high|height|level)\b"
+                      r"|\bstandard (?:door|doorway|handrail|railing|desk|step)s?\b", re.I)
+SCALE_FRAMING_RE = re.compile(r"中景|全景|全身|远景|双人|过肩|wide|full[- ]body|medium shot(?! close)", re.I)
+ACTION_WORDS_RE = re.compile(r"撞|推(?![镜近进])|冲(?!过的)|摔|抢|让开|让一步|让步|横跨|躲开|闪开|扑|砸|踢|夺|甩|charge|shove|push(?!-?in)|lunge|slam|grab", re.I)
+USE_PLAN_RE = re.compile(r"(?:取用|只留|留)约?\s*([0-9]+(?:\.[0-9]+)?)\s*(?:s|秒)")
 BACKREF_RE = re.compile(r"同上|与上一镜相同|和上一镜相同|保持不变|同前|same as (?:the )?previous|as before|unchanged from|as in the previous", re.I)
 BOUNDARY_KEYS = ("position", "facing", "gaze", "hands", "held", "state")
+# G36 画风漂移诱因词：动漫类起始帧不写摄影/渲染词（styles.md §1、storyboard-keyframes §6b 第 8 项）
+ANIME_PRESETS = ("anime_cel", "manhwa")
+LIVE_LOOK_PRESETS = ("live_modern", "live_period", "live_xianxia", "cg_realistic")
+ANIME_DRIFT_RE = re.compile(r"\b\d{2,3}\s?mm\b|\bbokeh\b|cinematic lighting|\bvolumetric\b|\b[48]k\b|photo-?realistic|\bphotograph(?:ic|y)?\b|film grain|depth of field", re.I)
+GUOMAN_DRIFT_RE = re.compile(r"photo-?realistic|\bphotograph(?:ic|y)?\b|film grain", re.I)
+LIVE_HEAD_RE = re.compile(r"realistic human|\bhandheld\b", re.I)
+NEG_BEFORE_RE = re.compile(r"\b(?:no|not|never|without|nor)\s+(?:[\w-]+\s+){0,2}$", re.I)
+# G37 单句长度（screenplay §4"短"）：可发声字数；en 按词
+LINE_MAX_DEFAULT = {"zh": 15, "ja": 20, "en": 10}
+FACE_SUFFIX = "-FACE"   # 头肩身份图 IMG-<NAME>-FACE（visual-assets §3）
+CLOSE_FRAMING_RE = re.compile(r"中近景|近景|特写|close-?up|medium close", re.I)
+# G43 视线：说话人看着对手（正反打时视线方向与对手的画面位置一致）
+GAZE_DIRS = ("left", "right", "camera", "down", "up")
+GAZE_TEXT_RE = re.compile(r"\b(?:eyes?|gaze|gazes|gazing|look(?:s|ing)?|stares?|staring|glanc\w*|watch(?:es|ing)?)\b[^.;]{0,70}?\bscreen[- ]?(left|right)\b", re.I)
+CAMERA_LOOK_RE = re.compile(r"\b(?:looks?|looking|stares?|staring|eyes?|gazes?)\b[^.;]{0,30}?\b(?:into|at|toward|towards)\s+(?:the\s+)?(?:camera|lens|viewer)\b|\bbreaks? the fourth wall\b", re.I)
+NEG_WIDE_RE = re.compile(r"\b(?:no|not|never|without|nor|nobody|no one|none|doesn't|does not|don't|do not|never)\b[^.;]{0,25}$", re.I)
+# G32 事件起因：登场、摔落、冲突爆发、受伤、闯入这类事件要交代起因（挂 requires_setup）
+EVENT_RE = re.compile(r"登场|出场|入画|闯入|闯进|冲进|破门|摔|掉落|跌落|跌倒|倒地|爆发|受伤|流血|起火|着火|爆炸|灯灭|停电|打碎|碎裂|撞|打翻|泼")
+# G44 台词语种与读音
+LANG_TAGS = {"ja": ("japanese",), "zh": ("chinese", "mandarin", "cantonese"), "en": ("english",), "ko": ("korean",)}
+KANA_RE = re.compile(r"[\u3040-\u30ff]")
+HAN_RE = re.compile(r"[\u4e00-\u9fff]")
 READABLE_TEXT_RE = re.compile(r"\b(reads?|reading|text says|says ['\"]|written|lettering|letters spell|caption|subtitle|sign(?:board)? (?:that )?says|headline)\b", re.I)
+
+
+def scene_state_issues(shots: list[dict]) -> list[dict]:
+    states = {}
+    issues = []
+    def flatten(value, prefix=""):
+        for key, item in value.items():
+            path = f"{prefix}/{key}"
+            if isinstance(item, dict):
+                yield from flatten(item, path)
+            else:
+                yield path, item
+    for shot in shots:
+        state = states.setdefault(shot.get("scene"), {})
+        block = shot.get("scene_state") or {}
+        for path, value in flatten(block.get("start") or {}):
+            if path in state and state[path] != value:
+                issues.append({"shot": shot["id"], "message": f"场景事实 {path} 从 {state[path]!r} 跳到 {value!r}；核对中间已发生的状态变化或明确时空跳转"})
+            state[path] = value
+        state.update(dict(flatten(block.get("end") or {})))
+    return issues
 
 
 class Findings:
@@ -72,6 +124,13 @@ def check(project: Project, ep: str) -> Findings:
     data = project.load_shots(ep)
     refs = project.load_refs()
     shots = data.get("shots") or []
+    if data.get("cut_order") is not None:
+        order = data["cut_order"]
+        by_id = {sh["id"]: sh for sh in shots}
+        if not order or len(order) != len(set(order)) or any(sid not in by_id for sid in order):
+            F.add("G41", "error", None, "cut_order 为空、重复或包含未知镜头")
+        else:
+            shots = [by_id[sid] for sid in order] + [sh for sh in shots if sh["id"] not in order]
     scenes = {s["id"]: s for s in (data.get("scenes") or []) if "id" in s}
     lang = project.get("dialogue_lang")
     rates = project.sub("speech_rates")
@@ -80,7 +139,9 @@ def check(project: Project, ep: str) -> Findings:
     notext = project.get("no_text_clause")
     forbidden = [w.lower() for w in project.get("forbidden_words") or []]
     keys = project.get("video_prompt_keys") or []
-    start_max = float(project.get("dialogue_start_max"))
+    fast_craft = project.get("craft_profile") == "commercial_fast"
+    start_value = project.get("dialogue_start_max")
+    start_max = float(start_value) if start_value is not None else (1.0 if fast_craft else None)
 
     script_doc = None
     visual = None
@@ -103,6 +164,10 @@ def check(project: Project, ep: str) -> Findings:
     covered_dialogue: set[str] = set()
     covered_scenes: set[str] = set()
     planned_total = 0.0
+    pace = project.sub("pace")
+    scene_use: dict[str, list[float]] = {}
+    prev_shot: dict | None = None
+    readings_all = project.get("readings") or {}
 
     for sh in shots:
         sid = sh.get("id", "?")
@@ -152,7 +217,7 @@ def check(project: Project, ep: str) -> Findings:
             at = float(d.get("at", 0.5))
             est = speech_seconds(t, d.get("lang", lang), rates)
             need = max(need, at + est)
-            if i == 0 and at > start_max and not sh.get("reaction_first") and not _waived(sh, "G05"):
+            if i == 0 and start_max is not None and at > start_max and not sh.get("reaction_first") and not _waived(sh, "G05"):
                 F.add("G05", "warn", sid, f"第一句台词 {at}s 才开口（上限 {start_max}s）；要么提前，要么写 reaction_first 并说明")
             if not d.get("speaker"):
                 F.add("G04", "error", sid, "台词缺 speaker")
@@ -167,7 +232,7 @@ def check(project: Project, ep: str) -> Findings:
             covered_dialogue.add(norm(t))
         if dlg and need + 0.5 > seconds:
             F.add("G04", "error", sid, f"台词需要约 {need:.1f}s + 0.5s 收尾，seconds={seconds} 装不下")
-        if kind not in INSERT_KINDS and not dlg and not sh.get("silent_reason") and not _waived(sh, "G05"):
+        if fast_craft and kind not in INSERT_KINDS and not dlg and not sh.get("silent_reason") and not _waived(sh, "G05"):
             F.add("G05", "warn", sid, "人物镜没有台词；要么给一句，要么写 silent_reason")
 
         # G06 不出可读文字；G07 禁词
@@ -208,6 +273,10 @@ def check(project: Project, ep: str) -> Findings:
                 hit = re.search(r"(?<!no )(?<!without )" + re.escape(phrase), fp.lower())
                 if not hit and not _waived(sh, "G23"):
                     F.add("G23", "error", sid, f"锁 {lk.get('id')} 的锁面「{lk.get('phrase')}」没有逐字出现在 frame_prompt 里")
+                # 视频提示词同样要带锁面（CON-07）；台词 <d>…</d> 不算，只查 warn
+                vtext = re.sub(r"<d>.*?</d>", "", (vp or sh.get("video_body") or ""), flags=re.S).lower()
+                if vtext and not re.search(r"(?<!no )(?<!without )" + re.escape(phrase), vtext) and not _waived(sh, "G23"):
+                    F.add("G23", "warn", sid, f"锁 {lk.get('id')} 的锁面「{lk.get('phrase')}」没有逐字出现在 video_prompt/video_body 里")
         # G24 回指词：图片模型看不到上一镜
         for label in ("keyframe", "frame_prompt", "end_state", "motion"):
             if BACKREF_RE.search(sh.get(label, "") or ""):
@@ -227,8 +296,10 @@ def check(project: Project, ep: str) -> Findings:
                 if diffs and not sh.get("boundary_break") and not _waived(sh, "G26"):
                     F.add("G26", "error", sid, f"与上一镜 {prev['id']} 的边界链不接：{diffs} 前一镜终点≠本镜起点；补一镜、改边界，或写 boundary_break 说明镜外发生了什么")
             # G27 同景别同主体跳切
-            if prev and prev.get("framing") and sh.get("framing") and norm(prev["framing"]) == norm(sh["framing"]) and not _waived(sh, "G27"):
-                F.add("G27", "warn", sid, f"和上一镜 {prev['id']} 同主体同景别「{sh['framing']}」相邻，是跳切；换景别、角度或中间加反应/插入镜")
+            # 紧挨着且没写 split_reason 时由 G45 提示合并成长镜头，这里不再劝"换景别拆开"
+            adjacent_unsplit = prev is not None and prev is prev_shot and not sh.get("split_reason")
+            if prev and not adjacent_unsplit and prev.get("framing") and sh.get("framing") and norm(prev["framing"]) == norm(sh["framing"]) and not _waived(sh, "G27"):
+                F.add("G27", "warn", sid, f"和上一镜 {prev['id']} 同主体同景别「{sh['framing']}」，是跳切；同一人连续的戏合并成一个长镜头，确需拆开就换景别或角度并写 split_reason")
             prev_by_scene_subject[key] = sh
             if facing in ("left", "right"):
                 facings_in_scene.setdefault(scene, {})[sh["subject"]] = facing
@@ -256,10 +327,164 @@ def check(project: Project, ep: str) -> Findings:
         # G13 质量地板
         if len(sh.get("keyframe", "")) < 20:
             F.add("G13", "warn", sid, "冻结关键帧描述太短（<20 字），下游没法核对构图")
-        if kind not in INSERT_KINDS and one and one.lower() in fp.lower() and re.search(r"\b(two|three|both|couple|crowd|people)\b", fp.lower()) and not sh.get("multi_person"):
+        if kind not in INSERT_KINDS and one and one.lower() in fp.lower() and re.search(r"\b(two|three|both|couple|crowd|people)\b(?!-quarter)", fp.lower()) and not sh.get("multi_person"):
             F.add("G13", "warn", sid, "起始帧提示词既写一镜一人又出现 two/both/people 等词，检查是否多人入画")
         if kind not in INSERT_KINDS and re.search(r"\bin focus\b", fp.lower()) and not _waived(sh, "G13"):
             F.add("G13", "warn", sid, "「in focus」给虚焦背景里的路人留了口子（实战里多出过人）；写 Only one person in the frame，不写 in focus")
+
+        # G29 动作职责镜：生成模型动作常晚 1–2 秒，计划取用太短或没标 action_window，动作会落在剪点外
+        if kind in ("person", "hands") and ACTION_WORDS_RE.search(sh.get("motion", "") or "") and not _waived(sh, "G29"):
+            plan = [float(x) for x in USE_PLAN_RE.findall(" ".join(map(str, sh.get("continuity") or [])) + " " + str(sh.get("silent_reason") or ""))]
+            if plan and min(plan) < 2.0:
+                F.add("G29", "warn", sid, f"动作镜（{ACTION_WORDS_RE.search(sh['motion']).group(0)}）计划只取用约 {min(plan)}s；动作常晚 1–2s 才发生，取用至少 2s，出点按动作结束定")
+            if not sh.get("planned_action_window") and not sh.get("action_window"):
+                F.add("G29", "warn", sid, "动作镜建议注明 planned_action_window 估时；生成后每个 take 单独审查 action_window，计划不作为剪点")
+        # G30 全景/全身人物镜配台词：脸只有几十像素，口型和表情都读不出
+        if kind == "person" and dlg and re.search(r"全景|全身|远景", sh.get("framing", "") or "") and not _waived(sh, "G30"):
+            F.add("G30", "warn", sid, f"全景/全身人物镜有台词（{sh.get('framing', '')[:12]}…）；对白镜至少中景，脸高占画高 20% 以上，全景只交代空间不配台词")
+        # G31 台词要有情绪：每句 dialogue[].emotion（情绪·强度·语速·音量），配音按它选参考或写 instruct
+        if not _waived(sh, "G31"):
+            bare = [d.get("text", "")[:10] for d in dlg if not str(d.get("emotion") or "").strip() and not (isinstance(d.get("emotion"), dict) and d["emotion"])]
+            if bare:
+                F.add("G31", "warn", sid, f"{len(bare)} 句台词没写 emotion（{'、'.join(bare)}…）；写「情绪·强度·语速·音量」，例 惊慌·强·快·大，配音才不会平读")
+        # G36 画风漂移诱因词（否定式 no film grain 不算）
+        preset_ = project.get("style_preset")
+        drift_re = ANIME_DRIFT_RE if preset_ in ANIME_PRESETS else GUOMAN_DRIFT_RE if preset_ == "guoman_3d" else None
+        if drift_re and not _waived(sh, "G36"):
+            bad = [m.group(0) for m in drift_re.finditer(fp) if not NEG_BEFORE_RE.search(fp[max(0, m.start() - 30):m.start()])]
+            if bad:
+                F.add("G36", "warn", sid, f"画风 {preset_} 的起始帧出现摄影/渲染词 {sorted(set(bad))}，会把画面往 3D/真人拉；按 storyboard-keyframes §6b 第 8 项换成本画风的镜头词")
+        # G38 参考图数量与头肩图绑定（visual-assets §3、§8）
+        frefs = list(sh.get("frame_refs") or [])
+        n_refs = len(frefs) + (1 if sh.get("frame_parent") else 0)
+        if n_refs > 3 and not _waived(sh, "G38"):
+            F.add("G38", "warn", sid, f"起始帧挂了 {n_refs} 张参考（含 frame_parent 父帧）；默认 2 张、接触镜 3 张、不超过 3 张，职责重叠的参考会被平均")
+        for r in frefs:
+            if r.endswith(FACE_SUFFIX) and r[:-len(FACE_SUFFIX)] in frefs and not _waived(sh, "G38"):
+                F.add("G38", "warn", sid, f"同时绑了全身身份图 {r[:-len(FACE_SUFFIX)]} 和头肩图 {r}；两张职责重叠，按景别只绑一张")
+            elif (refs.get(r) or {}).get("kind") == "identity" and (r + FACE_SUFFIX) in refs and r + FACE_SUFFIX not in frefs \
+                    and CLOSE_FRAMING_RE.search(sh.get("framing", "") or "") and not _waived(sh, "G38"):
+                F.add("G38", "warn", sid, f"中近景/近景/特写绑的是全身身份图 {r}，但 refs.json 有 {r + FACE_SUFFIX}；近景绑头肩图，脸才不漂")
+        # G40 同机位父帧：frame_parent 必须是本镜之前、同场、同主体的镜头
+        par = sh.get("frame_parent")
+        if par:
+            j, ps = next(((j, s_) for j, s_ in enumerate(shots) if s_.get("id") == par), (None, None))
+            me = next(j_ for j_, s_ in enumerate(shots) if s_ is sh)
+            if j is None or j >= me:
+                F.add("G40", "error", sid, f"frame_parent {par} {'不存在' if j is None else '在本镜之后'}；父帧必须是本集前面已出过起始帧的镜头")
+            elif (ps.get("scene") != scene or ps.get("subject") != sh.get("subject")) and not _waived(sh, "G40"):
+                F.add("G40", "warn", sid, f"frame_parent {par} 和本镜不是同场同主体（{ps.get('scene')}/{ps.get('subject')}）；同机位派生只用于同场同一人物反复回到的机位")
+
+        # G34 尺度锚点：绑了底板的中景以上/双人人物镜，起始帧要写人物与现实参照物的关系
+        plate_bound = any(refs.get(r, {}).get("kind") == "plate" for r in sh.get("frame_refs") or [])
+        if kind == "person" and plate_bound and (sh.get("multi_person") or SCALE_FRAMING_RE.search(sh.get("framing", "") or "")) \
+                and not SCALE_RE.search(fp) and not _waived(sh, "G34"):
+            F.add("G34", "warn", sid, "中景以上/双人镜的起始帧没写尺度锚点；写人物与护栏/门/桌/台阶的关系（the handrail reaches his waist），多人写相对身高（visual-assets §12）")
+        # G35 only checks a declared requirement; words like "dust/out of focus" prove no motion.
+        if sh.get("environment_motion_required") and not str(sh.get("environment_motion") or "").strip() and not _waived(sh, "G35"):
+            F.add("G35", "warn", sid, "本镜明确要求环境运动，但未写具体环境变化；静止背景本身不构成错误")
+
+        # G42 节奏下限：计划取用（motion/duty/continuity 里的「取用约 Xs」；没写就按整条 seconds 算）不能过短
+        plan_txt = " ".join([str(sh.get("motion") or ""), str(sh.get("duty") or "")] + [str(x) for x in sh.get("continuity") or []])
+        plan_vals = [float(x) for x in USE_PLAN_RE.findall(plan_txt)]
+        use = min(plan_vals) if plan_vals else seconds
+        scene_use.setdefault(scene, []).append(use)
+        on_screen_dlg = [d for d in dlg if not sh.get("audio_from") and (not sh.get("subject") or d.get("speaker") == sh.get("subject"))]
+        if not _waived(sh, "G42"):
+            if kind == "person" and on_screen_dlg:
+                floor = max(float(pace["dialogue_min"]), need + float(pace["dialogue_tail"]))
+                if use + 1e-6 < floor:
+                    F.add("G42", "warn", sid, f"对白镜计划取用约 {use:.1f}s，低于下限 {floor:.1f}s（台词说完约 {need:.1f}s + {pace['dialogue_tail']}s，且不短于 {pace['dialogue_min']}s）；台词要在一个镜头里说完，不在句中切")
+            elif kind == "person":
+                if use + 1e-6 < float(pace["reaction_min"]) and not sh.get("fast_cut_reason"):
+                    F.add("G42", "warn", sid, f"反应镜计划取用约 {use:.1f}s，低于 {pace['reaction_min']}s；冲击剪辑确需更短就写 fast_cut_reason")
+            elif use + 1e-6 < float(pace["insert_min"]) and not sh.get("fast_cut_reason"):
+                F.add("G42", "warn", sid, f"插入镜计划取用约 {use:.1f}s，短于 {pace['insert_min']}s 而没写 fast_cut_reason（观众来不及看清）")
+
+        # G44 台词语种与读音：lang 与 dialogue_lang 一致、<d>[语种] 标签对、文字像目标语言、日语专名有 reading
+        if not _waived(sh, "G44"):
+            want_tags = LANG_TAGS.get(str(lang or "")[:2])
+            tags = [t.strip().lower() for t in re.findall(r"<d>\s*\[([A-Za-z ]+)\]", vp)]
+            bad_tags = sorted({t for t in tags if want_tags and t not in want_tags})
+            if bad_tags:
+                F.add("G44", "warn", sid, f"video_prompt 的台词语种标签 {bad_tags} 与 dialogue_lang={lang} 不符；语言参数错了，口音和语调会跟着错")
+            for d in dlg:
+                t = d.get("text", "") or ""
+                if d.get("lang") and lang and d["lang"] != lang and not d.get("lang_reason"):
+                    F.add("G44", "warn", sid, f"台词「{t[:12]}」lang={d['lang']} 与 dialogue_lang={lang} 不一致；TTS/视频的语言参数必须显式等于台词语言，确属外语台词写 lang_reason")
+                eff = str(d.get("lang") or lang or "")[:2]
+                if eff == "ja" and HAN_RE.search(t) and not KANA_RE.search(t) and len(norm(t)) >= 4:
+                    F.add("G44", "warn", sid, f"日语台词「{t[:12]}」没有一个假名，像中文或书面汉文；按母语口语改写（screenplay §4c）")
+                elif eff == "zh" and KANA_RE.search(t):
+                    F.add("G44", "warn", sid, f"中文台词「{t[:12]}」里有假名，语种写混了")
+                rd = d.get("reading")
+                if eff == "ja" and not isinstance(rd, str):
+                    known = set(readings_all) | set((rd or {}) if isinstance(rd, dict) else {})
+                    miss = sorted(n for n in cast if n and HAN_RE.search(n) and n in t and n not in known)
+                    if miss:
+                        F.add("G44", "warn", sid, f"台词里的专名 {miss} 没写读音；在 dialogue[].reading 写 {{\"{miss[0]}\": \"假名\"}}（或 drama.json readings），配音前按它校对")
+
+        # G45 同一人不拆两镜：同场相邻两镜主体相同、中间没有别人或插入镜，默认合并成一个长镜头
+        if prev_shot is not None and kind not in INSERT_KINDS and sh.get("subject") and not _waived(sh, "G45") \
+                and prev_shot.get("scene") == scene and prev_shot.get("kind", "person") not in INSERT_KINDS \
+                and prev_shot.get("subject") == sh.get("subject") and not sh.get("split_reason"):
+            merged = float(prev_shot.get("seconds") or 0) + seconds
+            cap = float(secs["max"])
+            extra = f"；合并后约 {merged:.0f}s 超过 shot_seconds.max={cap:.0f}，先删同质节拍" if merged > cap else ""
+            F.add("G45", "warn", sid, f"与上一镜 {prev_shot.get('id')} 同场同一人物「{sh['subject']}」相邻、中间没有别人的镜头或插入镜；默认合并成一个长镜头（按内容定时长，上限 {cap:.0f}s）{extra}；只有景别/机位/剧情明显变化或时间跳跃才拆，拆就写 split_reason")
+        prev_shot = sh
+
+    # G42 同场平均镜长下限（只设下限，允许长镜头）
+    for sc_id, uses in scene_use.items():
+        if uses and sum(uses) / len(uses) + 1e-6 < float(pace["scene_avg_min"]):
+            F.add("G42", "warn", None, f"{sc_id} 计划平均镜长 {sum(uses) / len(uses):.2f}s，低于 {pace['scene_avg_min']}s；镜头切得太碎，合并同一人的相邻镜、让台词在一个镜头里说完")
+
+    # G43 视线：有台词的人物镜写 gaze（target + direction）；方向与对手在本场的朝向互补；提示词写明视线
+    for sh in shots:
+        sid, kind = sh.get("id"), sh.get("kind", "person")
+        if kind != "person" or _waived(sh, "G43"):
+            continue
+        dlg = sh.get("dialogue") or []
+        speaks = [d for d in dlg if not sh.get("audio_from") and (not sh.get("subject") or d.get("speaker") == sh.get("subject"))]
+        gz = sh.get("gaze") if isinstance(sh.get("gaze"), dict) else None
+        reason = str(sh.get("gaze_reason") or "").strip()
+        if not gz:
+            if speaks:
+                F.add("G43", "warn", sid, "有台词的人物镜没写 gaze（{\"target\": 说话对象, \"direction\": left/right}）；说话人默认看着对手，不看镜头")
+            continue
+        tgt, dirn = str(gz.get("target") or ""), str(gz.get("direction") or "")
+        if dirn not in GAZE_DIRS or not tgt:
+            F.add("G43", "warn", sid, f"gaze 要写 target（人物名或物件）和 direction（{'/'.join(GAZE_DIRS)}）：{gz}")
+            continue
+        scene = sh.get("scene")
+        people = {subj for (sc_, subj) in facing_by_scene if sc_ == scene} | set(cast)
+        if dirn == "camera" and not reason:
+            F.add("G43", "warn", sid, "gaze 朝镜头：只有独白、直面观众这类剧情才看镜头，写 gaze_reason")
+        if tgt not in people and not reason:
+            F.add("G43", "warn", sid, f"gaze.target「{tgt}」不是同场人物（看物件、回避视线）；剧情需要就写 gaze_reason")
+        if dirn in ("left", "right") and not reason:
+            own = sh.get("facing")
+            if own in ("left", "right") and own != dirn:
+                F.add("G43", "warn", sid, f"gaze 看画{'左' if dirn == 'left' else '右'}，身体 facing 却朝画{'左' if own == 'left' else '右'}；对不上就会像在看画外第三者")
+            tf = facing_by_scene.get((scene, tgt))
+            if tf == dirn:
+                F.add("G43", "warn", sid, f"对手「{tgt}」在本场面朝画{'左' if tf == 'left' else '右'}，说话人也看画{'左' if dirn == 'left' else '右'}：两人看向同一侧，正反打会读成在看画外第三者")
+        if dirn in ("left", "right"):
+            for label, body in (("frame_prompt", sh.get("frame_prompt") or ""), ("video_prompt", re.sub(r"<d>.*?</d>", "", sh.get("video_prompt") or "", flags=re.S))):
+                dirs = {m.group(1).lower() for m in GAZE_TEXT_RE.finditer(body)}
+                if not dirs:
+                    F.add("G43", "warn", sid, f"{label} 没写视线方向；写 eyes on {tgt if label == 'frame_prompt' else 'the other person'} off screen-{dirn}（眼神略偏离镜头，不看镜头）")
+                elif dirn not in dirs:
+                    F.add("G43", "warn", sid, f"{label} 写的视线方向 {sorted(dirs)} 与 gaze.direction={dirn} 不一致")
+        if dirn != "camera":
+            for label, body in (("frame_prompt", sh.get("frame_prompt") or ""), ("video_prompt", sh.get("video_prompt") or "")):
+                hit = next((m for m in CAMERA_LOOK_RE.finditer(body) if not NEG_WIDE_RE.search(body[max(0, m.start() - 40):m.start()])), None)
+                if hit:
+                    F.add("G43", "warn", sid, f"{label} 让人物看镜头（「{hit.group(0)}」），但 gaze 不是 camera；对话镜看对手，不看镜头")
+
+    # G41 scene state survives reverse shots; omitted fields retain their previous value.
+    for issue in scene_state_issues(shots):
+        F.add("G41", "warn", issue["shot"], issue["message"])
 
     # G17 视频正文里不该出现人名（H3 用 Subject/Speaker 编号指代；<d> 里的台词除外）
     banned = set()
@@ -276,39 +501,111 @@ def check(project: Project, ep: str) -> Findings:
                 F.add("G17", "warn", sh.get("id"), f"video_prompt 正文出现人名「{nm}」；H3 正文用 the man / (S1) 这类指代，人名只放起始帧提示词")
                 break
 
+    # G32 因果交代：requires_setup 指向的铺垫（名字在前面某镜的 setup_for，或直接写铺垫镜 ID）必须存在且在本镜之前
+    order = {s.get("id"): i for i, s in enumerate(shots)}
+    for i, sh in enumerate(shots):
+        if _waived(sh, "G32"):
+            continue
+        ev = EVENT_RE.search(f"{sh.get('title') or ''} {sh.get('duty') or ''}")
+        if ev and not sh.get("requires_setup") and not sh.get("setup_for"):
+            F.add("G32", "warn", sh.get("id"), f"事件镜（{ev.group(0)}）没写起因：requires_setup 写起因镜 ID 或起因名（前面某镜 setup_for 铺垫）；起因就在本镜里先发生，写本镜 ID")
+        for need_item in sh.get("requires_setup") or []:
+            item = str(need_item)
+            if re.fullmatch(r"EP\d{3}-S\d{2,}", item):
+                j = order.get(item)
+                if j is None:
+                    F.add("G32", "warn", sh.get("id"), f"requires_setup 指向的铺垫镜 {item} 不存在")
+                elif j > i:   # j == i：起因在本镜内（长镜头里先因后果）
+                    F.add("G32", "warn", sh.get("id"), f"requires_setup 指向的铺垫镜 {item} 在本镜之后；已声明的预先披露依赖应在本镜之前；后揭示信息不要写 requires_setup")
+                continue
+            where = [j for j, s in enumerate(shots) if item in (s.get("setup_for") or [])]
+            if not where:
+                F.add("G32", "warn", sh.get("id"), f"「{item}」没有任何镜在 setup_for 里铺垫；观众看不到它从哪来（凭空出现）")
+            elif min(where) >= i:
+                F.add("G32", "warn", sh.get("id"), f"「{item}」的铺垫镜 {shots[min(where)].get('id')} 在本镜之后；已声明的预先披露依赖应在本镜之前")
+    # G33 风格锁定：drama.json 的 style_preset 七选一，全剧一种
+    preset = project.get("style_preset")
+    if not preset:
+        F.add("G33", "warn", None, "drama.json 没写 style_preset；按 references/styles.md 七选一并全剧锁定（判不出用 live_modern）")
+    elif preset not in STYLE_PRESETS:
+        F.add("G33", "warn", None, f"style_preset「{preset}」不在风格库里：{', '.join(STYLE_PRESETS)}")
+
+    # G36 视频头句：非真人画风不用把画面往真人拉的词（styles.md §1 视频头句表）
+    head_ = project.get("video_prompt_head") or ""
+    if preset and preset not in LIVE_LOOK_PRESETS and preset in STYLE_PRESETS:
+        bad = [m.group(0) for m in LIVE_HEAD_RE.finditer(head_) if not NEG_BEFORE_RE.search(head_[max(0, m.start() - 30):m.start()])]
+        if bad:
+            F.add("G36", "warn", None, f"画风 {preset} 的 drama.json video_prompt_head 含 {sorted(set(bad))}（真人头句）；按 styles.md §1 换成本画风的视频头句和保持句")
+    # G39 AI 生成标识：drama.json 要明确写 ai_label（大陆发行写标识文字，海外写 null 并记决策）
+    if "ai_label" not in project.cfg:
+        F.add("G39", "warn", None, "drama.json 没写 ai_label；大陆发行要在成片前 3 秒叠显式标识（例「本片由AI生成」，cut.py 自动叠），只在海外发行写 null 并记决策记录")
+
     # G16 剧本层：冷开场、估时、台词占比、连说
     if script_doc:
         all_lines = [ln for sc in script_doc["scenes"] for ln in sc["lines"] if ln["type"] in ("action", "dialogue")]
         head = all_lines[:3]
-        if all_lines and not any(ln["type"] == "dialogue" for ln in head):
+        if fast_craft and all_lines and not any(ln["type"] == "dialogue" for ln in head):
             F.add("G16", "warn", None, "冷开场：前 3 拍没有对白；爽剧要在前 3 拍内出现可见冲突或异常，主体在动")
         d_secs = sum(speech_seconds(ln["text"], lang, rates) for ln in all_lines if ln["type"] == "dialogue")
         a_secs = 2.5 * sum(1 for ln in all_lines if ln["type"] == "action")
-        est = d_secs + a_secs
+        # Unknown overlap gives a range, not a falsely precise sum.
+        lower, upper = max(d_secs, a_secs), d_secs + a_secs
         target = float(project.get("target_seconds") or 0)
-        if target and (est < target * 0.75 or est > target * 1.25):
-            F.add("G16", "warn", None, f"剧本估时 {est:.0f}s（台词 {d_secs:.0f}s + 动作段 {a_secs:.0f}s），目标 {target:.0f}s，偏差超过 25%")
-        ratio_min = float(project.get("dialogue_ratio_min", 0.35))
-        if est and d_secs / est < ratio_min:
-            F.add("G16", "warn", None, f"台词秒数占比 {d_secs / est:.0%} 低于 {ratio_min:.0%}；本项目要求台词要多")
+        if target and (lower > target * 1.25 or upper < target * 0.75):
+            F.add("G16", "warn", None, f"剧本粗估区间 {lower:.0f}–{upper:.0f}s，目标 {target:.0f}s；按实际并行/顺序动作逐段核对，不直接相加")
+        ratio_min = float(project.get("dialogue_ratio_min", 0.35 if fast_craft else 0) or 0)
+        if upper and ratio_min and d_secs / upper < ratio_min:
+            F.add("G16", "warn", None, f"按顺序估计的台词占比 {d_secs / upper:.0%} 低于项目参考 {ratio_min:.0%}；先核对并行动作，不据此补台词")
         for sc in script_doc["scenes"]:
             run, prev = 0, None
             for ln in sc["lines"]:
                 if ln["type"] == "dialogue":
                     run = run + 1 if ln["speaker"] == prev else 1
                     prev = ln["speaker"]
-                    if run == 4:
+                    if fast_craft and run == 4:
                         F.add("G16", "warn", None, f"{sc['id']}：「{prev}」连说 4 句以上，中间要有对方反应或一个动作")
                 elif ln["type"] == "action":
                     run, prev = 0, None
             if not any(ln["type"] == "action" for ln in sc["lines"]):
                 F.add("G16", "warn", None, f"{sc['id']} 没有动作段，只有对白")
+        # G37 单句超长：拆成两句、中间插对方反应或动作（为了句数多、反应快，不是少说话）
+        lmax = {**(LINE_MAX_DEFAULT if fast_craft else {}), **(project.get("line_max") or {})}
+        for d in (script_dialogue if lmax else []):
+            t = d["text"]
+            if lang == "en" or not re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", t):
+                n, cap, unit = len(re.findall(r"[A-Za-z0-9']+", t)), int(lmax.get("en", 10)), "词"
+            else:
+                n, cap, unit = len(re.findall(r"[\w\u3040-\u30ff\u4e00-\u9fff]", t)), int(lmax.get(lang, lmax.get("zh", 15))), "字"
+            if n > cap:
+                F.add("G37", "warn", None, f"{d['scene']}「{d['speaker']}：{t[:14]}…」{n} {unit}，超过单句上限 {cap}；拆成两句，中间插对方反应或一个动作；同一人的两句可以放在同一个长镜头里（screenplay §4）")
 
     # G25 正反打：同场两个人物的朝向应互补（都朝画左 = 在看同一个画外第三者）
     for sc_id, fmap in facings_in_scene.items():
         if len(fmap) >= 2 and len(set(fmap.values())) == 1:
             sc_axis = (scenes.get(sc_id) or {}).get("axis", "")
             F.add("G25", "warn", None, f"{sc_id}：{list(fmap)} 全都面朝画{'左' if list(fmap.values())[0] == 'left' else '右'}，正反打没有互补朝向（轴线声明：{sc_axis or '无'}）")
+
+    # G28 场景连续：同场（同一地点组）的多块底板必须互相派生（refs.json 的 refs 连通），不许各自独立生成
+    for sc_id, sc in scenes.items():
+        plates = [x for x in (sc.get("plates") or []) if (refs.get(x) or {}).get("kind") == "plate"]
+        for group in (sc.get("plate_groups") or [plates]):
+            group = [x for x in group if x in plates]
+            if len(group) < 2:
+                continue
+            adj = {x: set() for x in group}
+            for x in group:
+                for y in list((refs.get(x) or {}).get("refs") or []) + ([refs[x]["same_place_as"]] if (refs.get(x) or {}).get("same_place_as") else []):
+                    if y in adj:
+                        adj[x].add(y); adj[y].add(x)
+            seen, stack = set(), [group[0]]
+            while stack:
+                x = stack.pop()
+                if x not in seen:
+                    seen.add(x); stack.extend(adj[x] - seen)
+            lonely = [x for x in group if x not in seen]
+            if lonely:
+                F.add("G28", "error", None, f"{sc_id}：底板 {lonely} 没有和 {group[0]} 互相派生（refs.json 的 refs 不连通），切镜会像换了地方；"
+                      f"派生底板挂主底板为参考图重出，确属不同地点就在 scene 写 plate_groups 分组")
 
     # G11 覆盖：剧本每场有镜头；每句对白有镜头
     if script_doc:
@@ -348,7 +645,8 @@ def check_refs(project: Project) -> Findings:
         if kind == "identity":
             if not re.search(r"\bone\b", low) or re.search(r"\b(two|three|both|couple|crowd|people)\b", low):
                 F.add("G18", "error", rid, "身份图必须是一个人：写 one …，不能出现 two/both/people")
-            if not any(w in low for w in ("full-body", "full body", "head-to-toe")):
+            is_face = rid.endswith(FACE_SUFFIX)   # 头肩身份图：不要求全身、身高留在全身图上
+            if not is_face and not any(w in low for w in ("full-body", "full body", "head-to-toe")):
                 F.add("G18", "warn", rid, "身份图建议全身（full-body）")
             if not any(w in low for w in ("facing the camera", "frontal", "front view")):
                 F.add("G18", "warn", rid, "身份图建议正面（facing the camera）")
@@ -356,11 +654,15 @@ def check_refs(project: Project) -> Findings:
                 F.add("G18", "warn", rid, "身份图带饰品（表/戒指/链子），以后每镜都会跟着人物走，难以去掉；确需保留写 accessories_ok: true")
             if not r.get("subject"):
                 F.add("G18", "error", rid, "身份图缺 subject（人物名，用来对账）")
+            if not is_face and not re.search(r"\b\d+(?:\.\d+)?\s*(?:cm|centimet(?:re|er)s?|m|met(?:re|er)s?)\b|\b(?:tall|height)\b", low):
+                F.add("G34", "warn", rid, "身份图没写身高（about 168 cm tall）；起始帧和底板才有比例依据（visual-assets §12）")
         elif kind == "plate":
             if not re.search(r"\bno (?:people|person|humans?|figures?)\b", low):
                 F.add("G19", "error", rid, "底板必须写 No people")
             if not any(w in low for w in ("left", "right")):
                 F.add("G19", "warn", rid, "底板建议写清画左/画右各是什么（left/right），轴线才有依据")
+            if not SCALE_RE.search(p):
+                F.add("G34", "warn", rid, "底板没写尺度参照（a standard 2.1 m door、handrails about 1 m high、each step about 17 cm）；模型会按随意尺寸造环境")
         elif kind == "prop":
             if not re.search(r"\bno (?:hands?|fingers?|people)\b", low):
                 F.add("G19", "error", rid, "道具图必须写 no hands")
@@ -372,6 +674,9 @@ def check_refs(project: Project) -> Findings:
     ids = list(ident)
     for i in range(len(ids)):
         for j in range(i + 1, len(ids)):
+            si, sj = ident[ids[i]].get("subject"), ident[ids[j]].get("subject")
+            if si and si == sj:   # 同一人物的全身图与头肩图 -FACE 本来就该相似，不算认错人
+                continue
             jac = _jaccard(ident[ids[i]].get("prompt", ""), ident[ids[j]].get("prompt", ""))
             if jac >= 0.75:
                 F.add("G20", "error", ids[i], f"和 {ids[j]} 的身份图提示词相似度 {jac:.0%}，观众会认错人：至少换脸型、发型、体形、服装之一")
@@ -405,6 +710,12 @@ def _facing_cn(f: str | None) -> str:
     return {"left": "面朝画左", "right": "面朝画右", "camera": "面朝镜头"}.get(f or "", f or "未写")
 
 
+def _emotion_cn(em) -> str:
+    if isinstance(em, dict):
+        return "·".join(str(em.get(k)) for k in ("feel", "intensity", "pace", "volume") if em.get(k))
+    return str(em)
+
+
 def render(project: Project, ep: str) -> list[Path]:
     data = project.load_shots(ep)
     refs = project.load_refs()
@@ -417,6 +728,7 @@ def render(project: Project, ep: str) -> list[Path]:
 
     # 分镜.md
     L = [f"# {ep} 分镜", "",
+         f"画风：{project.get('style_preset') or '未选（G33）'}（references/styles.md，全剧锁定）。",
          f"目标模型：{project.get('video_dialect')}；一镜一生成，keyframe 首帧模式；每镜生成秒数见各镜；成片取用区间按审片结果（审查/{ep}-review.json）。",
          f"拍法：{project.get('one_person_clause')} 每镜一人或一双手；关系和冲突靠特写与剪辑建立；字幕与后期字全部后期叠加，生成画面里不出字。", ""]
     if data.get("notes"):
@@ -428,7 +740,9 @@ def render(project: Project, ep: str) -> list[Path]:
         sid = sh["id"]
         ft = project.chosen_take(ep, sid, "frame", review)
         fpath = project.frame_path(ep, sid, ft) if ft else None
-        dl = "；".join(f"约 {d.get('at', 0.5)}s {d.get('speaker')}「{d.get('text')}」" for d in sh.get("dialogue") or []) or "无对白"
+        dl = "；".join(f"约 {d.get('at', 0.5)}s {d.get('speaker')}「{d.get('text')}」" + (f"（{_emotion_cn(d.get('emotion'))}）" if d.get("emotion") else "")
+                      + (f"［读音 {'、'.join(f'{k}={v}' for k, v in d['reading'].items()) if isinstance(d['reading'], dict) else d['reading']}］" if d.get("reading") else "")
+                      for d in sh.get("dialogue") or []) or "无对白"
         ov = "；".join(f"{o['kind']}（{o.get('side') or o.get('text')}）" for o in sh.get("overlay") or []) or "无"
         L += [f"## SHOT-{sid} · {sh.get('title', '')}",
               f"- 场景：{sh.get('scene')}",
@@ -436,7 +750,11 @@ def render(project: Project, ep: str) -> list[Path]:
               f"- 时长：生成 {sh.get('seconds')} 秒",
               f"- 目的：{sh.get('duty', '')}",
               f"- 景别/机位：{sh.get('framing', '')}",
-              f"- 主体与朝向：{sh.get('subject') or sh.get('kind', 'insert')}，{_facing_cn(sh.get('facing'))}",
+              f"- 主体与朝向：{sh.get('subject') or sh.get('kind', 'insert')}，{_facing_cn(sh.get('facing'))}"
+              + (f"；视线：看{(sh.get('gaze') or {}).get('target', '?')}（画{ {'left': '左', 'right': '右'}.get((sh.get('gaze') or {}).get('direction'), (sh.get('gaze') or {}).get('direction'))}）" if isinstance(sh.get("gaze"), dict) else "")
+              + (f"（{sh['gaze_reason']}）" if sh.get("gaze_reason") else ""),
+              *([f"- 拆镜理由：{sh['split_reason']}"] if sh.get("split_reason") else []),
+              *([f"- 快切理由：{sh['fast_cut_reason']}"] if sh.get("fast_cut_reason") else []),
               f"- 起点（冻结关键帧）：{sh.get('keyframe', '')}",
               f"- 唯一动作：{sh.get('motion', '')}",
               f"- 终点：{sh.get('end_state', '')}",
@@ -444,6 +762,8 @@ def render(project: Project, ep: str) -> list[Path]:
               f"- 后期叠加：{ov}",
               f"- 视觉依据：{'；'.join(sh.get('visual_deps') or []) or '无'}",
               f"- 连续性：{'；'.join(sh.get('continuity') or []) or '无'}",
+              *([f"- 铺垫（本镜交代来处）：{'、'.join(map(str, sh['setup_for']))}"] if sh.get("setup_for") else []),
+              *([f"- 需要前面已铺垫：{'、'.join(map(str, sh['requires_setup']))}"] if sh.get("requires_setup") else []),
               f"- 起始帧：{fpath.relative_to(project.root) if fpath else '尚未生成'}",
               ""]
     p = project.ep_dir(ep) / "分镜.md"
