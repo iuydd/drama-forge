@@ -149,7 +149,7 @@ Cinematic still from a live-action Chinese historical costume drama, practical s
 
 **禁忌与常见翻车**：
 - 牌匾、对联、圣旨上的字被模型画成乱码——写 `plain lacquered board with no characters`，内容后期叠加或靠台词。
-- 服饰朝代混搭（明制袄裙配清代旗头）：视觉设定写死朝代与形制。
+- 服饰朝代混搭（明制袄裙配清代旗头）：视觉设定写死朝代与形制；原著没明说时怎么推断、架空怎么写，见 visual-assets §1 时代基准。
 - 室内太亮太平像影棚：写明光源实物。
 - 殿内空间不合理（门后又是门、台阶方向乱）：见 visual-assets §4b。
 
