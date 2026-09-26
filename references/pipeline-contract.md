@@ -32,7 +32,8 @@
   EP001/成片/EP001.overlays.json   cut.py 写的成片元数据（schema drama-forge/overlays/v1，字段见 §6 末尾），final_qa.py 读它；草剪写在 审查/<EP>-草剪.overlays.json
   审查/<EP>-审查.md               C 阶段 reviewer 子代理的剧本审查，带 `剧本指纹：<12位>` 行（格式与分级见 review-checklists §0，骨架 assets/templates/审查.md，review_md_check.py 查结构）
   审查/<EP>-分镜审查.md           E 阶段 reviewer 子代理的分镜审查，带 `分镜指纹：<12位>` 行；指纹用 `project_tool.py fingerprint <项目> <EP>` 打印（剧本指纹 = 剧本.md 字节，分镜指纹 = shots.json 去掉 cut_order 后的规范 JSON，各取 sha256 前 12 位）
-  审查/agents/<时间>-<worker|reviewer>-<pid>/   isolated_agent.sh 留档：task.md、out.md、exit、meta.txt（模型、角色、起止时间）、written.sha256（子代理写出的 审查/*.md 的 sha256，review_md_check RV10 据此核对 reviewer 原稿没被改）；不删不改
+  审查/agents/<时间>-<worker|reviewer>-<pid>/   isolated_agent.sh 留档：task.md、out.md、exit、meta.txt（模型、角色、起止时间）、written.sha256（子代理写出的 审查/*.md 的 sha256，review_md_check RV10 据此核对 reviewer 原稿没被改）、pack.json（用任务包启动时原样另存）；不删不改
+  审查/agents/packs/<阶段>-<角色>-<EP>.json   task_pack.py build --out 写的子代理任务包（材料原文快照 + 路径、字节数、SHA-256 + 模板与工具指纹）；isolated_agent.sh 启动前 verify，过期就拒绝
   审查/<EP>-grade.json             可选：逐镜接镜调色参数（hub_tool.py grade，edit-and-delivery §5b），输出 成片/<EP>_graded.mp4
   审查/<EP>-sheets/<sid>_t<n>.jpg  接触表（2 帧/秒）
   审查/<EP>-asr.json <EP>-review.json <EP>-审片.md
@@ -45,6 +46,8 @@
   脚本/ids.log jobs.jsonl asr_cache.json prompts/<EP>/*.txt
   STOP                             出现即停（当前任务做完后）
 ```
+
+子代理任务包：`python3 scripts/task_pack.py build <项目> --stage A|B|C|D|E|I|J --role worker|reviewer [--episode EPxxx] --request-file <项目内相对路径> [--max-chars N] [--out 审查/agents/packs/….json]`，`task_pack.py verify <项目> <包.json>`（当前退出 0，过期退出 1）。各阶段各岗位的必需/可选材料、必读节、产出路径（含 A/B/D/I/J reviewer 的 `审查/系列简报-审查.md`、`审查/情绪集纲-审查.md`、`审查/<EP>-视觉审查.md`、`审查/<EP>-审片复核.md`、`审查/<EP>-终验复核.md`）和完成条件在 `assets/task-templates.json`；缺必需材料、超预算（按整个输出 JSON 字符数，不截断）、reviewer 的 `--request-file` 含放宽审查的词（从宽、只看格式、跳过、放行等），都报错退出不出包。
 
 创作真相是 Markdown（剧本、视觉设定、系列简报）和 `shots.json`；分镜.md / 图片提示词.md / 视频提示词.md 由 `shots_tool.py render` 从 `shots.json` 生成，只读不改。
 

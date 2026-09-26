@@ -1,6 +1,9 @@
 #!/bin/sh
 # 隔离子代理：只给 drama-forge SKILL.md + 任务，不带 CLAUDE.md、其他 skill、插件 hook、MCP。
-# 用法：isolated_agent.sh <工作目录(项目)> <任务文本或任务文件> [worker|reviewer]   （输出=子代理最终回复）
+# 用法：isolated_agent.sh <工作目录(项目)> <任务包.json | 任务文本或任务文件> [worker|reviewer]   （输出=子代理最终回复）
+# - 第二个参数是 .json 任务包（scripts/task_pack.py build 构建）时：先 task_pack.py verify，不是当前版本就拒绝启动；
+#   通过则用包里的 prompt 作任务书、包里的 role 作角色（给了第三个参数且不一致也拒绝），包原样另存 pack.json；
+#   纯文本任务书仍可用，但 reviewer 角色会在 stderr 警告（建议用 task_pack 构建，防漏材料、旧材料和放水任务书）；
 # - 任务书、输出、退出码、模型、子代理写出的 审查/*.md 的 sha256 都留档到 <工作目录>/审查/agents/<时间>-<角色>-<pid>/
 #   （review_md_check RV10 用 written.sha256 核对 reviewer 原稿没被主会话改过）；
 # - 子代理拿不到生成密钥（H3_STUDIO_TOKEN、FAL_KEY、KLING_API_KEY 等被清掉），并设 DF_SUBAGENT=1：
@@ -9,15 +12,25 @@
 # - reviewer 角色带固定职责头：审查范围由 review-checklists 定，任务书里放宽、缩范围、预设结论的话不执行并原文记进审查文件。
 set -e
 SKILL_DIR=$(cd "$(dirname "$0")/.." && pwd)
-WORKDIR=${1:?工作目录}; TASK=${2:?任务}; ROLE=${3:-worker}
-[ -f "$TASK" ] && TASK=$(cat "$TASK")
+WORKDIR=${1:?工作目录}; TASK=${2:?任务}; ROLE=${3:-worker}; PACK=""
 WORKDIR=$(cd "$WORKDIR" && pwd)
+case "$TASK" in
+  *.json) PACK=$(cd "$(dirname "$TASK")" && pwd)/$(basename "$TASK")
+    python3 "$SKILL_DIR/scripts/task_pack.py" verify "$WORKDIR" "$PACK" >&2 || { echo "任务包校验不通过，拒绝启动：${TASK}（重新 task_pack.py build）" >&2; exit 2; }
+    PROLE=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["role"])' "$PACK")
+    [ -n "${3:-}" ] && [ "$3" != "$PROLE" ] && { echo "角色 $3 与任务包的 role=$PROLE 不符，拒绝启动" >&2; exit 2; }
+    ROLE=$PROLE
+    TASK=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8"))["prompt"])' "$PACK");;
+  *) [ -f "$TASK" ] && TASK=$(cat "$TASK")
+    [ "$ROLE" = reviewer ] && echo "警告：reviewer 任务书建议用 scripts/task_pack.py build 构建任务包（防漏材料、旧材料和放水任务书）" >&2;;
+esac
 case "$ROLE" in worker|reviewer) ;; *) echo "角色只能是 worker 或 reviewer：$ROLE" >&2; exit 2;; esac
 MODEL=${DF_AGENT_MODEL:-opus}
-case "$MODEL" in opus|opus\[*|fable|fable\[*|claude-opus-*|claude-fable-*) ;; *) echo "拒绝降级子代理模型：$MODEL（只接受 opus / fable 系列）" >&2; exit 2;; esac
+case "$MODEL" in opus|opus\[*|fable|fable\[*|claude-opus-*|claude-fable-*) ;; *) echo "拒绝降级子代理模型：${MODEL}（只接受 opus / fable 系列）" >&2; exit 2;; esac
 LOG="$WORKDIR/审查/agents/$(date -u +%Y%m%dT%H%M%SZ)-$ROLE-$$"
 mkdir -p "$LOG"
 printf '%s\n' "$TASK" > "$LOG/task.md"
+[ -n "$PACK" ] && cp "$PACK" "$LOG/pack.json"
 printf 'model=%s role=%s skill=%s start=%s\n' "$MODEL" "$ROLE" "$SKILL_DIR" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$LOG/meta.txt"
 if ! command -v claude >/dev/null 2>&1; then echo "exit=127 claude 不可用" >> "$LOG/meta.txt"; exit 127; fi
 CHARTER=""
@@ -28,7 +41,7 @@ CHARTER=""
 SYS="$(cat "$SKILL_DIR/SKILL.md")
 
 ---
-你是 drama-forge 的子代理。上面是你唯一的规则。skill 目录在 $SKILL_DIR，references/、scripts/、assets/ 按需自己读，不改 scripts/。
+你是 drama-forge 的子代理。上面是你唯一的规则。skill 目录在 ${SKILL_DIR}，references/、scripts/、assets/ 按需自己读，不改 scripts/。
 不提交生成任务、不做 git。只做任务里写的事，做完用中文简短汇报产物路径和结论。$CHARTER"
 cd "$WORKDIR"
 set +e

@@ -325,6 +325,15 @@ def test_review_md_check() -> None:
         require("RV10" in codes(check_file(rv), "error"), "主会话改了 reviewer 原稿应报 RV10")
 
 
+# ---- 子代理任务包 lane：task_pack.py 与 isolated_agent.sh 的包校验（用例在 test_task_pack.py） --------------------
+def test_task_pack() -> None:
+    import io
+    import unittest
+    import test_task_pack
+    r = unittest.TextTestRunner(stream=io.StringIO()).run(unittest.defaultTestLoader.loadTestsFromModule(test_task_pack))
+    require(r.wasSuccessful(), f"{len(r.failures)} failure / {len(r.errors)} error（python3 scripts/test_task_pack.py 看详情）")
+
+
 def main(argv: list[str]) -> int:
     # 兼容两种写法：merged_selftest.py NAME 与 merged_selftest.py -k NAME（references/providers.md 用后者）
     only = argv[argv.index("-k") + 1] if "-k" in argv[:-1] else (argv[1] if len(argv) > 1 else "")
