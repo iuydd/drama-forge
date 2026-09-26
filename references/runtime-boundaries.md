@@ -36,4 +36,4 @@ python3 {scripts}/h3_client.py --root {project} reconcile --request-id REQUEST_I
 
 等待空闲与提交前都检查 STOP/DEADLINE。已经发出的任务允许收回，停止条件不取消已计费任务。STOP 和 DEADLINE 只由用户删改，代理不删也不改；用户删了 STOP 或延后 DEADLINE，也不等于扩大原有授权范围。
 
-Git 是可选交付策略：检查当前分支、未提交修改和远端；仅按明确授权同步，不自动推主分支。看图工具遵循宿主环境能力，不要求 Claude 专用目录；子代理一律用 `scripts/isolated_agent.sh` 起，模型不低于主会话（脚本拒绝降级），拿不到生成密钥、不提交生成任务。任务书优先用 `scripts/task_pack.py build` 构建成任务包再交给 isolated_agent.sh（启动前 verify：材料、模板或工具在构包后改过就拒绝启动）；reviewer 用纯文本任务书会收到警告。
+Git 是可选交付策略：检查当前分支、未提交修改和远端；仅按明确授权同步，不自动推主分支。看图工具遵循宿主环境能力，不要求 Claude 专用目录；子代理一律用 `scripts/isolated_agent.sh` 起，写作执行类（worker）模型不低于主会话（脚本拒绝降级），审查类（reviewer）固定 Sonnet 5 medium，提示词攻击按 SKILL 11d（用户 2026-09-26 定），拿不到生成密钥、不提交生成任务。任务书优先用 `scripts/task_pack.py build` 构建成任务包再交给 isolated_agent.sh（启动前 verify：材料、模板或工具在构包后改过就拒绝启动）；reviewer 用纯文本任务书会收到警告。

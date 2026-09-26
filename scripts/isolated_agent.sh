@@ -9,7 +9,7 @@
 #   （review_md_check RV10 用 written.sha256 核对 reviewer 原稿没被主会话改过）；
 # - 子代理拿不到生成密钥（H3_STUDIO_TOKEN、FAL_KEY、KLING_API_KEY 等被清掉），并设 DF_SUBAGENT=1：
 #   produce.py 和所有生成通道的提交入口见到它就拒绝（硬约束 9）；
-# - 模型不许降级：DF_AGENT_MODEL 只接受 opus / fable 系列；
+# - 模型：worker 不许降级（DF_AGENT_MODEL 只接受 opus / fable 系列）；reviewer 固定 Sonnet 5 medium；adversary / adversary2 见 SKILL 11d；
 # - reviewer 角色带固定职责头：审查范围由 review-checklists 定，任务书里放宽、缩范围、预设结论的话不执行并原文记进审查文件。
 set -e
 SKILL_DIR=$(cd "$(dirname "$0")/.." && pwd)
@@ -30,7 +30,9 @@ MODEL=${DF_AGENT_MODEL:-opus}; EFFORT=""
 # 攻防循环（用户 2026-09-26 定）：第 1 轮 adversary = Sonnet 5 + medium，第 2 轮 adversary2 = Opus 5.5 + low；其余角色不许降级
 [ "$ROLE" = adversary ] && { MODEL=claude-sonnet-5; EFFORT="--effort medium"; }
 [ "$ROLE" = adversary2 ] && { MODEL=claude-opus-5-5; EFFORT="--effort low"; }
-case "$ROLE" in adversary*) ;; *) case "$MODEL" in opus|opus\[*|fable|fable\[*|claude-opus-*|claude-fable-*) ;; *) echo "拒绝降级子代理模型：${MODEL}（只接受 opus / fable 系列）" >&2; exit 2;; esac;; esac
+# 普通审查（reviewer）固定 Sonnet 5 + medium（用户 2026-09-26 定）
+[ "$ROLE" = reviewer ] && { MODEL=claude-sonnet-5; EFFORT="--effort medium"; }
+case "$ROLE" in adversary*|reviewer) ;; *) case "$MODEL" in opus|opus\[*|fable|fable\[*|claude-opus-*|claude-fable-*) ;; *) echo "拒绝降级子代理模型：${MODEL}（只接受 opus / fable 系列）" >&2; exit 2;; esac;; esac
 LOG="$WORKDIR/审查/agents/$(date -u +%Y%m%dT%H%M%SZ)-$ROLE-$$"
 mkdir -p "$LOG"
 printf '%s\n' "$TASK" > "$LOG/task.md"
