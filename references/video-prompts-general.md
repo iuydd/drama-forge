@@ -59,6 +59,7 @@
 - 用封口词：`exactly`、`only`、`each … once`、`throughout the entire clip`、`remains … until the end`、`clearly visible, in focus, not blocked`。
 - 情绪和比喻只写可观察的身体动作，不写 `his heart sinks`、`frozen in fear` 这类会被照字面画出来的词（§5）。
 - 同一个人全文用同一个称呼加一个区别外观，不用 he/she 连续指代。
+- **有物理参与的镜头按常识写**（用户 2026-09-26 定）：摔、滑、撞、掉、泼、推倒这类动作，先想清楚现实里它怎么发生——多快（滑倒从脚离地到身体着地不到半秒）、往哪边倒（顺着惯性和重心）、有没有失控（真摔不会屈膝慢慢放下自己）、落地什么样（砸下、反弹、溅水、声音）、东西落在哪。把速度、失控和撞击写进提示词，否则模型会用慢而可控的动作交差（滑倒拍成坐下，E36）。攻击任务书同样要求检查这一点。
 - **方向不用左右，用画面里的实物做参照**：写「朝洗手台迈步」「往门那边倒」「落在靠门那条画框边外」，不写 left/right——人物对着镜头时他的左就是画面右，模型和写的人都会读反（E36）。起始帧里人物朝哪写死一句（`her toes point toward the vanity and her heels toward the door`）。画面里确实没有可用的实物时才写 `screen-left`，而且同一句带上人物朝向。
 - 不用模糊词充当规格：适当、自然、合理、相应、若干、一些、appropriately、naturally、some、several、as needed，每处换成谁、哪侧、几个、到哪（方言固定头部句除外）。
 
