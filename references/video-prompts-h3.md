@@ -133,7 +133,7 @@ On 「回るよ」 one hand opens outward in a small shrug; after the line one c
 
 ## 7. 可生成性改写阶梯
 
-高风险（生成管线里整镜常不可用）：整个人失去平衡（滑倒、摔倒、被撞飞；先走攻防循环堵住「走出画面」这类省事路径和做不到的轨迹，production-and-review E36）、精确拦截（在运动中截住某物）、不可见内部状态、否定式动作、一拍三步以上的双手编排、厘米级位移、单指操作小部件、承重的微表情。
+高风险（生成管线里整镜常不可用）：精确拦截（在运动中截住某物）、不可见内部状态、否定式动作、一拍三步以上的双手编排、厘米级位移、单指操作小部件、承重的微表情。
 
 改写：换承担者（物件/环境） → 拆到相邻镜（动作前 / 结果） → 换成停留 → 交给声音 → 标高风险并降级。例：「用手挡住正在合上的笔记本」→「合上笔记本，手放在盖子上没有移开」。
 
@@ -158,6 +158,14 @@ non_diegetic_music: N/A
 **这句头部只适用于真人画风（`live_*`）和 `cg_realistic`。** 头部句不写运镜（原来的 `Handheld camera with small natural breathing sway` 已移出，需要不稳感的镜在正文镜头一行写，video-prompts-general §2b 一）。其他画风（`anime_cel`、`manhwa`、`guoman_3d`）不写 `realistic human behaviour`（会把画面往真人实拍拉），`video_prompt_head` 一律用 [styles.md](styles.md) §1 表里对应画风的"视频头句 + 视频保持句"拼接而成，本文件不另写一份，避免两处定稿不一致。风格句本身（起始帧用的 `Style: …`）也以 styles.md 为准。`shots_tool.py` 的默认头部是否按风格切换不归本文件管，写 `drama.json` 时按 styles.md §1 手动选。
 
 写进 `shots.json` 时可以只写 `video_body`（从 "Her hand leaves…" 起）和 `soundscape`，`shots_tool.py build` 拼上头部和 N/A。人名：H3 正文建议用 `the woman (S1)` 而不是名字（G17 warn）；起始帧提示词里可以用名字。
+
+**全身动作实测成功例（滑倒，E36）**：起始帧是贴地机位、只拍到小腿和鞋，鞋尖朝洗手台。前 4 条失败的提示词经过攻防修补成下面这版，一次拍成（fal H3 Max Turbo 480P，5 秒）。管用的地方：朝向先写死、方向用实物加画面侧、位移按地砖数、每个时间窗一个动作、倒下的画内证据（裙摆和膝盖掉到地面）、终点留在画内、锁机位写全。
+
+```text
+integrated_multimodal_description: [Shot 1] Single continuous locked-off take from the opening frame, real-time speed; the camera stays fixed on the floor with no pan, no tilt, no shake, no reframing, no cuts, no zoom and no on-screen text. The only person is Mio; no hands enter the frame. At the start her lower legs hang down into the frame from its top edge, her toes pointing toward the vanity side of the frame (the screen-left side) and her heels toward the door side (the screen-right side); both shoes stay on her feet for the whole clip. At 1.0 seconds the rear shoe, the one nearer the door, swings forward past the other shoe and lands flat on the wet tile one full stride further toward the vanity side. From 1.2 to 1.8 seconds that front shoe slides fast along the floor across three tiles toward the vanity side, from the middle of the frame to the screen-left third, while her ankles buckle and the rear shoe lifts off the tile. From 1.8 to 2.5 seconds she falls backward toward the door side: her dress hem and knees drop down from the top edge of the frame to the floor, and both legs land flat on the wet tile, lying along the floor with her toes pointing up; her hips and upper body are outside the screen-right edge of the frame, beside the door. Her dress stays above her knees and never covers her lower legs. From 2.5 seconds to the end of the clip her legs lie still on the tile in exactly this position, fully inside the frame, clearly visible and in focus. No one speaks.
+overall_soundscape: low hum of a restroom ventilation fan; one heel click at 1.0 seconds; a short wet rubber squeak from 1.2 to 1.8 seconds; Mio's own short wordless startled gasp, a young woman's voice, at 1.5 seconds; the heavy thud and wet slap of her body hitting the tile just outside the screen-right edge of the frame at 2.4 seconds. These are the only sounds in the shot.
+non_diegetic_music: N/A
+```
 
 ## 10. 自检清单
 
