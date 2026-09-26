@@ -10,16 +10,23 @@
 - 时长只接受整数 5–15 秒：镜头秒数向上取整、不足 5 取 5（剪辑再按取用区间收）。
 - prompt_expansion_mode 固定 disabled：提示词由分镜写定，扩写会改动逐字台词。
 - 起始帧以 data URI 内联上传。
+- 超分（drama.json 的 video_upscale，用户 2026-09-26 定方案 A：480P 生成 + ByteDance Upscaler 到 1080p）：
+  生成结果下载后，用它的 CDN 地址提交超分端点，target_fps 锁 24；原片存 视频/_src/，音轨从原片 remux 回成片。
+  超分失败时成片位置先放原片并报错，之后用 upscale 子命令补。
 
   fal_client.py collect --root <项目> --job <request_id> --endpoint <端点> --out OUT
+  fal_client.py upscale --root <项目> --src 视频/_src/X.mp4 --out 视频/X.mp4
 """
 from __future__ import annotations
 
 import argparse
+import base64
 import hashlib
 import json
 import math
 import os
+import shutil
+import subprocess
 import sys
 import time
 import uuid
@@ -31,12 +38,23 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from h3_client import Client, SubmissionUnknown  # noqa: E402
 
 QUEUE = "https://queue.fal.run"
+UPSCALE_DEFAULT = {"endpoint": "fal-ai/bytedance-upscaler/upscale/video", "target_resolution": "1080p",
+                   "target_fps": 24, "enhancement_tier": "standard", "enhancement_preset": "aigc", "fidelity": "high"}
+
+
+def upscale_config(project_cfg) -> dict | None:
+    """drama.json 的 video_upscale：true 用默认；对象覆盖默认字段；缺省或 false 不超分。"""
+    if not project_cfg:
+        return None
+    return {**UPSCALE_DEFAULT, **(project_cfg if isinstance(project_cfg, dict) else {})}
 
 
 class FalClient(Client):
-    def __init__(self, endpoint: str, root: Path | None = None, log_dir: Path | None = None, poll: float = 5.0):
+    def __init__(self, endpoint: str, root: Path | None = None, log_dir: Path | None = None, poll: float = 5.0,
+                 upscale: dict | None = None):
         super().__init__(api=QUEUE, token="", root=root, poll=poll, log_dir=log_dir)
         self.endpoint = endpoint.strip("/")
+        self.upscale = upscale
         key = os.environ.get("FAL_KEY")
         self.s.headers.pop("Authorization", None)
         if key:
@@ -119,11 +137,61 @@ class FalClient(Client):
             self._mark(jid, "download_failed", out)
             raise RuntimeError(f"{jid}: 下载内容不是 mp4")
         out.parent.mkdir(parents=True, exist_ok=True)
-        tmp = out.with_suffix(out.suffix + ".part")
-        tmp.write_bytes(data)
-        os.replace(tmp, out)
+        if self.upscale:
+            src = out.parent / "_src" / out.name
+            src.parent.mkdir(parents=True, exist_ok=True)
+            _atomic_write(src, data)
+            _atomic_write(out, data)  # 超分失败时成片位置至少有原片
+            self._mark(jid, "collected", out)
+            self.upscale_video(url, src, out)
+            return out
+        _atomic_write(out, data)
         self._mark(jid, "collected", out)
         return out
+
+    def upscale_video(self, src_url: str, src: Path, out: Path) -> Path:
+        """超分 src_url（fal CDN 地址或 data URI）→ out；音轨从 src 原片 remux，避免超分端点丢音或改音。"""
+        self.require_token()
+        cfg = dict(self.upscale or UPSCALE_DEFAULT)
+        ep = cfg.pop("endpoint").strip("/")
+        body = {"video_url": src_url, **cfg}
+        r = self.s.post(f"{QUEUE}/{ep}", json=body, timeout=120)
+        r.raise_for_status()
+        rid = r.json()["request_id"]
+        base = f"{QUEUE}/{'/'.join(ep.split('/')[:2])}"
+        while True:
+            st = self.rget(f"{base}/requests/{rid}/status").json()
+            if st.get("status") == "COMPLETED":
+                break
+            time.sleep(self.poll)
+        res = self.s.get(f"{base}/requests/{rid}", timeout=60)
+        if res.status_code >= 400:
+            raise RuntimeError(f"超分失败 {rid}: HTTP {res.status_code} {res.text[:300]}；成片位置是原片，用 upscale 子命令补")
+        url = ((res.json().get("video") or {}).get("url")) or ""
+        data = requests.get(url, timeout=600).content if url else b""
+        if not data or b"ftyp" not in data[:64]:
+            raise RuntimeError(f"超分结果不是 mp4 {rid}；成片位置是原片，用 upscale 子命令补")
+        up = out.with_name(out.stem + ".up.part.mp4")
+        up.write_bytes(data)
+        mux = out.with_name(out.stem + ".mux.part.mp4")
+        cmd = ["ffmpeg", "-y", "-v", "error", "-i", str(up), "-i", str(src), "-map", "0:v:0", "-map", "1:a?",
+               "-c", "copy", "-shortest", str(mux)]
+        if shutil.which("ffmpeg") and subprocess.run(cmd).returncode == 0:
+            os.replace(mux, out)
+            up.unlink(missing_ok=True)
+        else:
+            mux.unlink(missing_ok=True)
+            os.replace(up, out)
+        self._append({"request_id": rid, "status": "upscaled", "name": out.stem, "kind": "upscale",
+                      "out": str(out.resolve()), "src": str(src.resolve()), "profile": ep,
+                      "billed_seconds": res.json().get("duration")})
+        return out
+
+
+def _atomic_write(path: Path, data: bytes) -> None:
+    tmp = path.with_suffix(path.suffix + ".part")
+    tmp.write_bytes(data)
+    os.replace(tmp, path)
 
 
 class FalImageClient(FalClient):
@@ -217,9 +285,21 @@ def main(argv: list[str] | None = None) -> int:
     c.add_argument("--job", required=True)
     c.add_argument("--endpoint", required=True)
     c.add_argument("--out", required=True)
+    u = sub.add_parser("upscale", help="补超分：原片 → 1080p（配置取 drama.json 的 video_upscale，缺省用默认）")
+    u.add_argument("--root", required=True)
+    u.add_argument("--src", required=True)
+    u.add_argument("--out", required=True)
     a = ap.parse_args(argv)
     root = Path(a.root)
-    cl = FalClient(a.endpoint, root=root, log_dir=root / "脚本")
+    if a.cmd == "upscale":
+        cfg = json.loads((root / "drama.json").read_text(encoding="utf-8")).get("video_upscale") or True
+        cl = FalClient("-", root=root, log_dir=root / "脚本", upscale=upscale_config(cfg))
+        src = Path(a.src)
+        print("UPSCALED", cl.upscale_video("data:video/mp4;base64," + base64.b64encode(src.read_bytes()).decode(), src, Path(a.out)))
+        return 0
+    cfg = json.loads((root / "drama.json").read_text(encoding="utf-8")).get("video_upscale") \
+        if (root / "drama.json").exists() else None
+    cl = FalClient(a.endpoint, root=root, log_dir=root / "脚本", upscale=upscale_config(cfg))
     cl.require_token()
     print("COLLECTED", a.job, cl.collect(a.job, "video", Path(a.out)))
     return 0

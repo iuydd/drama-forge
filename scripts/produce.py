@@ -119,8 +119,9 @@ _REVIEW_LOCK = _threading.Lock()   # --jobs 并行时保护 review.json 的读�
 def _video_client(project: Project) -> Client:
     """drama.json video_provider=fal 时视频走 fal 队列（profiles.video = fal 端点 ID），否则走 H3 中转。"""
     if project.get("video_provider") == "fal":
-        from fal_client import FalClient
-        return FalClient(project.sub("profiles")["video"], root=project.root, log_dir=project.scripts_dir)
+        from fal_client import FalClient, upscale_config
+        return FalClient(project.sub("profiles")["video"], root=project.root, log_dir=project.scripts_dir,
+                         upscale=upscale_config(project.get("video_upscale")))
     if project.get("video_provider") == "kling":
         from kling_client import KlingClient
         return KlingClient(project.sub("profiles")["video"], root=project.root, log_dir=project.scripts_dir,
