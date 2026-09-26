@@ -133,7 +133,7 @@ job 的 `model` 写用户开通的 Endpoint/模型 ID，脚本不假设是 2.0 �
 - **`prompt_expansion_mode` 固定 `disabled`**：默认 `balanced` 会改写提示词，逐字台词会被改。
 - **并行要用户单独授权**：硬约束 2 的串行是默认；用户在对话里明确同意并发、给了并发上限（决策记录 `拍板人: 用户` 抄原话），才用 `--jobs`，并发镜数 × 单价先算进本轮成本边界。"用 fal""用可灵"不等于同意并发。fal 是云端队列，`produce.py videos … --jobs 16` 每镜一个线程；提交仍经账本锁逐条记 intent→submitted，等待与下载并行。本地 H3 单卡**不许**用 `--jobs`（脚本会拒绝）。授权是规则要求：`produce.py` 只查通道是不是 fal/kling，不查决策记录里有没有并发授权、也不限并发数，执行者自己对账。实测 29 条 768P 5 秒视频 81 秒出齐，约 0.02 美元/秒。
 - 起始帧 data URI 内联；结果从 `video.url` 的 CDN 地址下载（不带密钥）；中断用 `fal_client.py collect --root <项目> --job <request_id> --endpoint <端点> --out <路径>` 收回。
-- **起始帧也可走 fal**：`drama.json` 写 `"frame_provider": "fal"`、`profiles.frame` 写图片编辑端点（例 `alibaba/qwen-image-3/edit`，1K 约 0.04 美元/张）；最多 3 张参考图（按 `frame_refs` 顺序 = image 1/2/3，提示词里的 Picture N 自动改成 image N），`enable_prompt_expansion` 固定关；`produce.py frames … --jobs N` 并行同样要用户单独授权（见上）。参考图（身份图、底板）仍走 H3 中转。
+- **起始帧默认走本地 H3 `qwen21`（用户 2026-09-26 定：本地出图质量最好）**；fal 出图只在用户明确要求时用。**起始帧也可走 fal**：`drama.json` 写 `"frame_provider": "fal"`、`profiles.frame` 写图片编辑端点（例 `alibaba/qwen-image-3/edit`，约 0.01 美元/张；单价以 `GET https://api.fal.ai/v1/models/pricing?endpoint_id=…` 为准，H3 Max Turbo 视频 0.0125 美元/秒）；最多 3 张参考图（按 `frame_refs` 顺序 = image 1/2/3，提示词里的 Picture N 自动改成 image N），`enable_prompt_expansion` 固定关；`produce.py frames … --jobs N` 并行同样要用户单独授权（见上）。参考图（身份图、底板）仍走 H3 中转。
 - 画质与本地 H3 同源、风格稳定；同样有约 0.5–2 秒的镜内切景和状态细节丢失，审片照 production-and-review 的 E1–E12 处理。
 
 ## 7c. 可灵开放平台（kling-v3，2026-09-26 实测接通）

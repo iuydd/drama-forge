@@ -355,6 +355,12 @@ def check(project: Project, ep: str) -> Findings:
     script_scene_ids = {s["id"] for s in (script_doc["scenes"] if script_doc else [])}
     script_dialogue = dialogue_lines(script_doc) if script_doc else []
     script_norm = {norm(d["text"]): d for d in script_dialogue}
+    # [VO] / [OS] 角色：台词 也是剧本台词（心声、画外声），G10 对照时一并收进来
+    for sc in (script_doc["scenes"] if script_doc else []):
+        for ln in sc["lines"]:
+            if ln.get("type") == "tag" and ln.get("tag") in ("VO", "OS") and "：" in ln.get("text", ""):
+                spk, txt = ln["text"].split("：", 1)
+                script_norm.setdefault(norm(txt.strip()), {"scene": sc["id"], "speaker": spk.strip(), "text": txt.strip()})
     cast = speakers(script_doc, visual) if script_doc else set()
 
     ids_seen = set()
@@ -442,7 +448,7 @@ def check(project: Project, ep: str) -> Findings:
             if not _waived(sh, "G03"):
                 F.add("G03", "warn", sid, f"人物镜没有绑定「{sh.get('subject')}」的身份图（identity ref）")
         sc = scenes.get(scene) or {}
-        if sc.get("plates") and not any(r in (sc.get("plates") or []) for r in sh.get("frame_refs") or []) and kind != "plate":
+        if sc.get("plates") and not sh.get("frame_parent") and not any(r in (sc.get("plates") or []) for r in sh.get("frame_refs") or []) and kind != "plate":
             F.add("G03", "warn", sid, f"场景 {scene} 声明了底板 {sc.get('plates')}，本镜没绑任何一张")
 
         # G04 时长与台词容量；G05 开口时点
@@ -462,7 +468,8 @@ def check(project: Project, ep: str) -> Findings:
             elif cast and d["speaker"] not in cast:
                 F.add("G15", "warn", sid, f"说话人「{d['speaker']}」不在剧本/视觉设定的人物里")
             # G09 台词逐字进视频提示词
-            if t and norm(t) not in norm(vp):
+            # vo:true（心声、画外音另配）不进视频正文，不查
+            if t and not d.get("vo") and norm(t) not in norm(vp):
                 F.add("G09", "error", sid, f"台词「{t}」没有逐字出现在 video_prompt 里")
             # G10 台词来自剧本
             if script_doc and t and norm(t) not in script_norm:
@@ -498,7 +505,7 @@ def check(project: Project, ep: str) -> Findings:
         for k in keys:
             if k and k not in vp:
                 F.add("G09", "error", sid, f"video_prompt 缺「{k}:」段")
-        if dlg and "<d>" not in vp:
+        if project.get("video_dialect", "minimax-h3") == "minimax-h3" and any(not d.get("vo") for d in dlg) and "<d>" not in vp:
             F.add("G09", "error", sid, "有台词但 video_prompt 里没有 <d>…</d> 台词标记")
 
         # G23 连续性锁：锁面逐字进范围内的起始帧提示词（否定式不算携带）
