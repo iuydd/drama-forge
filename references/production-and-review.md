@@ -76,6 +76,8 @@
 | E28 | 用户指出的问题只修了一部分就当成完成汇报（五处问题里「推下去又抓着悬崖」只用剪辑遮了一下） | 用户列出的每一条问题逐条对账：修法、证据（帧/ASR）、结果，一条一条写进汇报；没有真正修好的明说「还没修好」，不许混在「都改了」里 |
 | E29 | 另一个会话在改 skill 脚本（改到一半依赖缺函数），本会话的 cut.py 直接报 ImportError | 不动别人未提交的改动；用 `git archive HEAD .claude/skills/drama-forge/scripts` 导出已提交版本到 scratchpad 里跑，提交时只 add 剧的目录 |
 | E30 | 起始帧参考图分工句写的是「Picture 1 … as a soft out-of-focus background」（skill 里还标为实战验证写法），模型把底板当成虚化背景板、人贴在前面，不理解那是人站在里面的空间：EP002 S06 顾长生站在崖外云上（底板左侧是云海，提示词写「他在画面左侧」）；EP001 开头站位乱跳也是同源（用户 09-26「这个场景 AI 都没看出来是一个地吧，当成背景了」） | 分工句改为「Picture 1 is the real place where this happens, not a flat backdrop … every foot rests on solid ground that exists in Picture 1」（visual-assets.md 已改）。写人物位置前先看底板图：他要站的那一侧是地还是空；人物尽量入画双脚、写脚下有影子。起始帧目检专门查「脚下是不是实地」，按小图扫过不算看过 |
+| E31 | 台词表演四层里写了句中停顿（「长老要 tossed out lightly, a half-beat pause, then 自己拿」「a pause of no more than 0.2 seconds」），H3 在停顿处补字：S06 连着三条把「自己/拿」说两遍，S20 在「镇物」后多出一个「盗/到」（重音词被重复） | 短句（≤10 字）**不写句中停顿**，写成「one smooth unbroken breath, no pause anywhere, each syllable said exactly once」；需要节奏靠重音和语速写，不靠 pause/beat。长句确需停顿时停顿后的半句单独成句另写开口时间。复听一律关 VAD 并加 condition_on_previous_text=False（否则 large-v3 在长音频后段会幻觉复读整句，EP002 整片识别出现过假重复） |
+| E32 | 用户拒绝一次工具调用时，那条 produce videos 其实已经跑了一段（S01–S35 已提交计费），界面上看像没执行 | 被拒/中断后第一件事查账本：`h3_client.py unresolved` 和 jobs.jsonl 里 submitted 未 collected 的，逐条 collect 收回，只有 intent 的按 --not-submitted 对账；如实告诉用户已经花掉的部分，不重复提交 |
 
 **其他图生视频模型的通用现象**（EP001 逐镜复盘：动作比秒级时间戳晚、运动区域的人物细节损失、镜内自己硬切、微动作生成不出来）和对应写法见 [video-prompts-general.md](video-prompts-general.md) §1。
 
