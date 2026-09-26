@@ -32,7 +32,8 @@
   EP001/成片/EP001.overlays.json   cut.py 写的成片元数据（schema drama-forge/overlays/v1，字段见 §6 末尾），final_qa.py 读它；草剪写在 审查/<EP>-草剪.overlays.json
   审查/<EP>-审查.md               C 阶段 reviewer 子代理的剧本审查，带 `剧本指纹：<12位>` 行（格式与分级见 review-checklists §0，骨架 assets/templates/审查.md，review_md_check.py 查结构）
   审查/<EP>-分镜审查.md           E 阶段 reviewer 子代理的分镜审查，带 `分镜指纹：<12位>` 行；指纹用 `project_tool.py fingerprint <项目> <EP>` 打印（剧本指纹 = 剧本.md 字节，分镜指纹 = shots.json 去掉 cut_order 后的规范 JSON，各取 sha256 前 12 位）
-  审查/agents/<时间>-<worker|reviewer>-<pid>/   isolated_agent.sh 留档：task.md、out.md、exit、meta.txt（模型、角色、起止时间）、written.sha256（子代理写出的 审查/*.md 的 sha256，review_md_check RV10 据此核对 reviewer 原稿没被改）、pack.json（用任务包启动时原样另存）；不删不改
+  审查/adversary/<ID>-vN.txt、<ID>-rN.md   攻防循环（SKILL.md 11d）：每一轮送攻的提示词版本和攻击子代理的清单；最后一轮 0 条才提交
+  审查/agents/<时间>-<worker|reviewer|adversary>-<pid>/   isolated_agent.sh 留档：task.md、out.md、exit、meta.txt（模型、角色、起止时间）、written.sha256（子代理写出的 审查/*.md 的 sha256，review_md_check RV10 据此核对 reviewer 原稿没被改）、pack.json（用任务包启动时原样另存）；不删不改
   审查/agents/packs/<阶段>-<角色>-<EP>.json   task_pack.py build --out 写的子代理任务包（材料原文快照 + 路径、字节数、SHA-256 + 模板与工具指纹）；isolated_agent.sh 启动前 verify，过期就拒绝
   审查/<EP>-grade.json             可选：逐镜接镜调色参数（hub_tool.py grade，edit-and-delivery §5b），输出 成片/<EP>_graded.mp4
   审查/<EP>-sheets/<sid>_t<n>.jpg  接触表（2 帧/秒）

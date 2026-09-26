@@ -1,6 +1,7 @@
 #!/bin/sh
 # 隔离子代理：只给 drama-forge SKILL.md + 任务，不带 CLAUDE.md、其他 skill、插件 hook、MCP。
-# 用法：isolated_agent.sh <工作目录(项目)> <任务包.json | 任务文本或任务文件> [worker|reviewer]   （输出=子代理最终回复）
+# 用法：isolated_agent.sh <工作目录(项目)> <任务包.json | 任务文本或任务文件> [worker|reviewer|adversary]   （输出=子代理最终回复）
+# - adversary（提示词攻防循环的攻击者）：不给 SKILL.md、不给 skill 目录，只给一句身份和任务书（assets/templates/攻击任务书.md 填好的那份）
 # - 第二个参数是 .json 任务包（scripts/task_pack.py build 构建）时：先 task_pack.py verify，不是当前版本就拒绝启动；
 #   通过则用包里的 prompt 作任务书、包里的 role 作角色（给了第三个参数且不一致也拒绝），包原样另存 pack.json；
 #   纯文本任务书仍可用，但 reviewer 角色会在 stderr 警告（建议用 task_pack 构建，防漏材料、旧材料和放水任务书）；
@@ -24,7 +25,7 @@ case "$TASK" in
   *) [ -f "$TASK" ] && TASK=$(cat "$TASK")
     [ "$ROLE" = reviewer ] && echo "警告：reviewer 任务书建议用 scripts/task_pack.py build 构建任务包（防漏材料、旧材料和放水任务书）" >&2;;
 esac
-case "$ROLE" in worker|reviewer) ;; *) echo "角色只能是 worker 或 reviewer：$ROLE" >&2; exit 2;; esac
+case "$ROLE" in worker|reviewer|adversary) ;; *) echo "角色只能是 worker、reviewer 或 adversary：$ROLE" >&2; exit 2;; esac
 MODEL=${DF_AGENT_MODEL:-opus}
 case "$MODEL" in opus|opus\[*|fable|fable\[*|claude-opus-*|claude-fable-*) ;; *) echo "拒绝降级子代理模型：${MODEL}（只接受 opus / fable 系列）" >&2; exit 2;; esac
 LOG="$WORKDIR/审查/agents/$(date -u +%Y%m%dT%H%M%SZ)-$ROLE-$$"
@@ -43,12 +44,17 @@ SYS="$(cat "$SKILL_DIR/SKILL.md")
 ---
 你是 drama-forge 的子代理。上面是你唯一的规则。skill 目录在 ${SKILL_DIR}，references/、scripts/、assets/ 按需自己读，不改 scripts/。
 不提交生成任务、不做 git。只做任务里写的事，做完用中文简短汇报产物路径和结论。$CHARTER"
+ADD_DIR="--add-dir $SKILL_DIR"
+if [ "$ROLE" = adversary ]; then
+  SYS="你扮演一个恶意的生成模型，只做任务书里的事：不改任何文件，只把清单写到任务书指定的那个文件，做完按任务书要求简短回复。"
+  ADD_DIR=""
+fi
 cd "$WORKDIR"
 set +e
 { env -u H3_STUDIO_TOKEN -u FAL_KEY -u KLING_API_KEY -u KLING_SECRET_KEY -u MINIMAX_API_KEY -u ARK_API_KEY -u OPENAI_API_KEY \
     DF_SUBAGENT=1 claude -p --model "$MODEL" \
     --setting-sources "" --strict-mcp-config --disable-slash-commands \
-    --dangerously-skip-permissions --add-dir "$SKILL_DIR" \
+    --dangerously-skip-permissions $ADD_DIR \
     --system-prompt "$SYS" "$TASK"; echo $? > "$LOG/exit"; } | tee "$LOG/out.md"
 RC=$(cat "$LOG/exit" 2>/dev/null || echo 1)
 find 审查 -maxdepth 1 -name '*.md' -newer "$LOG/task.md" -exec shasum -a 256 {} \; > "$LOG/written.sha256"
