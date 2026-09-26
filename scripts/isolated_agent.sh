@@ -26,8 +26,10 @@ case "$TASK" in
     [ "$ROLE" = reviewer ] && echo "警告：reviewer 任务书建议用 scripts/task_pack.py build 构建任务包（防漏材料、旧材料和放水任务书）" >&2;;
 esac
 case "$ROLE" in worker|reviewer|adversary) ;; *) echo "角色只能是 worker、reviewer 或 adversary：$ROLE" >&2; exit 2;; esac
-MODEL=${DF_AGENT_MODEL:-opus}
-case "$MODEL" in opus|opus\[*|fable|fable\[*|claude-opus-*|claude-fable-*) ;; *) echo "拒绝降级子代理模型：${MODEL}（只接受 opus / fable 系列）" >&2; exit 2;; esac
+MODEL=${DF_AGENT_MODEL:-opus}; EFFORT=""
+# adversary 固定 sonnet + medium effort（用户 2026-09-26 定：攻防循环要快）；其余角色不许降级
+[ "$ROLE" = adversary ] && { MODEL=sonnet; EFFORT="--effort medium"; }
+[ "$ROLE" != adversary ] && case "$MODEL" in opus|opus\[*|fable|fable\[*|claude-opus-*|claude-fable-*) ;; *) echo "拒绝降级子代理模型：${MODEL}（只接受 opus / fable 系列）" >&2; exit 2;; esac
 LOG="$WORKDIR/审查/agents/$(date -u +%Y%m%dT%H%M%SZ)-$ROLE-$$"
 mkdir -p "$LOG"
 printf '%s\n' "$TASK" > "$LOG/task.md"
@@ -52,7 +54,7 @@ fi
 cd "$WORKDIR"
 set +e
 { env -u H3_STUDIO_TOKEN -u FAL_KEY -u KLING_API_KEY -u KLING_SECRET_KEY -u MINIMAX_API_KEY -u ARK_API_KEY -u OPENAI_API_KEY \
-    DF_SUBAGENT=1 claude -p --model "$MODEL" \
+    DF_SUBAGENT=1 claude -p --model "$MODEL" $EFFORT \
     --setting-sources "" --strict-mcp-config --disable-slash-commands \
     --dangerously-skip-permissions $ADD_DIR \
     --system-prompt "$SYS" "$TASK"; echo $? > "$LOG/exit"; } | tee "$LOG/out.md"
