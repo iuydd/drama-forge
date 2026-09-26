@@ -241,7 +241,7 @@ EP001 成片 43% 的时间是数字静音，没有环境声、没有咔哒和倒
 原素材过了审片，不代表成片没有新问题：剪点会裁掉语气词、叠字会遮脸、合成会拖出停帧、删镜会删掉因果证据。所以阶段 J 的完成标准是**从最终 MP4 重新验收**。终验分两份，别混在一个文件里：
 
 - **机读部分**（脚本写，重跑覆盖，不手改）：`final_qa.py <项目> <EP> [--video PATH] [--no-asr] [--asr-min 0.8]` 读成片和 cut.py 写的 `成片/<EP>.overlays.json`，写 `审查/<EP>-final-qa.json`、`审查/<EP>-final-qa.md`，证据帧和接触表放 `审查/<EP>-final-qa/`。md 首行「结论：PASS」或「结论：REVISE」由脚本判：没有 error 级问题，且 `asr_ok` 为 true（或 cut_order 里的镜都没台词）才 PASS；PASS 退出码 0，REVISE 退出码 2。期望台词取 shots.json 里进了 cut_order 的镜，不按成片字幕算；终验重新跑 ASR，不用缓存；草剪（`--draft`）出的成片一律 REVISE。ASR 不可用（或 `--no-asr`）时 `asr_ok` 为 null，结论写 REVISE 并注明"未验证"。
-- **结论部分**（模型写）：`审查/<EP>-成片终验.md`，模板 `assets/templates/成片终验.md`。汇总脚本结果，补脚本做不了的看图、听审项，列已知问题和用户确认。阶段 J 完成看这几样：`final-qa.json` 的 `conclusion`、`delivery` 为 true 且不是草剪、它记的 `video_sha256` 与 `成片/<EP>.mp4` 一致、`成片终验.md` 首行 PASS；`project_tool.py next` 按这几样判，不读可能被手改的 `final-qa.md`（REVISE + 用户确认的集，`next` 仍报终验未完成，汇报照实写）。
+- **结论部分**（模型写）：`审查/<EP>-成片终验.md`，模板 `assets/templates/成片终验.md`。汇总脚本结果，补脚本做不了的看图、听审项，列已知问题和用户确认。阶段 J 完成看这几样：`final-qa.json` 的 `conclusion`、`delivery` 为 true 且不是草剪、它记的 `video_sha256` 与 `成片/<EP>.mp4` 一致、`成片终验.md` 首行 PASS；`project_tool.py next` 按这几样判，不读可能被手改的 `final-qa.md`REVISE 的集只在 `成片终验.md` 有「用户确认：D-xxx」、且决策记录里这一行是 `拍板人: 用户`、用户原话非空时，`next` 才放行。
 
 **验收对象**：交付的那一个文件，json 里记它的路径和 sha256。`project_tool next` 只认对 `成片/<EP>.mp4` 跑的报告（`delivery=true`）：交付调色版时，`--video` 指到 `_graded` 版跑出的报告 `delivery=false`，`next` 不放行——要么把调色版定为 `成片/<EP>.mp4`（原版改名归档、不删）再跑，要么交付未调色版；重剪、重调色后终验失效，重跑 final_qa.py 并重写结论。
 

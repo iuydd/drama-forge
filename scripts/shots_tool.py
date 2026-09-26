@@ -140,6 +140,10 @@ WAIVE_REASON_MIN = 8
 DECISION_RE = re.compile(r"\bD-\d+\b")
 # 这些门的 error 以前能被 waive 降级或抹掉；现在 error 门一律不认 waive（G51 提示旧豁免已失效）
 FORMERLY_WAIVED_ERRORS = ("G02", "G06", "G10", "G23", "G26")
+# 只有这些 warn 门认 waive；其余门号写进 waive 一律不生效并报 G51
+WAIVABLE_GATES = {"G03", "G05", "G08", "G13", "G17", "G21", "G27", "G29", "G30", "G31", "G32", "G34", "G35",
+                  "G36", "G38", "G40", "G42", "G43", "G44", "G45", "G47", "G48", "G49"}
+DECISION_ROW_RE = re.compile(r"^\|\s*(D-\d+)\s*\|", re.M)   # 决策记录表里真实的一行（模板占位【D-001】不算）
 
 
 def _waive_entry(shot: dict, code: str) -> dict | None:
@@ -150,9 +154,9 @@ def _waive_entry(shot: dict, code: str) -> dict | None:
 
 
 def _waived(shot: dict, code: str) -> bool:
-    """只认完整豁免 {gate, reason(≥8 字), decision(D-xxx)}；只用于 warn 门（error 门的调用点不查豁免）。"""
+    """只认 waive_findings 核验过的豁免（_ok）：warn 门、理由 ≥8 字、decision 在决策记录里真有这一行。"""
     w = _waive_entry(shot, code)
-    return bool(w and len(str(w.get("reason") or "").strip()) >= WAIVE_REASON_MIN and DECISION_RE.search(str(w.get("decision") or "")))
+    return bool(w and w.get("_ok"))
 
 
 def _people_count(fp: str, one: str) -> int | None:
@@ -247,6 +251,7 @@ def waive_findings(F: "Findings", shots: list[dict], scenes: list[dict], project
     """G51：豁免写法。只认 {gate, reason, decision}；decision 要在 项目开发/决策记录.md 里查得到。"""
     rec_p = project.root / "项目开发" / "决策记录.md"
     rec_text = rec_p.read_text(encoding="utf-8") if rec_p.exists() else ""
+    rec_ids = set(DECISION_ROW_RE.findall(rec_text))
     waived = []
     for owner in list(shots) + list(scenes):
         oid = owner.get("id")
@@ -259,13 +264,16 @@ def waive_findings(F: "Findings", shots: list[dict], scenes: list[dict], project
                 F.add("G51", "warn", oid, f"waive 条目格式不对：{w}")
                 continue
             gate, reason, dec = w.get("gate"), str(w.get("reason") or "").strip(), str(w.get("decision") or "")
-            if gate in FORMERLY_WAIVED_ERRORS:
-                F.add("G51", "warn", oid, f"waive {gate} 无效：error 门不能豁免")
+            w.pop("_ok", None)
+            if gate in FORMERLY_WAIVED_ERRORS or gate not in WAIVABLE_GATES:
+                F.add("G51", "warn", oid, f"waive {gate} 无效：只有 warn 门能豁免（error 门永不豁免）")
             elif len(reason) < WAIVE_REASON_MIN or not DECISION_RE.search(dec):
                 F.add("G51", "warn", oid, f"waive {gate} 缺理由（≥{WAIVE_REASON_MIN} 字）或决策记录编号（D-xxx），不生效")
             else:
-                if rec_text and DECISION_RE.search(dec).group(0) not in rec_text:
-                    F.add("G51", "warn", oid, f"waive {gate} 引的 {dec} 在 项目开发/决策记录.md 里找不到")
+                if DECISION_RE.search(dec).group(0) not in rec_ids:
+                    F.add("G51", "warn", oid, f"waive {gate} 引的 {dec} 在 项目开发/决策记录.md 的表里没有这一行，不生效")
+                    continue
+                w["_ok"] = True
                 waived.append([oid, gate, reason, dec])
     F.waived = waived
 

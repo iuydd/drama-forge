@@ -396,6 +396,7 @@ def main() -> int:
     Fw = check(pr, "EP001")
     require(any(f["code"] == "G49" for f in Fw.warns()) and any(f["code"] == "G51" and "旧写法" in f["msg"] for f in Fw.warns()),
             "旧写法 waive [\"G49\"]（无理由、无决策号）不生效并报 G51")
+    (pr.root / "项目开发" / "决策记录.md").write_text("| 编号 | 日期 | 阶段 | 拍板人 |\n|---|---|---|---|\n| D-001 | 2026-09-26 | E | 代理 | — | 豁免 G49 |\n", encoding="utf-8")
     by["EP001-S03"]["waive"] = [{"gate": "G49", "reason": "三上这镜的嘲笑本身就是改变局面的反应，笑声压住遥", "decision": "D-001"}]
     sp.write_text(json.dumps(nb, ensure_ascii=False), encoding="utf-8")
     require(not any(f["code"] == "G49" for f in check(pr, "EP001").warns()), "补了承接动作或完整豁免（门号+理由+决策号）后不报 G49")

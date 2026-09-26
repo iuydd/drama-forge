@@ -86,6 +86,19 @@ def review_problems(project: Project, ep: str, stage: str) -> list[str]:
     return out
 
 
+def _user_confirmed(project: Project, text: str) -> bool:
+    """REVISE 交付：成片终验.md 的「用户确认：D-xxx」要在决策记录表里是 拍板人=用户、用户原话非空的一行。"""
+    m = re.search(r"^用户确认\s*[：:].*?\b(D-\d+)\b", text, re.M)
+    rec = project.root / "项目开发" / "决策记录.md"
+    if not m or not rec.exists():
+        return False
+    for ln in rec.read_text(encoding="utf-8").splitlines():
+        cells = [c.strip() for c in ln.strip().strip("|").split("|")]
+        if len(cells) >= 5 and cells[0] == m.group(1):
+            return cells[3] == "用户" and cells[4] not in ("", "—", "-", "【—】")
+    return False
+
+
 def delivery_problems(project: Project, ep: str) -> list[str]:
     """J 完成：final-qa.json 对交付文件跑过、PASS、sha 等于当前成片、不是草剪；成片终验.md 首行 PASS。"""
     from review_quality import media_digest
@@ -108,11 +121,13 @@ def delivery_problems(project: Project, ep: str) -> list[str]:
         out.append(f"final-qa 报告不是对交付文件跑的、或成片是草剪：用 cut.py 正式剪后重跑 {run}")
     elif "delivery" not in rep:
         out.append(f"final-qa 是旧版脚本写的（没有 delivery 字段）：重跑 {run}")
-    if rep.get("conclusion") != "PASS":
-        out.append(f"final-qa 结论 {rep.get('conclusion')}：按 审查/{ep}-final-qa.md 问题清单改完重剪重验")
     fp = project.review_dir / f"{ep}-成片终验.md"
-    first = next((ln.strip() for ln in fp.read_text(encoding="utf-8").splitlines() if ln.strip()), "") if fp.exists() else ""
-    if not re.match(r"^结论\s*[：:]\s*PASS\b", first):
+    text = fp.read_text(encoding="utf-8") if fp.exists() else ""
+    first = next((ln.strip() for ln in text.splitlines() if ln.strip()), "")
+    user_ok = re.match(r"^结论\s*[：:]\s*REVISE\b", first) and _user_confirmed(project, text)
+    if rep.get("conclusion") != "PASS" and not user_ok:
+        out.append(f"final-qa 结论 {rep.get('conclusion')}：按 审查/{ep}-final-qa.md 问题清单改完重剪重验")
+    if not user_ok and not re.match(r"^结论\s*[：:]\s*PASS\b", first):
         out.append(f"审查/{ep}-成片终验.md {'不存在' if not fp.exists() else '首行不是「结论：PASS」'}：按 assets/templates/成片终验.md 逐项看成片后填写"
                    "（REVISE 交付要用户看过问题清单的原话确认，拿不到就是未交付）")
     return out

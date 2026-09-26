@@ -147,7 +147,7 @@ take 从 1 起，只增不删；哪个 take 进成片由 `review.json` 决定，
                  "end":   {"position": "", "facing": "left", "gaze": "", "hands": "", "held": "", "state": ""}},   // 边界链（G26 逐项比对）
     "boundary_break": "",               // 同场同主体相邻镜边界不接时的镜外说明
     "video_body": "", "soundscape": "", "music": "",   // 可代替 video_prompt：只写正文，`shots_tool.py build` 拼三段骨架
-    "waive": [{"gate": "G05", "reason": "本镜具体为什么不适用", "decision": "D-012"}]   // 只认 warn 门（混合门只认 warn 那一支），error 门写了无效；reason ≥8 字、decision 形如 D-xxx（缺一项不生效，G51）；D-xxx 必须是决策记录里真有的一行（查不到脚本只报 G51 warn、不拦，按规则算无效豁免）；reason 要过搬家测试（总则第 7 条）
+    "waive": [{"gate": "G05", "reason": "本镜具体为什么不适用", "decision": "D-012"}]   // 只认 warn 门（混合门只认 warn 那一支），error 门写了无效；reason ≥8 字、decision 形如 D-xxx（缺一项不生效，G51）；D-xxx 必须是决策记录表里真有的一行（查不到、只在模板占位里、或决策记录.md 不存在，豁免都不生效并报 G51）；reason 要过搬家测试（总则第 7 条）
   }],
   // 尺度锚点不是单独字段：写在 frame_prompt 里（中景以上、双人镜必写人物与护栏/门/桌/台阶的关系，多人写相对身高），
   // 身份图 prompt 写厘米身高，底板 prompt 写至少一个现实尺寸参照（visual-assets §12，G34）；
@@ -301,7 +301,7 @@ take 从 1 起，只增不删；哪个 take 进成片由 `review.json` 决定，
 | G48 | warn | 能力规则重复解释：同集（按 cut_order）`explains_ability` 镜超过 `gate_limits.ability_explain_shots`（默认 2）或计划取用合计超过 `ability_explain_seconds`（默认 12 秒）；第二集起开头 `recap_window`（默认 30 秒）内超过 `recap_explain_shots`（默认 1）镜（screenplay §5b3）；台词或 duty 提到 `drama.json` `ability_terms` 里的词却没标 `explains_ability` 的镜，照样计数并报 warn[自测：外部审查] |
 | G49 | warn | 只说不做：同场有台词的人物镜（不含 audio_from、不在 cut_order 的）≥ `talk_only_min_shots`（默认 3）且超过 `talk_only_ratio`（默认一半）的 motion 里没有承接对方行为的动作或反应词（夺、合上、推回、后退、僵住……；只写点头、摇头、看一眼、看向这类弱动作不算）；有意保持不动的镜写 G49 的 `waive` 对象，整场豁免写在 scene 的 `waive`（storyboard-keyframes §8c）[自测：外部审查] |
 | G50 | error/warn | 门阈值只能收紧：`drama.json` 的 `gate_limits`、`pace`、`line_max`、`final_qa.asr_min`、`budget.asr_pass` 比内置默认宽松报 error（宽松值不生效，按默认查）；`one_person_clause` / `no_text_clause` 置空报 warn（照样按内置默认句查）（总则第 9 条） |
-| G51 | warn | 豁免写法：旧写法 `"waive": ["G05"]`、缺 reason（≥8 字）或 decision（D-xxx）、豁免 G02/G06/G10/G23/G26 这几个 error 门——这些豁免不生效（其他 error 门写进 waive 也不生效，只是不另报）；decision 在 `项目开发/决策记录.md` 里找不到只报 warn，豁免照样生效（脚本不拦，reviewer 按 review-checklists §E 豁免表核对；决策记录.md 不存在时不查）（总则第 7 条） |
+| G51 | warn | 豁免写法：旧写法 `"waive": ["G05"]`、缺 reason（≥8 字）或 decision（D-xxx）、豁免任何不在可豁免 warn 门清单里的门号（含全部 error 门）、decision 在 `项目开发/决策记录.md` 的表里没有这一行——这些豁免都不生效并逐条报出（总则第 7 条） |
 | G52 | error/warn | 恶意执行预演 `adversarial_preflight`（镜头与参考图，video-prompts-general §2b 五）：少于 3 条报 warn（`produce.py` 提交前按缺失拒绝提交）；worst 重复、缺 blocked_by、blocked_by 既不是当前提示词里的原句也不以「验收：」开头报 error |
 | G53 | error | 对话看得见对象（SKILL 11c）：有镜内台词的人物镜只写单人句又没写 `single_reason`（或少于 10 字）；同一句 `single_reason` 用在两镜；多人镜 `in_frame` 人数与 exactly N 不一致、名单里有不在 `scene_state` 在场名单的人；没写 `in_frame` 时 exactly N 多于在场人数 |
 

@@ -67,6 +67,28 @@ class QualityTests(unittest.TestCase):
     def issues(self):
         return cut_issues(self.project, "EP001", self.project.load_shots("EP001"), self.project.load_review("EP001"))
 
+    def test_waive_needs_real_decision_row_and_warn_gate(self):
+        from shots_tool import Findings, waive_findings, _waived
+        rec = self.project.root / "项目开发" / "决策记录.md"
+        rec.write_text("| 编号 | 日期 |\n|---|---|\n| 【D-001】 | 模板占位 |\n| D-002 | 2026-09-26 | E | 代理 | — | 豁免 |\n", encoding="utf-8")
+        sh = {"id": "EP001-S01", "waive": [{"gate": "G08", "reason": "本镜是背影远景无朝向可写", "decision": "D-001"},
+                                           {"gate": "G05", "reason": "本镜是背影远景无朝向可写", "decision": "D-002"},
+                                           {"gate": "G46", "reason": "本镜是背影远景无朝向可写", "decision": "D-002", "_ok": True}]}
+        F = Findings()
+        waive_findings(F, [sh], [], self.project)
+        self.assertFalse(_waived(sh, "G08"))    # 编号只在模板占位里，不算
+        self.assertTrue(_waived(sh, "G05"))
+        self.assertFalse(_waived(sh, "G46"))    # 非 warn 门，手写 _ok 也被清掉
+        self.assertEqual(sum(1 for f in F.warns() if f["code"] == "G51"), 2)
+
+    def test_revise_delivery_needs_user_row(self):
+        from project_tool import _user_confirmed
+        rec = self.project.root / "项目开发" / "决策记录.md"
+        rec.write_text("| D-003 | 2026-09-26 | J | 代理 | — | 接受 |\n| D-004 | 2026-09-26 | J | 用户 | 问题1和2可以接受，先交付 | 接受 |\n", encoding="utf-8")
+        self.assertFalse(_user_confirmed(self.project, "结论：REVISE\n用户确认：待确认\n"))
+        self.assertFalse(_user_confirmed(self.project, "结论：REVISE\n用户确认：D-003\n"))
+        self.assertTrue(_user_confirmed(self.project, "结论：REVISE\n用户确认：D-004\n"))
+
     def test_negation_and_numbers_require_listening(self):
         diff = speech_diff("我没有拿走合同", "我有拿走合同")
         self.assertEqual(diff["status"], "needs_listening")
