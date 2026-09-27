@@ -1,0 +1,28 @@
+# 模型分工：哪个环节用哪个模型（用户 2026-09-27 定）
+
+原则：**写内容、看图判断用强模型；审查用中档；量大、套路固定的活用便宜模型。** 下表是默认值，用户在对话里另行指定的以用户为准（总则 2）。生成模型（出图、出视频、TTS）不在本表，仍按硬约束 1b 由用户指定。
+
+| 环节 | Claude 运行时 | Codex 运行时 | `isolated_agent.sh` 角色 |
+|---|---|---|---|
+| 主会话：调度、起始帧与视频看图目检、审片 mark、成片终验、账本对账 | Opus 5.5 | GPT-6 Sol（high） | —（主会话本身） |
+| A0 逐章功能提取（结构化抽取，量大） | Sonnet 5（medium） | GPT-6 Luna（high） | `light` |
+| A0 聚合（剧情单元、人物、改编价值）、A 立项、B 情绪集纲 | Opus 5.5 | GPT-6 Sol | `worker` |
+| C 剧本 / D 视觉设定 / E 分镜：写作与按审查改稿 | Opus 5.5 | GPT-6 Sol | `worker` |
+| C / D / E 独立审查 | Sonnet 5（medium） | GPT-6 Sol（medium） | `reviewer` |
+| 送审前补账（攻防判断栏、`review_ready.py` 列出的账目）、格式与机械门修复 | Sonnet 5（medium） | GPT-6 Luna（medium） | `light` |
+| 提示词攻防第 1 轮（11d） | Sonnet 5（medium） | GPT-6 Luna（high） | `adversary` |
+| 提示词攻防第 2 轮（11d） | Opus 5.5（low） | GPT-6 Sol（low） | `adversary2` |
+| 声音听感（`listen_ok`、口音、情绪） | 真人 | 真人 | —（总则 5） |
+
+## 边界
+
+- **`light` 只做不改剧情的活**：补账、格式、机械门 error、逐章抽取。任务里要改剧情、台词、构图、镜头设计的，一律派 `worker`；`light` 发现需要改这些就停下，在输出里列出来交回主会话。
+- **看图目检不下放**：起始帧、视频、成片的看图判断留在主会话（强模型）。便宜模型的看图能力要先用本项目已判过对错的帧做盲判测试（抓坏图的比例、误杀好图的比例），和主会话结果差不多才可以把"初筛"交给它，放行仍由主会话看单张原图（总则 4）。
+- **写作与审查分离不变**（硬约束 7）：同一个模型族也可以一写一审，但必须是两个独立子代理，reviewer 没参与写作。
+- **Codex 运行时**：`isolated_agent.sh` 目前只调用 `claude`。在 Codex 里执行本流程时，用 Codex 自己的子代理机制按上表选模型，任务书内容、角色约束（reviewer 职责头、adversary 只给攻击任务书、子代理不提交生成任务）照 `isolated_agent.sh` 的规则写进子代理的系统提示。
+- 换档后前几集多盯一眼：同一套规则换了模型，理解可能不同；新发现的偏差按"修改纪律"先记 `项目开发/模型观察.md`。
+
+## 来源
+
+- GPT-6 Sol / Luna：OpenAI 2026-09-22 发布；Sol $2/$10、Luna $0.10/$0.50（每百万 token 输入/输出），Luna 官方定位为"专项、大批量任务"，不作最难的端到端 agent 工作的默认选择。[官方] https://openai.com/index/introducing-gpt-6-sol-and-luna/ 、https://developers.openai.com/api/docs/models/gpt-6-luna
+- Claude 侧 reviewer 固定 Sonnet 5 medium、攻防两轮模型：用户 2026-09-26 定（见 SKILL 硬约束 7、11d）。

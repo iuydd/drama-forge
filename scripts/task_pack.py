@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """子代理任务包：按阶段把任务书、材料原文和指纹装成一个 JSON 包，isolated_agent.sh 校验通过才启动子代理。
 
-  task_pack.py build <项目> --stage A|B|C|D|E|I|J --role worker|reviewer [--episode EP003] --request-file <项目内相对路径>
+  task_pack.py build <项目> --stage A|B|C|D|E|I|J --role worker|reviewer|light [--episode EP003] --request-file <项目内相对路径>
                      [--max-chars 150000] [--out 审查/agents/packs/<名>.json]      不给 --out 就打印到 stdout
   task_pack.py verify <项目> <包.json>        当前=退出 0；材料、模板或工具改过、包被手改=退出 1（打印 findings）
 
@@ -99,8 +99,8 @@ def build(root, stage: str, role: str, episode: str | None, request_file: str, m
     pr = Project(root)
     t = json.loads(TEMPLATES.read_bytes())
     st = t["stages"].get(stage)
-    if st is None or role not in ("worker", "reviewer"):
-        raise PackError(f"阶段只能是 {'/'.join(t['stages'])}、角色只能是 worker/reviewer：{stage} {role}")
+    if st is None or role not in ("worker", "reviewer", "light"):
+        raise PackError(f"阶段只能是 {'/'.join(t['stages'])}、角色只能是 worker/reviewer/light：{stage} {role}")
     if max_chars <= 0:
         raise PackError("--max-chars 必须是正整数（按整个输出 JSON 的字符数算）")
     if st["episode"] and not episode:
@@ -108,7 +108,8 @@ def build(root, stage: str, role: str, episode: str | None, request_file: str, m
     if episode and episode not in pr.episodes:
         raise PackError(f"集号 {episode} 不在本项目 {pr.episodes[0]}–{pr.episodes[-1]} 里")
     prev = f"EP{int(episode[2:]) - 1:03d}" if episode and episode != "EP001" else None
-    tpl, reviewer = st[role], role == "reviewer"
+    # light（补账、格式、机械门修复、逐章抽取，不改剧情）复用本阶段 worker 模板，只是模型不同（references/model-routing.md）
+    tpl, reviewer = st["worker" if role == "light" else role], role == "reviewer"
     fill = lambda s: s.replace("{ep}", episode or "").replace("{prev}", prev or "")  # noqa: E731
 
     specs = [(request_file, "用户本轮要求", False)]
@@ -220,7 +221,7 @@ def main(argv=None) -> int:
     b = sub.add_parser("build")
     b.add_argument("project")
     b.add_argument("--stage", required=True)
-    b.add_argument("--role", required=True, choices=("worker", "reviewer"))
+    b.add_argument("--role", required=True, choices=("worker", "reviewer", "light"))
     b.add_argument("--episode")
     b.add_argument("--request-file", required=True)
     b.add_argument("--max-chars", type=int, default=DEFAULT_MAX)
