@@ -40,3 +40,5 @@
 | L28 | a little / briefly / gently 等伪量词按零或最大值执行 | 对抗审查 V25 | 换成秒数、件数、三档强度词 | G54 L28 |
 | L29 | G52 的 blocked_by 全写「验收：」，提示词一字不改；worst 改一个字就不算重复 | 对抗审查 V14 | 「验收：」最多 1 条且带可量检查；相似度 >0.8 算重复 | G54 L29（error） |
 | L30 | 审片只看三帧、只数人头、ASR 听不到的声音当没有，多余的人和物只在 0.5–1.5 秒出现 | 对抗审查 V13、V15、V16 | 4fps count_trace + verify_frames、scene_state 逐项计数、VAD 段 vocal_ok（general §2b 七） | G54 L30 |
+| L31 | 歧义动词按另一个意思执行：tearing（流泪/撕扯）、shoot（开枪/拍摄）、draw（拔刀/画画）、wave（挥手/浪）、charge（冲锋/充电）、strike（击打/划火柴） | GitHub 提示词 skill 调研（OSideMedia/higgsfield-ai-prompt-skill） | 发出前逐个动词问"它还能被画成另一种画面吗"；能就换成带宾语和身体部位的写法：`tears run down her cheeks`、`pulls the knife from the sheath at his hip` | 攻击子代理查 |
+| L32 | 物件按剧情重要性缩放：关键道具画大（手机像平板、刀像剑）、小物画小、跨镜忽大忽小；只写 small/large 时模型自选尺寸 | 用户 2026-09-27 要求物品和人物按真实比例生成 | 厘米尺寸 + 一个身体部位对照，全集逐字复用（storyboard-keyframes §6b 物件真实比例）；目检和最近的身体部位对量 | 攻击子代理查 |

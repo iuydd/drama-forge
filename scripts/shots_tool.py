@@ -809,12 +809,14 @@ def check(project: Project, ep: str) -> Findings:
             if prev and b.get("start") and (prev.get("boundary") or {}).get("end"):
                 pe, cs = prev["boundary"]["end"], b["start"]
                 diffs = [k for k in BOUNDARY_KEYS if k in pe and k in cs and norm(str(pe[k])) != norm(str(cs[k]))]
-                if diffs and not sh.get("boundary_break"):
+                # 冲击重复（storyboard-keyframes §2）：重复镜从同一个"动作前"起步，起点本来就等于前一镜起点
+                impact_repeat = str(sh.get("split_reason") or "").startswith("冲击重复")
+                if diffs and not sh.get("boundary_break") and not impact_repeat:
                     F.add("G26", "error", sid, f"与上一镜 {prev['id']} 的边界链不接：{diffs} 前一镜终点≠本镜起点；补一镜、改边界，或写 boundary_break 说明镜外发生了什么")
             # G27 同景别同主体跳切
             # 紧挨着且没写 split_reason 时由 G45 提示合并成长镜头，这里不再劝"换景别拆开"
             adjacent_unsplit = prev is not None and prev is prev_shot and not sh.get("split_reason")
-            if prev and not adjacent_unsplit and prev.get("framing") and sh.get("framing") and norm(prev["framing"]) == norm(sh["framing"]) and not _waived(sh, "G27"):
+            if prev and not adjacent_unsplit and not str(sh.get("split_reason") or "").startswith("冲击重复") and prev.get("framing") and sh.get("framing") and norm(prev["framing"]) == norm(sh["framing"]) and not _waived(sh, "G27"):
                 F.add("G27", "warn", sid, f"和上一镜 {prev['id']} 同主体同景别「{sh['framing']}」，是跳切；同一人连续的戏合并成一个长镜头，确需拆开就换景别或角度并写 split_reason")
             prev_by_scene_subject[key] = sh
             if facing in ("left", "right"):

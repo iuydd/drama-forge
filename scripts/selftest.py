@@ -587,6 +587,11 @@ def main() -> int:
     require(("G04", "EP001-S04") in ecodes, "台词装不下要报 G04")
     require(("G10", "EP001-S04") in ecodes, "台词不在剧本里要报 G10")
     require(not any(c == "G08" for c, _ in ecodes), "三上只出现一次，改朝向不构成轴线冲突")
+    broken["shots"][3]["split_reason"] = "冲击重复：EP001-S01"
+    bp.write_text(json.dumps(broken, ensure_ascii=False), encoding="utf-8")
+    Fr = check(pr, "EP001")
+    rcodes = {(f["code"], f["shot"]) for f in Fr.errors() + Fr.warns()}
+    require(not {("G26", "EP001-S04"), ("G27", "EP001-S04"), ("G45", "EP001-S04")} & rcodes, f"冲击重复镜不报 G26/G27/G45：{rcodes}")
     bp.write_text(good, encoding="utf-8")
     passed += 1
 
