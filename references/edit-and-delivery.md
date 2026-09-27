@@ -246,6 +246,8 @@ EP001 成片 43% 的时间是数字静音，没有环境声、没有咔哒和倒
 
 ## 7b. 成片终验（硬门）
 
+汇报时按 [audience-feedback.md](audience-feedback.md) §3 分列制作验收、声音验证、观众验证。以下 PASS 是制作验收结论；允许 listen_ok / sync_ok 未验证入剪，不等于声音验证完成。没有真人观众反馈就写“观众未验证”，不扩大解释为商业效果通过，也不新增生产阻断门。
+
 原素材过了审片，不代表成片没有新问题：剪点会裁掉语气词、叠字会遮脸、合成会拖出停帧、删镜会删掉因果证据。所以阶段 J 的完成标准是**从最终 MP4 重新验收**。终验分两份，别混在一个文件里：
 
 - **机读部分**（脚本写，重跑覆盖，不手改）：`final_qa.py <项目> <EP> [--video PATH] [--no-asr] [--asr-min 0.8]` 读成片和 cut.py 写的 `成片/<EP>.overlays.json`，写 `审查/<EP>-final-qa.json`、`审查/<EP>-final-qa.md`，证据帧和接触表放 `审查/<EP>-final-qa/`。md 首行「结论：PASS」或「结论：REVISE」由脚本判：没有 error 级问题，且 `asr_ok` 为 true（或 cut_order 里的镜都没台词）才 PASS；PASS 退出码 0，REVISE 退出码 2。期望台词取 shots.json 里进了 cut_order 的镜，不按成片字幕算；终验重新跑 ASR，不用缓存；草剪（`--draft`）出的成片一律 REVISE。ASR 不可用（或 `--no-asr`）时 `asr_ok` 为 null，结论写 REVISE 并注明"未验证"。

@@ -146,7 +146,7 @@ take 从 1 起，只增不删；哪个 take 进成片由 `review.json` 决定，
     "seedance_task": "reference",        // 仅 video_dialect 为 seedance-2.5：reference | edit | extend，默认 reference（video-prompts-seedance §4）
     "continuation_pending": false,       // 仅 Seedance 续接：上一镜未生成或未过审时标 true，保留正文草案、不提交（video-prompts-seedance §5）
     "visual_deps": ["人物「遥」", "地点「会议室」"], "continuity": ["笔在桌上"],
-    "multi_person": false, "multi_person_reason": "",   // 接触动作（推、撞、抢、递、扶）和对话镜（听者入画，硬约束 11c；自言自语、对全场喊话的单人镜写 `single_reason`）必须 true；理由写"接触动作：谁对谁做了什么"或"对话：谁对谁说，听者在画面哪侧"，提示词写 exactly N
+    "multi_person": false, "multi_person_reason": "",   // 多人接触或默认听者入画的对话镜填 true，写清谁对谁、听者方位，提示词写 exactly N；单人对白用 single_reason 引建立镜、对象方位、视线与切回承接，按 storyboard-keyframes §1 核验
     "boundary": {"start": {"position": "", "facing": "left", "gaze": "", "hands": "", "held": "", "state": ""},
                  "end":   {"position": "", "facing": "left", "gaze": "", "hands": "", "held": "", "state": ""}},   // 边界链（G26 逐项比对）
     "boundary_break": "",               // 同场同主体相邻镜边界不接时的镜外说明
@@ -353,7 +353,7 @@ error 必须清零，`waive` 对 error 门无效；warn 逐条判断，豁免写
 | 成片终验不过 | 排版类改叠加参数重出成片；台词边界类放宽剪点或回剧本删句重出字幕；片尾停帧收紧叠字时长；剧情事实类回生产 | 交付前必须有 `final-qa.json`；有已知问题写 REVISE，按阶段表 J 取得用户确认，拿不到写"待确认"、该集汇报为未交付（edit-and-delivery §7b） |
 | 起始帧参考图 | 默认 2 张（底板 + 身份），接触同框 3 张，不超过 3 张 | 中近景以上绑 `-FACE`；同机位反复出现用 `frame_parent` |
 | AI 生成标识 | `ai_label: null`（默认不叠） | 用户明确要求才写文字，cut.py 叠在前 3 秒右上角 |
-| 新的模型行为结论 | 先记 `项目开发/模型观察.md`（观察、N 次里几次、能判断什么、混杂因素） | 同一写法有效 ≥ 3 次才升级成 skill references 里的规则；单次改善只记录 [社区][推断] |
+| 新的模型行为结论 | 先记 `项目开发/模型观察.md`（新旧写法的成功与失败、范围、混杂因素） | 成功三次只形成候选经验；采用与退出按 audience-feedback §4，生产中不自动修改 skill |
 | API 连不上 | 写作阶段照做；生产阶段停，写明原因 | 其他停止条件包括未决提交、预算边界与 STOP/DEADLINE，见 runtime-boundaries.md |
 
 ## 9. 续跑、中止与收回

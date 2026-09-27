@@ -2,7 +2,7 @@
 
 **中文** · [English](README.en.md)
 
-一个给 AI 编码 agent（Claude Code、Codex 等）用的 skill：从一个点子无人值守地做出一部商业爽剧短剧。
+一个给 AI 编码 agent（Claude Code、Codex 等）用的 skill：在授权预算内把点子推进为可审查的短剧成片，分别报告制作验收、声音验证与观众反馈。自动制作不等于无人验收，也不保证商业效果。
 
 **它把目前网上能找到的短剧 skill 全部拆开读完、逐条提炼精华，再合成一条能跑的流水线。**六套来源：short-drama 十一件套、shuohao-skills、su-ai-short-drama、cinematic-video-prompt-engineer、director、AI-drama-pound；每一套都通读过全部文件、实际跑过它们的脚本和自测，只留下对全自动商业爽剧真正有用的方法，并写成 G00–G49 这些能机械执行的门。short-drama 十一件套的全部内容已并入本 skill，现在只需要安装 drama-forge 一个 skill。各家取了什么见下面的[来源表](#精华来自哪里)。
 

@@ -34,8 +34,8 @@
 
 ## 1. 镜头单位：对话看得见对象、接触动作双人同框
 
-- **对话必须看得见对象（2026-09-26 修订，原「对话默认单人正反打」作废，错误表 E33）**：台词镜里被说话的人必须入画——两人同框一左一右，或听者的肩/后脑/背影在前景（只露背不露脸，不挂画中人的头肩图，避免 E3 把同一人画两次）；多人镜人数写 `exactly N`、每人一次（video-prompts-general §2b）。实测单人正反打在 AI 视频里读成「对着空气说话」：生成的两镜屏幕位置、视线、光都对不上，观众建立不起两人关系。和剑灵这类只有主角看得见的角色说话，剑灵必须在画里。只有自言自语、对全场喊话且上一镜刚建立全场站位时才允许单人，写 `single_reason`（引用剧本原句和上一镜镜号，过搬家测试）。反应镜（不说话）可以单人。机械门 G53：台词镜只写单人句又没有 `single_reason`（或不足 10 字、同一句用在两镜）报 error；多人镜可写 `in_frame` 名单，人数要等于 exactly N、每人在 `scene_state` 在场名单里。
-- **同场连续镜头链式出帧（E33②）**：同一场里下一镜的起始帧用上一镜视频出点那一帧作 Picture 1（导出到参考图目录 `CHAIN-<镜号>.png`，frame_refs 第一项），分工句写「Picture 1 is the last frame of the previous shot: keep the place, the light and the world position of every person and prop in it; change only the camera angle and framing.」，紧接着按 video-prompts-general §2b 逐人写在场名单：换机位后每人新的画左画右按轴线重新算好写死，不用 "same people / same positions" 一句带过；链式镜不用 visual-assets §7 的底板分工句（参考图取舍见 visual-assets §7）；只有换场、时间跳跃才从底板重新出帧。生产顺序因此按场内镜头顺序：上一镜视频通过后再出下一镜起始帧。
+- **对话对象与空间关系可辨（2026-09-27 维护修订，E33）**：默认两人同框或听者肩背在前景（只露背不露脸，避免 E3 把同一人画两次）；多人镜写 `exactly N`、每人一次。已有建立镜、视线和切回承接能明确对象时，可拍单人对白；`single_reason` 引用建立镜号、剧本原句、对象方位和本镜用途，不能只写“突出情绪”。只有主角看得见的角色也要先建立存在和方位，不能凭设定省略。自言自语、对全场喊话同样写具体理由；无对白反应镜可以单人。reviewer 和预演按前后镜核对象，读成对空气说话就退回同框。G53 保持原检查：理由缺失、少于 10 字或两镜复用同一句报 error；理由的真实性由审查判断。多人镜 `in_frame` 人数要等于 exactly N，且在 `scene_state` 名单内。
+- **连续性不等于全场串行（2026-09-27 维护修订，E33②）**：默认由经核验的同机位底板、身份图和 `scene_state` 生成各镜起始帧；同机位可用通过的 `frame_parent` 派生，保持原有 G40 与参考图准入。逐镜核站位、视线、光与道具，不能声称参考图自动保证连续。只有确需继承动作终态时才取上一镜已通过视频的出点帧作 Picture 1（保存为 `CHAIN-<镜号>.png`，记来源镜、take、秒数和 sha）；逐人写新机位下的位置朝向，不用“same positions”带过。G2 前先用底板或父起始帧完成可审预演，不要求所有首帧等待尚未生成的视频；后续改用实际出点帧时，重新目检并重跑受影响的预演，再提交后续视频，不借链式需求跳过 G2。已声明的父帧或视频链依赖照常失效传播；没有依赖的镜只重核受影响的场景状态与相邻连续性。
 - **接触关系必须可读**：双人同框、身份明确的手部特写，或有证据的省略均可；写明谁将什么交给谁、接触前后归属。选择双人构图时写 `multi_person` 及原因。
 - **脸要达到用途所需的可读性**：关键口型与细微表情优先近景；远景可承担画外对白，不要求所有脸达到统一比例。
 - 表情承担关键信息时保证其载体可见；遮眼可以是造型或叙事选择，须换用可读的姿态/声音。
@@ -50,7 +50,7 @@
 
 先做**动作落实表**：来源动作｜主要落实镜头｜动作前事实｜动作后事实｜其他镜头作用。每个来源动作只有一个主要落实镜头，其他镜头只加反应、细节或新理解。上一镜终点是"右手刚开始伸出"，下一镜才完成取物；上一镜已经取到，下一镜就从"已经持有"开始，不再拿一次（AI 视频最常在下一镜开头把上一镜的动作重演一遍）。
 
-剧本每场每句对白都要有镜头承载（G11）；多句台词按语义闭合点拆镜（同一人连说合并成长镜头，§7b），每个台词镜都按 §1 让说话对象入画。
+剧本每场每句对白都要有镜头承载（G11）；多句台词按语义闭合点拆镜（同一人连说合并成长镜头，§7b），每个台词镜都按 §1 确保说话对象可辨，默认让听者入画。
 
 - 动作落实表是责任清单，不是"一段一镜"：连续表演守得住原意时几段剧本可以合在一镜，揭示、反应、证据细节很重要时一段剧本也可以由几镜承担。
 - 同一段剧本出现在两镜里，只在第二次带来新的观众体验时成立（新增反应、此前保留的证据、对前镜的新理解）；例：前一镜交代"谁摊开了手"，后一镜才让观众看清掌心的证物——物理状态没变、信息变了，也是有效的镜头职责。
@@ -110,7 +110,7 @@ director 在写正式镜头前，比较两到三个**真正不同**的方案。�
 
 每个方案回答同一组问题：观众何时知道什么、站在谁一边、谁拥有表演空间、最强的一格画面和最后的落点、可能丢掉的空间/反应/信息、和本剧画风与模型能力是否相容。整场还要看七件事是否共同承担同一个转向：戏剧转向（什么关系、信息或选择不可逆地变了）、观众立场从哪到哪、空间压力、视觉推进、摄影节奏、反应落点、声音策略（主导声源、何时留白、声音桥）。
 
-两个方案在知情时机、对齐对象、表演空间、最强画面和落点上都一样，就是同一个方案。不固定方案数、宫格或镜头数。director 选定一个，把理由和放弃的方案各一句写进 `项目开发/决策记录.md`，再把选中的观看位置、信息时机、空间和声音策略写进正式镜头；未选的方案不留在 shots.json 里。剧本的开场与顺叙规则（SKILL.md 硬约束 6b）、画面不出字、对话对象入画（§1）与接触同框照常适用，方案比较不能绕过它们。
+两个方案在知情时机、对齐对象、表演空间、最强画面和落点上都一样，就是同一个方案。不固定方案数、宫格或镜头数。director 选定一个，把理由和放弃的方案各一句写进 `项目开发/决策记录.md`，再把选中的观看位置、信息时机、空间和声音策略写进正式镜头；未选的方案不留在 shots.json 里。剧本的开场与顺叙规则（SKILL.md 硬约束 6b）、画面不出字、对话对象可辨与接触关系可读（§1）照常适用，方案比较不能绕过它们。
 
 ## 2e. 必拍事实 must_show：剧情事实不可妥协
 
@@ -236,7 +236,7 @@ The boy stands on the stairs holding the cash box, worried. The scene is set in 
 
 问题：没写身高和尺度（出图后人和护栏一样高）；没写画面哪侧、朝哪；"on the stairs"没说楼梯往上还是往下（出图台阶方向与剧情相反）；`worried` 是形容词；"keep … exactly"让模型为保底板把人缩小；没有光和镜头。
 
-**正例**（不说话的反应镜；台词镜按 §1 让对象入画，用 §9 的双人模板）：
+**正例**（不说话的反应镜；台词镜默认用 §9 双人模板，单人对白按 §1 提供并核验空间关系）：
 
 ```text
 Medium shot at eye level, 35mm, shallow depth of field. A slim Japanese high-school boy about 168 cm tall with a mushroom haircut, white short-sleeved school shirt, stands on screen-left in the midground, one step in front of the top of a staircase that goes down to the floor below behind him; the metal handrail beside him reaches his waist. His body is turned three-quarters toward screen-right, eyes on the tall boy off screen-right, eyes clearly visible under the fringe. He hugs a metal cash box about 30 cm wide against his chest with both arms, lips pressed tight, brows drawn together. Flat white daylight from the corridor windows on screen-right; the right side of his face is brighter, both eyes still readable. Picture 1 anchors the stairwell geometry, descending stairs, materials and world-space window position; camera framing follows this description. Picture 2 sets only his identity. Only one person in the frame; the tall boy stands off screen-right, out of frame, and the stairwell is otherwise empty. Style: …, no text.
@@ -409,7 +409,7 @@ Medium shot at eye level, 35mm, shallow depth of field. A slim Japanese high-sch
 
 ## 9b. 复杂调度：竖屏多人、单房对白、证据揭示、群体、动态对象
 
-这些是思考步骤，不是镜头数量模板；对话对象必须入画，接触同框（§1）。
+这些是思考步骤，不是镜头数量模板；对话对象必须可辨，默认听者入画，单人对白按 §1 验证；接触归属与因果仍须清楚。
 
 **竖屏多人**：先画出人能怎样通行，再决定纵向画幅怎样表现关系。用前中后景、门框、台阶、桌沿建立深度；写清谁能接近证据、出口或权力位置；头像高低只在空间真实且有意义时表达地位；两人对话时仍留出第三人监听、反应或阻挡的位置（在全景或过肩前景里）。设计顺序：空间锚点与入口 → 每人的目标和筹码 → 群体注意中心 → 关键动作前后的站位 → 哪些同时反应必须留在宽镜里 → 只有丢信息时才切插入或近景。常见问题：站位只为填满画面；背景人物切镜后无故换边；重要人物一直被前景挡住而剧情并没利用这种遮挡。
 

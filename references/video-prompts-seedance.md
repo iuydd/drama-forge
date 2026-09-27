@@ -1,6 +1,6 @@
 # 视频提示词：Seedance 2.0 / 2.5 方言
 
-只在用户把视频模型指定为 Seedance、并写进 `drama.json`（`video_dialect: "seedance-2.0"` 或 `"seedance-2.5"`，`profiles.video` 是账号里开通的 Endpoint/模型 ID）后使用（SKILL.md 硬约束 1b）。用户没指定就不走本文件，也不因为"Seedance 支持更长时长"自行换模型。内容原则仍按 [video-prompts-general.md](video-prompts-general.md)；对话对象入画（storyboard-keyframes §1）、封闭清单（video-prompts-general §2b）、接触同框、长镜头合并、节奏下限、视线、台词逐字、画面不出字这些硬规则和 H3 一样有效，本文只管 Seedance 的写法差异。接口参数与提交见 [providers.md](providers.md) §3。
+只在用户把视频模型指定为 Seedance、并写进 `drama.json`（`video_dialect: "seedance-2.0"` 或 `"seedance-2.5"`，`profiles.video` 是账号里开通的 Endpoint/模型 ID）后使用（SKILL.md 硬约束 1b）。用户没指定就不走本文件，也不因为"Seedance 支持更长时长"自行换模型。内容原则仍按 [video-prompts-general.md](video-prompts-general.md)；对话对象可辨（默认入画，单人对白按 storyboard-keyframes §1 验证）、封闭清单（video-prompts-general §2b）、接触关系可读、长镜头合并、节奏下限、视线、台词逐字、画面不出字的要求和 H3 相同，本文只管 Seedance 的写法差异。接口参数与提交见 [providers.md](providers.md) §3。
 
 ## 目录
 
@@ -94,7 +94,7 @@
 4. 写了"全程无字幕、无对白文字叠加、画面中没有可读文字""全程无背景音乐"，正文没有 `【】`。
 5. 2.0 没用时间戳；2.5 的时间段不重叠不留空、终点等于镜长。
 6. `edit`/`extend` 的比例、时长和参考视频满足接口硬条件；续接两项真实输入都在，或标了 `continuation_pending`。
-7. 对话对象入画、封闭清单（general §2b）、视线、节奏下限、一镜一个主变化照 H3 的同一套规则过一遍；正文开头有单镜不切句。
+7. 对话对象可辨（默认入画，单人对白按 storyboard-keyframes §1）、封闭清单（general §2b）、视线、节奏下限、一镜一个主变化照 H3 的同一套规则过一遍；正文开头有单镜不切句。
 8. 带台词的片段审片时听最后 0.3 秒：片尾可能有截断杂音，剪辑时出点前做短淡出，或把出点提前到杂音之前，不为这个整镜重拍（edit-and-delivery §8）。（取自 shuohao-skills）
 9. 竖屏项目比横屏更容易冒出字幕：审片接触表重点看画面下三分之一，出字按审片规则判 retake，不靠后期擦除掩盖。（取自 shuohao-skills）
 

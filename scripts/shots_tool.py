@@ -689,12 +689,12 @@ def check(project: Project, ep: str) -> Findings:
             elif n_people >= 2 and not sh.get("multi_person"):
                 F.add("G02", "warn", sid, f"起始帧写了 exactly {n_people} people 但 multi_person 没开；多人镜打开 multi_person 并写 multi_person_reason")
 
-        # G53 对话要看得见对象（SKILL 11c）；多人镜人数和在场名单对得上
+        # G53 单人对白须提供空间关系理由（SKILL 11c）；真实性由 reviewer 与预演核验
         if kind not in INSERT_KINDS and talk and n_people == 1:
             sr = str(sh.get("single_reason") or "").strip()
             if not sr:
-                F.add("G53", "error", sid, "台词镜只有一人入画：被说话的人要入画（multi_person + exactly N，听者只露背/肩），"
-                      "只有自言自语、对全场喊话且上一镜已建立站位时才用单人，并写 single_reason（引剧本原句和上一镜镜号）")
+                F.add("G53", "error", sid, "台词镜只有一人入画：默认让听者入画（multi_person + exactly N，听者只露背/肩），"
+                      "单人对白须写 single_reason（引建立镜号、剧本原句、对象方位、视线与切回承接）；自言自语或全场喊话也须具体理由")
             elif len(sr) < 10:
                 F.add("G53", "error", sid, f"single_reason「{sr}」太短，说不清为什么不给听者入画（引剧本原句和上一镜镜号）")
             else:
@@ -1368,8 +1368,8 @@ def render(project: Project, ep: str) -> list[Path]:
     L = [f"# {ep} 分镜", "",
          f"画风：{project.get('style_preset') or '未选（G33）'}（references/styles.md，全剧锁定）。",
          f"目标模型：{project.get('video_dialect')}；一镜一生成，keyframe 首帧模式；每镜生成秒数见各镜；成片取用区间按审片结果（审查/{ep}-review.json）。",
-         "拍法：对话镜被说话的人必须入画（SKILL 11c：两人一左一右，或听者只露背/肩在前景）；多人镜写死 exactly N、逐人位置朝向；"
-         "单人台词镜只限自言自语、对全场喊话，写 single_reason；字幕与后期字全部后期叠加，生成画面里不出字。", ""]
+         "拍法：对白默认听者入画（SKILL 11c：两人同框或听者肩背在前景）；多人镜写死 exactly N、逐人位置朝向；"
+         "单人对白写 single_reason，引用建立镜、对象方位、视线与切回承接，由 reviewer 和预演核验；自言自语或全场喊话也写具体理由。字幕与后期字全部后期叠加，生成画面里不出字。", ""]
     if data.get("notes"):
         L += ["本集说明：", *[f"- {n}" for n in data["notes"]], ""]
     for sc in data.get("scenes") or []:

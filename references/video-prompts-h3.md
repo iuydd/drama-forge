@@ -44,7 +44,7 @@ non_diegetic_music: N/A
 
 本地实测：近处骑手正脸不说话时，旧写法 3 次里 2 次把口型放到骑手脸上；补"骑手不说话、嘴唇紧闭"后 3/3 正确；骑手出画或背身 12/12 正确。**模型把口型放到画面里最显眼的正脸上。**所以：
 
-- 台词镜按 storyboard-keyframes §1：被说话的人必须入画（两人一左一右，或听者背影在前景），人数写 `exactly N`、每人一次（video-prompts-general §2b）；单人台词镜只限 §1 的例外并写 `single_reason`。口型会落到最显眼的正脸上，所以听者优先背对镜头（`seen from behind, his face never turns toward the camera`），并写明全程只有谁开口。
+- 台词镜按 storyboard-keyframes §1：默认听者入画（同框或肩背在前景），多人镜写 `exactly N`、每人一次（video-prompts-general §2b）；已建立空间关系的单人对白写 `single_reason` 并核验视线与切回承接。口型有落到最显眼正脸的风险，所以听者优先背对镜头（`seen from behind, his face never turns toward the camera`），并写明全程只有谁开口。
 - 画内有第二张看得见的脸（听者正脸、接触同框）：`<Other> does not speak; his lips remain completely closed for the whole shot.`
 - 画外台词（`[OS]`）：**H3 不会生成画外人声**（实测三个 take 都没声音）。画外说的话要么改成说话人在镜的台词镜（听者照样入画），要么另生成一个该人物当面说这句的音源镜（不进 `cut_order`），在听者镜上用 `audio_from` 垫音；听者镜正文写 `No one speaks`、嘴唇闭合。小声台词写成低声但每个字清楚、嘴唇可见，不写耳语（耳语会没声）。
 
