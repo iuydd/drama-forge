@@ -10,7 +10,7 @@
 生成出来不好、要重拍的镜头（11d 第二类）由主会话按需派，不在这里自动判定。
 
   adversary_plan.py list   <项目> <EP>                 列出高风险镜和触发原因
-  adversary_plan.py tasks  <项目> <EP> [--model TEXT]  为提示词有变化的高风险镜写 -vN.txt 与攻击任务书（最多两轮，第 2 轮提示 adversary2）
+  adversary_plan.py tasks  <项目> <EP> [--model TEXT]  为提示词有变化的高风险镜写 -vN.txt 与攻击任务书（只做一轮，用户 2026-09-27 定）
   adversary_plan.py status <项目> <EP>                 最新一轮清单缺「判断」一节的镜（送审前必须补齐）
 """
 from __future__ import annotations
@@ -28,7 +28,7 @@ PHYSICAL = ("摔", "滑倒", "撞", "倒下", "倒地", "跌", "打翻", "翻倒
 BODY = "(手腕|手背|手臂|胳膊|肩|袖口|后背|腰|衣领|头发)"
 CONTACT_RE = re.compile(r"(握|抓|拽|拉|扶|按|盖|推|拍|搂|抱)[^，。；→]{0,16}" + BODY + "|" + BODY + r"[^，。；→]{0,6}(被握|被抓|被拽|被按)")
 JUDGE_RE = re.compile(r"^#+\s*.*判断", re.M)
-MAX_ROUNDS = 2
+MAX_ROUNDS = 1  # 用户 2026-09-27：攻防只做一轮（SKILL 放行标准与防卡死 4）
 
 
 def reason(sh: dict) -> str:

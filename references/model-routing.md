@@ -12,7 +12,7 @@
 | C / D / E 独立审查 | Sonnet 5（medium） | GPT-6 Sol（medium） | `reviewer` |
 | 送审前补账（攻防判断栏、`review_ready.py` 列出的账目）、格式与机械门修复 | Sonnet 5（medium） | GPT-6 Luna（medium） | `light` |
 | 提示词攻防第 1 轮（11d） | Sonnet 5（medium） | GPT-6 Luna（high） | `adversary` |
-| 提示词攻防第 2 轮（11d） | Opus 5.5（low） | GPT-6 Sol（low） | `adversary2` |
+| 提示词攻防第 2 轮（11d，2026-09-27 起停用） | Opus 5.5（low） | GPT-6 Sol（low） | `adversary2` |
 | 声音听感（`listen_ok`、口音、情绪） | 真人 | 真人 | —（总则 5） |
 
 ## 边界
