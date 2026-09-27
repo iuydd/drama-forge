@@ -141,7 +141,7 @@ working side：摄影机常驻窗一侧
 屏幕方向：遥固定占画面左、面朝画右；三上固定占画面右、面朝画左
 ```
 
-- 裸写的 left/right 一律指**画面**左右；人物自身的左右带主体（his left hand）。
+- 左右按 video-prompts-general §2 的唯一口径：先用实物参照，不得已写 `screen-left` 并同句写人物朝向；禁止裸 left/right 和 `to his left` 一类人物相对方位；身体部位写 his left hand。
 - 三人以上的场，"屏幕方向"一行逐人写全（含只有主角看得见的角色），与 `scene_state.characters` 一致（E34）。
 - 越轴那一镜标 `axis_break` 并写理由，之后重新声明 working side。越轴本身不是错，没有动机又让空间读不懂才是；合法手段有：人物在同一镜内穿过轴线、中性过渡镜、用新的宽镜头重新建立方位，或导演有意制造主观错乱。
 - 轴线要写成两个可命名锚点的连线；写 `<working side>` 这类占位等于没写。判据：换一个人来拍下一镜，只读这三行能不能把机位放对。
@@ -199,7 +199,8 @@ working side：摄影机常驻窗一侧
 - **回溯、重复类镜头复刻原镜**：时间倒回、梦境重演、"一模一样地再来一次"的镜头，与原镜同机位、同景别、同姿势、同持物（直接复用原镜 `frame_prompt` 和底板，只改变化的那一项），观众才看得出"回到了那一刻"。同时写 `frame_parent: <原镜 ID>`，写法见 [pipeline-contract.md](pipeline-contract.md) §4、G40。
 - 每个人都写身体朝向；印章字要放的一侧留空（构图偏另一侧，脑后留出空位）。
 - 可渲染检查：每人位置与间距、前中后景、视觉重点、景别、机位、光源方向、每人姿态朝向手部持物——接手的人能否照着画出来而不用自己发明事实。
-- 长短不设上限也不设目标，封闭清单（video-prompts-general §2b 表中适用于静帧的各行）一行不能少；起始帧提示词 = 镜头句（景别、机位高度、焦段）→ 在场名单 → 主体与动作（人物名 + 外观锚点、位置、朝向、持物、表情）→ 尺度锚点 → 参考图分工 → The scene is set … → Style: …，镜头句固定放第一句（§6b 正例和实战项目都是这样写的，顺序固定比长短更要紧；有 `frame_parent` 时，`The same shot as Picture 1…` 保留句放在镜头句之前）[社区][自测]（单人镜含单人固定句，多人镜写 `multi_person`、`exactly N` 和逐人位置朝向；都含 no text）。
+- 长短不设上限也不设目标，封闭清单（video-prompts-general §2b 表中适用于静帧的各行）一行不能少；起始帧提示词的顺序只有一套，就是 video-prompts-general §2b 二b 的静帧清单：镜头句（景别、机位高度、焦段，不写运动词）→ 人数排他句 → 逐人（名字 + drift_anchors、三方向位置、朝向、支撑、手、持物、表情档）→ 陈设清点与门窗开度 → 光句与不对称锚点 → 尺度锚点 → 参考图分工 → The scene is set … → 无字句与版式句 → Style: …；本文件其他地方的顺序以此为准，镜头句固定放第一句（§6b 正例和实战项目都是这样写的，顺序固定比长短更要紧；有 `frame_parent` 时，`The same shot as Picture 1…` 保留句放在镜头句之前）[社区][自测]（单人镜含单人固定句，多人镜写 `multi_person`、`exactly N` 和逐人位置朝向；都含 no text）。
+- **陈设与门窗**：画内每类可数陈设写 `exactly N` 加三方向位置（左右、以镜头为准的前后、高度），末尾写同类排他句；门窗抽屉写可量开度；全部从 `scene_state` 的 `set`、`fixtures` 逐字翻译，同场各镜同一句（video-prompts-general §2b 陈设清点、位置、全程不变量三行，G54 L11–L13）。
 - **尺度锚点**：中景、全景、全身、双人镜的起始帧必须写人物与一个环境参照物的关系（`the handrail reaches his waist`、`the door frame is about a head taller than him`、`each step is about ankle height`），多人同框写相对身高；参照值见 [visual-assets.md](visual-assets.md) §12，G34 查写了没有。
 - 视觉依据在成稿后回填：从关键帧正文读出这一格里谁需要被认出；每个露脸入画的人 1 个人物条目（画外另注），前景只露背、肩、后脑的人不挂身份图（E3）。
 
@@ -248,7 +249,7 @@ Medium shot at eye level, 35mm, shallow depth of field. A slim Japanese high-sch
 - 写清尺度：每件多大、和手掌或箱体比多大（`each box about the size of a palm, the case about 60 cm wide`），否则模型会多塞或缩小。
 - **起始帧目检逐个数**：用看图工具放大那块区域，按排逐个数，结果写进目检记录（`计数：上 5 / 下 5 = 10 ✓`）；数不对就 `--retake` 或改构图（减少件数、分成两个插入镜），不带着错数进视频。视频接触表的第一格和最后一格再各数一次，防止运动中多出或少掉。
 
-**删句测试**：删掉任意一句，如果画面没有因此变得更不确定，那句就是多的（连接词、铺垫、换个说法重说一遍）。一件事只说一次。与上一镜相同的部分也要写成绝对事实，不写"同上""与上一镜相同"（G24；图片模型逐张独立生成，看不到上一镜）。
+**删句测试**（只对静帧清单以外的句子做；清单行和必备句不参与，video-prompts-general §2b 二b）：删掉任意一句，如果画面没有因此变得更不确定，那句就是多的（连接词、铺垫、换个说法重说一遍）。一件事只说一次。与上一镜相同的部分也要写成绝对事实，不写"同上""与上一镜相同"（G24；图片模型逐张独立生成，看不到上一镜）。
 
 **收尾固定一句版式声明**：`A single clean full-bleed frame: no borders, no panel dividers, no labels, no text, no watermark.` 起始帧挂着身份板、转面板裁格或白底道具图时，模型会模仿参考图里的分隔线和多格版式，这句用正面描述先封住版式；它只管版式，不替代 V01 目检。（取自 shuohao-skills）
 

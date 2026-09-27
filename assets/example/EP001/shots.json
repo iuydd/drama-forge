@@ -83,13 +83,13 @@
       },
       "framing": "中近景，会议室桌角，遥与三上的背影，面朝画左的主位",
       "keyframe": "遥坐在长桌桌角面朝画左，手里的笔刚放到桌面上，手边一杯没动的咖啡，脸上平静，视线抬向画左。",
-      "frame_prompt": "Over-the-shoulder medium close-up of a slim Japanese woman about 28 in a charcoal grey blazer over a white shirt, seated at the corner of a long meeting table facing screen left, her pen just set down on the table, an untouched cup of coffee beside her hand, calm face, eyes lifted toward screen left. Exactly two people in the frame, each appearing once. In the left foreground only the back of a heavy-set man's navy-suited shoulder and the back of his head, seen from behind, his face never visible. Seated, the table top is level with her waist; standing he would be about a head taller than her. Picture 1 sets only the location and the lighting; do not copy any person from it. Picture 2 sets only the identity of the seated person: keep exactly her face, hairline, skin and build. The scene is set in a corporate meeting room in Tokyo in daylight, the window side behind her. Style: candid 35mm film still, available light, film grain, no text, no logos.",
+      "frame_prompt": "Over-the-shoulder medium close-up of a slim Japanese woman about 28 in a charcoal grey blazer over a white shirt, seated at the corner of a long meeting table facing screen left, her pen just set down on the table, an untouched cup of coffee beside her hand, calm face, eyes lifted toward screen left. Exactly two people in the frame, each appearing once. In the screen-left foreground only the back of a heavy-set man's navy-suited shoulder and the back of his head, seen from behind, his face never visible. Seated, the table top is level with her waist; standing he would be about a head taller than her. Picture 1 sets only the location and the lighting; people, pose and framing come from this description, not from Picture 1. Picture 2 sets only her face, hairline, skin and build; her pose, clothing and expression come from this description, not from Picture 2. The scene is set in a corporate meeting room in Tokyo in daylight, the window side behind her. Style: candid 35mm film still, available light, film grain, no text, no logos.",
       "frame_refs": [
         "IMG-PLATE-MEETING",
         "IMG-HARUKA"
       ],
       "motion": "她的手离开笔；约 0.5 秒开口说台词，说到「あなたが」时下巴微抬；说完保持看着画左，不笑。",
-      "video_prompt": "integrated_multimodal_description: [Shot 1] Single continuous take, no cuts, starting exactly from the opening frame. Locked-off camera on a tripod; real-time speed; realistic human behaviour with blinking and breathing. No subtitles, captions or on-screen text at any time. The man in the left foreground stays seen from behind and silent the whole time; only the woman speaks. Her hand leaves the pen. At about half a second the woman in a charcoal grey blazer (S1), on-screen, with a young woman's calm, clear voice, says in Japanese, evenly: <d>[Japanese] 名前は消していいです。承認は、あなたがどうぞ。</d> On 「あなたが」 her chin lifts slightly; after the line she keeps looking toward screen left, not smiling.\noverall_soundscape: quiet meeting room, the faint fan of a projector, a distant office phone.\nnon_diegetic_music: N/A",
+      "video_prompt": "integrated_multimodal_description: [Shot 1] Single continuous take, no cuts, starting exactly from the opening frame. Locked-off camera on a tripod, no pan, no tilt, no zoom, no cuts; real-time speed; realistic human behaviour with blinking and breathing. No subtitles, captions or on-screen text at any time. The man in the screen-left foreground stays seen from behind and silent the whole time; only the woman speaks. Her hand leaves the pen. At about half a second the woman in a charcoal grey blazer (S1), on-screen, with a young woman's calm, clear voice, says in Japanese, evenly: <d>[Japanese] 名前は消していいです。承認は、あなたがどうぞ。</d> On 「あなたが」 her chin lifts slightly; after the line she keeps looking toward screen left, not smiling. Exactly two people are in the frame for the whole clip. She holds that look until the end of the clip. These are the only words spoken in this shot. These are the only sounds in the shot.\noverall_soundscape: quiet meeting room, the faint fan of a projector, a distant office phone.\nnon_diegetic_music: N/A",
       "seconds": 6,
       "dialogue": [
         {
@@ -124,7 +124,7 @@
       "adversarial_preflight": [
         {
           "worst": "前景的三上转过脸来，口型落到他脸上，看起来是他在说话",
-          "blocked_by": "The man in the left foreground stays seen from behind and silent the whole time; only the woman speaks."
+          "blocked_by": "The man in the screen-left foreground stays seen from behind and silent the whole time; only the woman speaks."
         },
         {
           "worst": "画里多出第三个人，或三上被画成正脸坐在她对面",
@@ -147,12 +147,12 @@
       ],
       "framing": "手部插入镜，俯拍桌面",
       "keyframe": "俯拍长桌桌面，一只戴金色腕表的手握着红色记号笔，笔尖压在方案首页署名栏的位置，署名栏只有模糊的图形，不可读。",
-      "frame_prompt": "Insert shot, high angle tight on a long meeting table: a man's hand with a gold wristwatch holds a red marker, its tip pressed onto the signature box of a proposal cover page; the page shows only blurred grey shapes, nothing readable. Flat daylight from the left. Style: candid 35mm film still, film grain, no text, no logos.",
+      "frame_prompt": "Insert shot, high angle tight on a long meeting table: a man's hand with a gold wristwatch holds a red marker, its tip pressed onto the signature box of a proposal cover page; the page shows only blurred grey shapes, nothing readable. Flat daylight from screen left. Style: candid 35mm film still, film grain, no text, no logos.",
       "frame_refs": [
         "IMG-PLATE-MEETING"
       ],
       "motion": "红笔在署名栏上狠狠划一道，然后被扔到桌上滚了半圈。",
-      "video_prompt": "integrated_multimodal_description: [Shot 1] Single continuous take, starting exactly from the opening frame. The red marker drags one hard stroke across the signature box, then the hand tosses the marker onto the table where it rolls half a turn and stops. Dust drifts slowly in the window light above the table. No on-screen text at any time.\noverall_soundscape: the squeak of a marker on paper, a plastic pen clattering on a wooden table.\nnon_diegetic_music: N/A",
+      "video_prompt": "integrated_multimodal_description: [Shot 1] Single continuous take, starting exactly from the opening frame. The camera is locked overhead, no pan, no tilt, no zoom, no cuts. The red marker drags one hard stroke across the signature box, then the hand tosses the marker onto the table where it rolls half a turn and stops. Dust drifts slowly in the window light above the table. No on-screen text at any time. Exactly one person is in the frame, seen only as a hand and wrist. The marker stays still on the table until the end of the clip. No one speaks. These are the only sounds in the shot.\noverall_soundscape: the squeak of a marker on paper, a plastic pen clattering on a wooden table.\nnon_diegetic_music: N/A",
       "seconds": 4,
       "dialogue": [],
       "end_state": "红笔停在桌上，署名栏被划掉。",
@@ -174,11 +174,11 @@
         },
         {
           "worst": "红笔没划下去，只是停在纸上，或划完没被扔掉",
-          "blocked_by": "The red marker drags one hard stroke across the signature box, then the hand tosses the marker onto the table where it rolls half a turn and stops."
+          "blocked_by": "The camera is locked overhead, no pan, no tilt, no zoom, no cuts. The red marker drags one hard stroke across the signature box, then the hand tosses the marker onto the table where it rolls half a turn and stops."
         },
         {
           "worst": "手没有连着任何人，凭空从画面边伸出一只手",
-          "blocked_by": "验收：手腕和金表连着画框外同一侧的手臂，看不到断开的手"
+          "blocked_by": "验收：0–5 秒逐帧看手腕和金表连着画框外同一侧的手臂，看不到断开的手"
         }
       ]
     },
@@ -200,13 +200,13 @@
       },
       "framing": "中近景，主位，三上与遥的背影，面朝画右",
       "keyframe": "三上坐在长桌主位面朝画右，身体后靠，一侧嘴角挑起，下巴微扬，投影幕在他身后，构图偏右、脑后画左留出空位。",
-      "frame_prompt": "Over-the-shoulder medium close-up of a slightly heavy Japanese man about 45 in a dark navy suit, seated at the head of a long meeting table facing screen right, leaning back, one corner of his mouth lifted, chin slightly raised, eyes toward screen right on the woman in the right foreground, not at the camera, a projection screen out of focus behind him, framed off-center to the right with clear empty space on screen left behind his head. Exactly two people in the frame, each appearing once. In the right foreground only the back of a slim woman's charcoal-blazered shoulder and her low ponytail, seen from behind, her face never visible. Seated, the table top is level with his waist; he is about a head taller than her. Picture 1 sets only the location and the lighting; do not copy any person from it. Picture 2 sets only the identity of the seated person: keep exactly his face, hairline, skin and build. The scene is set in a corporate meeting room in Tokyo in daylight, the projector wall behind him. Style: candid 35mm film still, film grain, no text, no logos.",
+      "frame_prompt": "Over-the-shoulder medium close-up of a slightly heavy Japanese man about 45 in a dark navy suit, seated at the head of a long meeting table facing screen right, leaning back, one corner of his mouth lifted, chin slightly raised, eyes toward screen right on the woman in the screen-right foreground, not at the camera, a projection screen out of focus behind him, framed off-center toward screen right with clear empty space on screen left behind his head. Exactly two people in the frame, each appearing once. In the screen-right foreground only the back of a slim woman's charcoal-blazered shoulder and her low ponytail, seen from behind, her face never visible. Seated, the table top is level with his waist; he is about a head taller than her. Picture 1 sets only the location and the lighting; people, pose and framing come from this description, not from Picture 1. Picture 2 sets only his face, hairline, skin and build; his pose, clothing and expression come from this description, not from Picture 2. The scene is set in a corporate meeting room in Tokyo in daylight, the projector wall behind him. Style: candid 35mm film still, film grain, no text, no logos.",
       "frame_refs": [
         "IMG-PLATE-MEETING",
         "IMG-MIKAMI"
       ],
       "motion": "约 0.5 秒开口嘲讽，笑出声；约 3.2 秒再说第二句，说到「回るよ」时手一摊；说完笑容不变。",
-      "video_prompt": "integrated_multimodal_description: [Shot 1] Single continuous take, starting exactly from the opening frame. Locked-off camera on a tripod; real-time speed; realistic human behaviour. No subtitles, captions or on-screen text at any time. The woman in the right foreground stays seen from behind and silent the whole time; only the man speaks. At about half a second the man (S2), on-screen, with a smooth condescending voice, says in Japanese, mocking: <d>[Japanese] 外注が署名？笑わせるな。</d> He laughs once. At about three seconds he adds, easily: <d>[Japanese] 君がいなくても、回るよ。</d> On 「回るよ」 one hand opens outward in a small shrug; after the line one corner of his mouth stays pulled up, eyes cold and fixed on screen right, not a warm smile.\noverall_soundscape: quiet meeting room, the faint fan of a projector, his short laugh.\nnon_diegetic_music: N/A",
+      "video_prompt": "integrated_multimodal_description: [Shot 1] Single continuous take, starting exactly from the opening frame. Locked-off camera on a tripod, no pan, no tilt, no zoom, no cuts; real-time speed; realistic human behaviour. No subtitles, captions or on-screen text at any time. The woman in the screen-right foreground stays seen from behind and silent the whole time; only the man speaks. At about half a second the man (S2), on-screen, with a smooth condescending voice, says in Japanese, mocking: <d>[Japanese] 外注が署名？笑わせるな。</d> He laughs once. At about three seconds he adds, easily: <d>[Japanese] 君がいなくても、回るよ。</d> On 「回るよ」 one hand opens outward in a small shrug; after the line one corner of his mouth stays pulled up, eyes cold and fixed on screen right, not a warm smile. Exactly two people are in the frame for the whole clip. He holds that look until the end of the clip. These are the only words spoken in this shot. These are the only sounds in the shot.\noverall_soundscape: quiet meeting room, the faint fan of a projector, his short laugh.\nnon_diegetic_music: N/A",
       "seconds": 6,
       "dialogue": [
         {
@@ -248,7 +248,7 @@
       "adversarial_preflight": [
         {
           "worst": "前景的遥转过脸来，嘲笑像是对着镜头",
-          "blocked_by": "The woman in the right foreground stays seen from behind and silent the whole time; only the man speaks."
+          "blocked_by": "The woman in the screen-right foreground stays seen from behind and silent the whole time; only the man speaks."
         },
         {
           "worst": "他笑成和善的笑，嘲讽读不出来",
@@ -278,13 +278,13 @@
       },
       "framing": "近景，桌角，遥与三上的背影，面朝画左",
       "keyframe": "遥坐在桌角面朝画左，右手端起咖啡杯刚喝了一口，杯子还在嘴边下方，眼睛看着画左，神情平静。",
-      "frame_prompt": "Over-the-shoulder close-up of a slim Japanese woman about 28 in a charcoal grey blazer over a white shirt, seated at the corner of a long meeting table facing screen left, a coffee cup in her right hand just lowered from her lips, eyes on screen left, calm. Exactly two people in the frame, each appearing once. In the left foreground only the back of a heavy-set man's navy-suited shoulder and the back of his head, seen from behind, his face never visible. Seated, the table top is level with her waist; standing he would be about a head taller than her. Picture 1 sets only the location and the lighting; do not copy any person from it. Picture 2 sets only the identity of the seated person: keep exactly her face, hairline, skin and build. The scene is set in a corporate meeting room in Tokyo in daylight, the window side behind her. Style: candid 35mm film still, film grain, no text, no logos.",
+      "frame_prompt": "Over-the-shoulder close-up of a slim Japanese woman about 28 in a charcoal grey blazer over a white shirt, seated at the corner of a long meeting table facing screen left, a coffee cup in her right hand just lowered from her lips, eyes on screen left, calm. Exactly two people in the frame, each appearing once. In the screen-left foreground only the back of a heavy-set man's navy-suited shoulder and the back of his head, seen from behind, his face never visible. Seated, the table top is level with her waist; standing he would be about a head taller than her. Picture 1 sets only the location and the lighting; people, pose and framing come from this description, not from Picture 1. Picture 2 sets only her face, hairline, skin and build; her pose, clothing and expression come from this description, not from Picture 2. The scene is set in a corporate meeting room in Tokyo in daylight, the window side behind her. Style: candid 35mm film still, film grain, no text, no logos.",
       "frame_refs": [
         "IMG-PLATE-MEETING",
         "IMG-HARUKA"
       ],
       "motion": "她把杯子放回桌上；约 0.6 秒开口，语气像随口一问；说完看着画左等答案。",
-      "video_prompt": "integrated_multimodal_description: [Shot 1] Single continuous take, starting exactly from the opening frame. Locked-off camera on a tripod; real-time speed; realistic human behaviour with blinking and breathing. No subtitles, captions or on-screen text at any time. The man in the left foreground stays seen from behind and silent the whole time; only the woman speaks. She sets the cup down on the table. At about half a second the woman in a charcoal grey blazer (S1), on-screen, with a young woman's calm, clear voice, says in Japanese, as if in passing: <d>[Japanese] 承認料、先週お振込みでしたよね。</d> After the line she keeps her eyes on screen left, waiting.\noverall_soundscape: quiet meeting room, a cup set down on wood, the faint fan of a projector.\nnon_diegetic_music: N/A",
+      "video_prompt": "integrated_multimodal_description: [Shot 1] Single continuous take, starting exactly from the opening frame. Locked-off camera on a tripod, no pan, no tilt, no zoom, no cuts; real-time speed; realistic human behaviour with blinking and breathing. No subtitles, captions or on-screen text at any time. The man in the screen-left foreground stays seen from behind and silent the whole time; only the woman speaks. She sets the cup down on the table. At about half a second the woman in a charcoal grey blazer (S1), on-screen, with a young woman's calm, clear voice, says in Japanese, as if in passing: <d>[Japanese] 承認料、先週お振込みでしたよね。</d> After the line she keeps her eyes on screen left, waiting. Exactly two people are in the frame for the whole clip. She keeps waiting until the end of the clip. These are the only words spoken in this shot. These are the only sounds in the shot.\noverall_soundscape: quiet meeting room, a cup set down on wood, the faint fan of a projector.\nnon_diegetic_music: N/A",
       "seconds": 6,
       "dialogue": [
         {
@@ -318,7 +318,7 @@
       "adversarial_preflight": [
         {
           "worst": "三上转过来开口回答，打破“此刻没有回答”的事实",
-          "blocked_by": "The man in the left foreground stays seen from behind and silent the whole time; only the woman speaks."
+          "blocked_by": "The man in the screen-left foreground stays seen from behind and silent the whole time; only the woman speaks."
         },
         {
           "worst": "杯子没放下，拿着杯子说完，手里多一只杯子",
@@ -326,7 +326,7 @@
         },
         {
           "worst": "她笑着说，语气变成闲聊，逼问读不出来",
-          "blocked_by": "验收：听审语气笃定、说完看着画左等答案，不笑"
+          "blocked_by": "验收：听审语气笃定，台词结束后 1 秒内仍看着画左等答案，不笑"
         }
       ]
     }

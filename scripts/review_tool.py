@@ -48,7 +48,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from common import Project, ffprobe_duration, norm, speech_seconds  # noqa: E402
-from review_quality import (AUDIO_KEYS, CHECKS, EDIT_KEYS, MUST_SHOW_VALUES, animatic_inputs_fp, audio_status, fmt_audio,
+from review_quality import (AUDIO_KEYS, CHECKS, EDIT_KEYS, MUST_SHOW_VALUES, animatic_inputs_fp, audio_status, coverage_warnings, fmt_audio,
                             media_digest, must_show_approval_issues, must_show_failed, must_show_facts, must_show_state,
                             provenance_issues, shot_digest, speech_diff, take_quality, valid_window, asr_currency_issues)
 
@@ -750,6 +750,7 @@ def report(project: Project, ep: str) -> Path:
          "「未验证」表示没人做过这一项，不等于通过。", "",
          "| 镜 | 标题 | take | 时长 | ASR 命中 | 听到 | 声音 | 必须拍清楚 | 结论 | 取用 | 备注 |", "|---|---|---|---|---|---|---|---|---|---|---|"]
     ms_rows: dict[str, list[str]] = {}
+    cover: list[str] = []
     for sh in data.get("shots") or []:
         sid = sh["id"]
         e = (review.get("shots") or {}).get(sid) or {}
@@ -771,6 +772,7 @@ def report(project: Project, ep: str) -> Path:
         if rec.get("voice_mismatch"):
             heard += f"；[warn] 声线疑似不符（中位基频 {rec['voice_mismatch']['f0_median_hz']}Hz，设定 {rec['voice_mismatch']['expected']}），听审确认"
         audio = fmt_audio(audio_status(rec.get("assessment"))) if sh.get("dialogue") else "-"
+        cover += [f"- {sid}/t{t}：{w}" for w in coverage_warnings(sh, rec, project.root)] if t else []
         state = must_show_state(e, t) if t else {}
         ids = list(dict.fromkeys(list(sh.get("must_show_ids") or []) + list(state)))
         ms = "；".join(f"{mid} {({'pass': '通过', 'fail': '✗ 没拍出来', 'unverified': '未验证'}).get(state.get(mid), '未验证')}" for mid in ids) or "-"
@@ -783,6 +785,8 @@ def report(project: Project, ep: str) -> Path:
         for mid, f in facts.items():
             rows = ms_rows.get(mid) or [f"{x}：未验证" for x in f["shots"]] or ["✗ 没有任何镜承担"]
             L.append(f"- {mid}（{f.get('kind') or '-'}）「{f['fact']}」：{'；'.join(rows)}")
+    if cover:
+        L += ["", "## 审片覆盖提醒（L30，warn）", ""] + cover
     L += ["", f"接触表：审查/{ep}-sheets/<镜>_t<take>.jpg（2 帧/秒）。模型看图后用 `review_tool.py mark` 记录取用区间与结论。"]
     project.review_dir.mkdir(parents=True, exist_ok=True)
     p = project.review_dir / f"{ep}-审片.md"

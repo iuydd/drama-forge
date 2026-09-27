@@ -278,37 +278,85 @@ def waive_findings(F: "Findings", shots: list[dict], scenes: list[dict], project
     F.waived = waived
 
 
-# G54 提示词漏洞机械检查：每条对应 references/prompt-loopholes.md 的编号；只报 warn，逐条改或按总则 7 豁免
+# G54 提示词漏洞机械检查：每条对应 references/prompt-loopholes.md 的编号；只报 warn（L14 头句 / L15 封口句是 error），逐条改或按总则 7 豁免
 _LR_RE = re.compile(r"\b(left|right)\b", re.I)
-_LR_OK_RE = re.compile(r"(screen[- ]|\b(?:his|her|their|its|my)\s+(?:\w+\s+)?|\b(?:has|had|have|just|already|was|were)\s+)$", re.I)
+_LR_OK_RE = re.compile(r"(screen[- ]|\b(?:has|had|have|just|already|was|were)\s+)$", re.I)
+_LR_POSS_RE = re.compile(r"(?:\b(?:his|her|their|its|my)|\w's)\s+(?:[a-z-]+\s+)?$", re.I)
+_LR_BODY_RE = re.compile(r"\s+(?:[a-z-]+\s+)?(?:hand|arm|foot|leg|shoulder|cheek|eye|ear|knee|hip|wrist|side of|palm|thumb|elbow|ankle|temple|fist|fingers?|hands|arms|feet|legs|shoulders|cheeks|eyes|ears|knees|hips|eyebrows?|brows?|forearms?|sleeves?|pockets?|cuffs?|collar|lapel|jaw|chin|heels?|toes?|calf|thigh|gloves?|shoes?|boots?|breast|earlobe|nostril|ribs?|flank)\b", re.I)
 _MOVE_RE = re.compile(r"\b(skid\w*|stumbl\w*|slip(?:s|ped|ping)?|toppl\w*|lung(?:e|es|ing)|(?:she|he|they|body|feet|shoe|foot)\s+(?:\w+\s+)?slid(?:e|es|ing)?)\b", re.I)
 _QTY_RE = re.compile(r"\b(\d+(?:\.\d+)?|half|one|two|three|four|five|a few|a)[\s-]*(?:a\s+)?(cm|centimet\w*|met(?:re|er)s?|m|tiles?|steps?|strides?|paces?|inch\w*|body lengths?|arm'?s? lengths?|hand'?s? width)\b|\b\d+(?:\.\d+)?\s*(?:feet|foot)\b", re.I)
 _PHYS_RE = re.compile(r"\b(fall(?:s|ing)?\s+(?:backward|forward|down|over|off|flat|hard)|fell\b|slip(?:s|ped)\b(?!\s+(?:out|in|into|through|away|past))|skid\w*|trip(?:s|ped)\b|collaps\w*|toppl\w*|knock\w*\s+(?:over|down)|(?<!mist )(?<!smoke )(?<!light )(?<!fog )spill(?:s|ed|ing)?\b|crash(?:es|ed)?\s+(?:into|onto|down))", re.I)
-_SPEED_RE = re.compile(r"\b(fast|sudden\w*|abrupt\w*|instant\w*|fraction of a second|less than|violent\w*|hard|at once|in under|within \d|snap\w*|whip\w*)\b", re.I)
+# L18：hard/snap/whip 多义（hard floor、snaps his fingers、whip-pan），不再算速度证据
+_SPEED_RE = re.compile(r"\b(fast|sudden\w*|abrupt\w*|instant\w*|fraction of a second|less than|violent\w*|at once|in under|within \d|at full speed|quickly|rapid\w*|in one motion)\b", re.I)
 _IMPACT_RE = re.compile(r"\b(land\w*|hit\w*|smash\w*|slam\w*|thud\w*|bounc\w*|splash\w*|crash\w*|onto)\b", re.I)
 _EXIT_RE = re.compile(r"\b(out of (?:the )?frame|leav\w* the frame|exit\w* the frame|out of shot)\b", re.I)
 _WINDOW_RE = re.compile(r"(?:^|[.;]\s+)(?:At|From|Between|By)\s+(?:about\s+)?\d+(?:\.\d+)?\s*(?:s\b|sec)", re.I)
+_SHAKE_RE = re.compile(r"\bhandheld\b|\bsway\w*|\bshak\w*", re.I)
+_VAGUE_RE = re.compile(r"\b(a little|briefly|a moment|gently|somewhat|a bit)\b", re.I)
+_KEEP_VAGUE_RE = re.compile(r"\bkeep\b[^.]*\bexactly\b|\b(?:scene|room|everything|background|the rest)\s+(?:stays?|remains?)\s+exactly\b", re.I)
+_FRAME_MOTION_RE = re.compile(r"\bno (?:pan|tilt|zoom|cut)s?\b|\bcamera (?:moves|pushes|pans)\b|\bthen\b|\bslowly\b", re.I)
+_COLLECTIVE_RE = re.compile(r"(?<!\bno )\b(everyone|everything else|the rest|other elements|all other)\b", re.I)
+_INNER_RE = re.compile(r"\b(is being|has been|because|in front of (?:him|her))\b", re.I)
 
 
-def loophole_findings(F: "Findings", sid: str, vp: str, seconds) -> None:
-    """G54：把攻防里反复出现、能用规则查的漏洞在分镜门里查掉（L01–L06，见 references/prompt-loopholes.md）。"""
-    text = re.sub(r"<d>.*?</d>", "", vp or "", flags=re.S)
+def _sents(text: str) -> list[str]:
+    return [x for x in re.split(r"(?<=[.;!?])\s+", text or "") if x.strip()]
+
+
+def _neg_hit(rx, text: str) -> list[str]:
+    return [m.group(0) for m in rx.finditer(text) if not NEG_BEFORE_RE.search(text[max(0, m.start() - 30):m.start()])]
+
+
+def lr_findings(F: "Findings", sid: str, label: str, text: str) -> None:
+    """L01/L20：裸 left/right；his/her left 只在后接身体部位时豁免，to/on his left 这种人物坐标照样报。"""
+    body = re.sub(r"<d>.*?</d>", "", text or "", flags=re.S).split("overall_soundscape:")[0]
+    bad = []
+    for m in _LR_RE.finditer(body):
+        pre, post = body[max(0, m.start() - 24):m.start()], body[m.end():m.end() + 30]
+        if _LR_OK_RE.search(pre) or re.match(r"\s*(?:(?:edge|side|third|half|corner)\s+)?of (?:the )?(?:frame|screen|image|cent(?:re|er))|\s+edge\b", post, re.I):
+            continue
+        if _LR_POSS_RE.search(pre) and _LR_BODY_RE.match(post) and not re.search(r"\b(?:to|on|toward|towards)\s+(?:his|her|their|its|my)\s+(?:[a-z-]+\s+)?$", pre, re.I):
+            continue
+        bad.append(m.group(1).lower())
+    if bad:
+        pers = re.search(r"\b(?:to|on)\s+(?:his|her|their)\s+(?:left|right)\b", body, re.I)
+        F.add("G54", "warn", sid, f"L01 {label} 方向写了裸 {sorted(set(bad))}{'（含人物坐标「' + pers.group(0) + '」，L20）' if pers else ''}：人物对着镜头时左右会读反，改用画面里的实物做参照（朝门、背对洗手台）；"
+              "非写不可写 screen-left 并在同一句写人物朝向；his/her left 只用于身体部位（her left hand）")
+
+
+def loophole_findings(F: "Findings", sid: str, vp: str, seconds, *, head: str = "", sh: dict | None = None) -> None:
+    """G54：把攻防里反复出现、能用规则查的漏洞在分镜门里查掉（L01–L06、L14、L16–L20、L23、L24、L28，见 references/prompt-loopholes.md）。"""
+    sh = sh or {}
+    raw = vp or ""
+    if head:
+        raw = raw.replace(head, " ")
+    text = re.sub(r"<d>.*?</d>", "", raw, flags=re.S)
     body = text.split("overall_soundscape:")[0]
     if not body.strip():
         return
-    bad_lr = [m.group(1) for m in _LR_RE.finditer(body) if not _LR_OK_RE.search(body[max(0, m.start() - 24):m.start()])
-              and not re.match(r"\s*(?:edge|side|third|half|corner)?\s*of (?:the )?(?:frame|screen|image)", body[m.end():m.end() + 30], re.I)]
-    if bad_lr:
-        F.add("G54", "warn", sid, f"L01 方向写了裸 {sorted(set(w.lower() for w in bad_lr))}：人物对着镜头时左右会读反，改用画面里的实物做参照（朝门、背对洗手台）；非写不可写 screen-left 并在同一句写人物朝向")
+    sents = _sents(body)
+    lr_findings(F, sid, "video_prompt", body)
     low = body.lower()
     if re.search(r"locked|static shot|tripod|holds a static", low):
-        miss = [w for w in ("pan", "tilt", "zoom", "cut") if not re.search(rf"\bno {w}s?\b|\bno [a-z ,]*\b{w}s?\b", low)]
+        miss = [w for w in ("pan", "tilt", "zoom", "cut")
+                if not re.search(rf"\bno (?:[a-z-]+s?(?:,\s*|\s+(?:or|and|nor)\s+)(?:no\s+)?)*{w}s?\b", low)]
         if miss:
-            F.add("G54", "warn", sid, f"L02 写了锁机位但没封住 {miss}：锁定写全 no pan, no tilt, no shake, no reframing, no zoom, no cuts，模型会借机摇镜代替人物动作")
-    elif not re.search(r"\bcamera\b|\bshot\b", low):
-        F.add("G54", "warn", sid, "L02 摄影机一栏没写：锁定也要写（景别 + 机位高度 + no pan, no tilt, no zoom, no cuts）")
-    if _MOVE_RE.search(body) and not _QTY_RE.search(body):
-        F.add("G54", "warn", sid, "L03 有位移动作（滑、摔、推、拖、踢）但没有可量的距离：写成 across three tiles / half a metre / one full stride，否则模型只挪几厘米交差")
+            F.add("G54", "warn", sid, f"L02 写了锁机位但没封住 {miss}：锁定写全 no pan, no tilt, no shake, no reframing, no zoom, no cuts（同一句逗号串起来），模型会借机摇镜代替人物动作")
+    elif not any(re.match(r"(?:\[Shot \d+\]\s*)?(?:The camera|Locked|Static)\b", x.strip(), re.I) or re.search(r"\bcamera\b", x, re.I) for x in sents):
+        F.add("G54", "warn", sid, "L02 摄影机一栏没写：锁定也要写（The camera … / Locked-off …：景别 + 机位高度 + no pan, no tilt, no zoom, no cuts）；medium shot、gunshot 不算写了镜头")
+    shake, lock = _neg_hit(_SHAKE_RE, body), re.search(r"\blocked\b|\bstatic\b|\bno pan\b", low)
+    if shake and lock:
+        F.add("G54", "warn", sid, f"L14 本镜同时写了 {sorted(set(w.lower() for w in shake))} 和锁定（{lock.group(0)}）：两句互相打架，模型挑容易的那句；锁定就删 handheld/sway，要晃就删 locked")
+
+    def near(rx_act, rx_ev):
+        for i, x in enumerate(sents):
+            if rx_act.search(x):
+                ctx = x + " " + (sents[i + 1] if i + 1 < len(sents) else "")
+                yield x, ctx, rx_ev
+    for x, ctx, _ in near(_MOVE_RE, _QTY_RE):
+        if not _QTY_RE.search(ctx):
+            F.add("G54", "warn", sid, f"L03 有位移动作但动作句及下一句没有可量的距离：「{x.strip()[:60]}」；写成 across three tiles / half a metre / one full stride，否则模型只挪几厘米交差")
+            break
     windows = len(_WINDOW_RE.findall(body))
     try:
         sec = float(seconds or 0)
@@ -320,15 +368,171 @@ def loophole_findings(F: "Findings", sid: str, vp: str, seconds) -> None:
                and len(re.findall(r",\s*(?:and|then)\s|;\s|\bthen\b|\bwhile\b", s_)) >= 3]
     if (sec and windows > sec) or crowded:
         F.add("G54", "warn", sid, f"L04 时间窗里塞了多个动作（{windows} 个时间窗 / {sec:g} 秒{'；' + crowded[0] + '…' if crowded else ''}）：一条视频一个主动作、每个时间窗一个动作，多写的里面最难的会被丢掉")
-    if _PHYS_RE.search(body):
-        need = [n for n, r_ in (("速度/失控", _SPEED_RE), ("落地/撞击", _IMPACT_RE)) if not r_.search(body)]
+    for x, ctx, _ in near(_PHYS_RE, None):
+        need = [n for n, r_ in (("速度/失控", _SPEED_RE), ("落地/撞击", _IMPACT_RE)) if not r_.search(ctx)]
         if need:
-            F.add("G54", "warn", sid, f"L05 有物理动作（摔、滑、撞、掉、泼）但没写 {need}：按常识写多快、是否失控、怎么落地，否则模型用慢而可控的动作交差（滑倒拍成坐下）")
+            F.add("G54", "warn", sid, f"L05 物理动作「{x.strip()[:50]}」所在句及下一句没写 {need}：按常识写多快、是否失控、怎么落地，否则模型用慢而可控的动作交差（滑倒拍成坐下）")
+            break
     for m in _EXIT_RE.finditer(body):
         sent = body[max(0, body.rfind(".", 0, m.start()) + 1):body.find(".", m.end()) if body.find(".", m.end()) > 0 else len(body)]
-        if not re.search(r"\b(edge|side|to the|toward|towards|through|past|beyond|bottom|top|up|down)\b", sent, re.I):
-            F.add("G54", "warn", sid, f"L06 终点句「{m.group(0)}」没写路径：写明从画框哪条边、以什么方式离开，否则模型让人走出去交差")
+        if not re.search(r"\b(left|right|top|bottom) edge\b", sent, re.I):
+            F.add("G54", "warn", sid, f"L06 终点句「{m.group(0)}」没写从画框哪条边离开：写 through the left/right/top/bottom edge of the frame 和离开方式，否则模型让人走出去交差")
             break
+        if re.search(r"\b(walk\w*|step\w*|strolls?)\b", sent, re.I) and not sh.get("walk_exit_ok"):
+            F.add("G54", "warn", sid, f"L19 出画方式是走/迈步：「{sent.strip()[:60]}」；要表现被推、摔、拖出画就写那个动作，确实是走出去写 walk_exit_ok: true")
+            break
+    for x in sents:
+        if _KEEP_VAGUE_RE.search(x):
+            F.add("G54", "warn", sid, f"L16 video_prompt 用了模糊保持「{_KEEP_VAGUE_RE.search(x).group(0)}」：模型不知道「exactly」指什么；逐项写哪几样东西不动（the door, the lamp and the box do not move）")
+            break
+    for m in re.finditer(r"<d>", raw):
+        pre = raw[:m.start()]
+        cut = max(pre.rfind(". "), pre.rfind("</d>"))
+        s_ = pre[cut + 1:] if cut >= 0 else pre
+        hit = _INNER_RE.search(s_)
+        if hit and hit.group(0).startswith("in front of"):   # 站位的 in front of her own body 不算，只查破折号后的情绪从句
+            hit = re.search(r"\bin front of (?:him|her)\b(?! own)", s_.split("—")[-1]) if "—" in s_ else None
+            hit = hit or re.search(r"\b(is being|has been|because)\b", s_)
+        if hit:
+            F.add("G54", "warn", sid, f"L23 台词前那句写了内心/因果从句「{hit.group(0)}」：「{s_.strip()[:60]}」；模型拍不出原因，只拍看得见的动作和表情（jaw tightens, eyes drop）")
+            break
+    picture_findings(F, sid, "video_prompt", body)
+    vague = sorted({m.group(1).lower() for m in _VAGUE_RE.finditer(body)})
+    if vague:
+        F.add("G54", "warn", sid, f"L28 video_prompt 用了模糊量词 {vague}：模型按最省事的幅度拍；写成秒数、距离、角度（for 0.5 seconds, about 10 cm）")
+
+
+def picture_findings(F: "Findings", sid: str, label: str, text: str) -> None:
+    """L24：Picture N sets only … 的分工句要同句写 not from Picture M。"""
+    for x in re.split(r"(?<=[.!?])\s+", text or ""):
+        if re.search(r"\bPicture \d sets only\b", x, re.I) and not re.search(r"\bnot from Picture \d\b", x, re.I):
+            F.add("G54", "warn", sid, f"L24 {label} 分工句「{x.strip()[:60]}」没写反面：同句补 …, not from Picture {re.search(r'Picture (\d)', x).group(1)}，否则模型从两张图里各取一半")
+            break
+
+
+def seal_findings(F: "Findings", sid: str, vp: str, sh: dict, one: str = "") -> None:
+    """L15：视频提示词的必备封口句（声音、台词、时长、人数），缺一条报 error。"""
+    if not (vp or "").strip():
+        return
+    low = re.sub(r"<d>.*?</d>", "", vp, flags=re.S).lower()
+    miss = []
+    if "these are the only sounds in the shot" not in low:
+        miss.append("These are the only sounds in the shot")
+    if [d for d in sh.get("dialogue") or [] if isinstance(d, dict) and d.get("text")]:
+        if "these are the only words spoken in this shot" not in low:
+            miss.append("These are the only words spoken in this shot")
+    elif "no one speaks" not in low:
+        miss.append("No one speaks")
+    if "until the end of the clip" not in low:
+        miss.append("until the end of the clip")
+    if not (re.search(r"\bexactly \w+ (?:people|persons?)\b|\bonly one person\b|\bno (?:people|person|humans?|one else)\b", low) or (one and one.lower() in low)):
+        miss.append("人数句（Exactly N people / Only one person in the frame.）")
+    if miss:
+        F.add("G54", "error", sid, f"L15 video_prompt 缺必备封口句 {miss}：没有封口，模型会自己加声音、台词、人和动作收尾（references/prompt-loopholes.md L15）")
+
+
+def frame_findings(F: "Findings", sid: str, fp: str) -> None:
+    """L21/L16/L27/L24：静帧提示词里的左右、模糊保持、运动词、集合词、分工句。"""
+    if not (fp or "").strip():
+        return
+    lr_findings(F, sid, "frame_prompt", fp)
+    m = _KEEP_VAGUE_RE.search(fp)
+    if m:
+        F.add("G54", "warn", sid, f"L16 frame_prompt 用了模糊保持「{m.group(0)}」：逐项写哪几样东西保持参考图原样")
+    mv = sorted({m.group(0).lower() for m in _FRAME_MOTION_RE.finditer(fp)})
+    if mv:
+        F.add("G54", "warn", sid, f"L21 frame_prompt 是静帧却写了运动/时间词 {mv}：起始帧只写这一瞬间的状态，运镜和先后顺序写进 video_prompt")
+    col = sorted({m.group(1).lower() for m in _COLLECTIVE_RE.finditer(fp)})
+    if col:
+        F.add("G54", "warn", sid, f"L27 frame_prompt 用了集合词 {col}：模型不知道集合里有什么，逐件点名（the desk, the lamp and the two chairs）")
+    picture_findings(F, sid, "frame_prompt", fp)
+
+
+def drift_findings(F: "Findings", sid: str, vp: str, sh: dict, refs: dict) -> None:
+    """L22：refs.json 身份图的 drift_anchors 逐字进本镜 video_prompt（人物在 in_frame / subject 里时）。"""
+    people = set(sh.get("in_frame") or []) | ({sh["subject"]} if sh.get("subject") else set())
+    low = (vp or "").lower()
+    for rid, r in refs.items():
+        if r.get("kind") != "identity" or r.get("subject") not in people:
+            continue
+        miss = [a for a in r.get("drift_anchors") or [] if isinstance(a, str) and a.strip() and a.lower() not in low]
+        if miss:
+            F.add("G54", "warn", sid, f"L22 「{r['subject']}」的漂移锚点 {miss}（{rid}.drift_anchors）没逐字写进 video_prompt：长镜头后半段脸和衣服会漂，锚点句每镜照抄")
+
+
+_PHRASE_STOP = {"a", "an", "the", "one", "two", "three", "four", "five", "single", "exactly", "of", "on", "in", "at", "to", "from", "with", "and",
+                "or", "is", "are", "sits", "stands", "lies", "rests", "his", "her", "their", "its", "this", "that", "by", "near", "beside", "under",
+                "behind", "into", "onto", "over", "no", "other", "every", "each", "same", "only", "holds", "holding", "has", "carries", "carrying"}
+
+
+def prop_phrase_findings(F: "Findings", shots: list[dict]) -> None:
+    """L26：scene_state 里 set/props 的 en 名，同集各镜用的名词短语要一致（the cracked blue helmet 不能下一镜变 the helmet）。"""
+    names = set()
+    for sh in shots:
+        for part in ("start", "end"):
+            for grp in ("set", "props"):
+                for v in (((sh.get("scene_state") or {}).get(part) or {}).get(grp) or {}).values():
+                    if isinstance(v, dict) and isinstance(v.get("en"), str) and v["en"].strip():
+                        names.add(v["en"].strip().lower())
+    for name in sorted(names):
+        seen: dict[str, str] = {}
+        for sh in shots:
+            text = re.sub(r"<d>.*?</d>", "", " ".join(str(sh.get(k) or "") for k in ("frame_prompt", "video_prompt")), flags=re.S).lower()
+            for m in re.finditer(rf"((?:[a-z-]+\s+){{0,6}}){re.escape(name)}\b", text):
+                words = m.group(1).split()
+                keep = []
+                for w in reversed(words):
+                    if w in _PHRASE_STOP or re.search(r"[^a-z-]", w):
+                        break
+                    keep.insert(0, w)
+                seen.setdefault(" ".join(keep + [name]), sh.get("id"))
+        if len(seen) > 1:
+            F.add("G54", "warn", None, f"L26 道具「{name}」各镜写法不一：{', '.join(f'{k}（{v}）' for k, v in list(seen.items())[:4])}；同一件东西每镜用同一个名词短语，否则模型当成两件")
+
+
+def light_findings(F: "Findings", shots: list[dict]) -> None:
+    """L25：同一场各镜 frame_prompt 的 key light 句逐字一致（写了 single key light / only light source 的场才查）。"""
+    by_scene: dict[str, dict[str, str]] = {}
+    for sh in shots:
+        fp = sh.get("frame_prompt") or ""
+        if not re.search(r"single key light|only light source", fp, re.I):
+            continue
+        for x in _sents(fp):
+            if re.search(r"key light", x, re.I):
+                by_scene.setdefault(sh.get("scene"), {}).setdefault(norm(x), sh.get("id"))
+    for sc, d in by_scene.items():
+        if len(d) > 1:
+            F.add("G54", "warn", list(d.values())[1], f"L25 {sc} 各镜的主光句不一致（{', '.join(list(d.values())[:4])}）：同一场的 key light 句逐字照抄，不然光向跳、影子换边")
+
+
+_NEAR_RE = re.compile(r"\b(?:sits?|rests?|lies|lie|stands?|is placed|are placed|is stacked|are stacked|is piled|are piled|leans?|is propped|are propped)\b[^.;]{0,40}?\b(beside|next to|near|close to|by the)\b", re.I)
+_DEPTH_RE = re.compile(r"\b(far side|near side|behind|in front of|between\b[^.;]*\band\b|nearest (?:to )?the camera|closest to the camera|(?:closer to|farther from|further from|away from) the camera|toward the camera|back wall|foreground|background|camera side)\b", re.I)
+_OPENABLE_RE = re.compile(r"\b(doors?|windows?|drawers?|curtains?|cabinet doors?|wardrobe doors?|gates?|lids?|shutters?)\b[^.;,]{0,25}?\b(open|ajar|half[- ]open|partly open|partially open|opened)\b|\b(open|ajar|half[- ]open|partly open)\s+(doors?|windows?|drawers?|gates?|lids?)\b", re.I)
+_OPEN_QTY_RE = re.compile(r"\b(\d+\s*(?:degrees?|°|cm|centimet\w*)|hand'?s? width|finger'?s? width|a crack|a gap of|fully open|wide open|flat open|pushed flat|all the way|flat against the wall|at a right angle|halfway)\b", re.I)
+_STILL_RE = re.compile(r"\b(does not move|do not move|stays? (?:exactly )?(?:as|at|where|still|in place|the same)|remains? (?:exactly )?(?:as|at|still|in place|the same|open|shut|closed)|never moves?)\b", re.I)
+_COUNT_OBJ_RE = re.compile(r"\b(?:exactly (?:one|two|three|four|five|six|\d+)|one single)\s+(?!people\b|persons?\b|man\b|woman\b|men\b|women\b|figures?\b|times?\b|seconds?\b|words?\b|lines?\b|steps?\b|strides?\b|beats?\b|hits?\b|blinks?\b|breaths?\b|sounds?\b|shots?\b|takes?\b)([a-z-]+(?:\s+[a-z-]+)?)", re.I)
+
+
+def set_findings(F: "Findings", sid: str, label: str, body: str, *, video: bool) -> None:
+    """G54 L11–L13：陈设清点排他句、物件前后位置、门窗开度（references/prompt-loopholes.md）。"""
+    text = re.sub(r"<d>.*?</d>", "", body or "", flags=re.S).split("overall_soundscape:")[0]
+    if not text.strip():
+        return
+    sents = [x for x in re.split(r"(?<=[.;])\s+", text) if x.strip()]
+    counted = [re.sub(r"\s+(?:of|in|on|at|with|and|from)$", "", m.group(1).lower()) for m in _COUNT_OBJ_RE.finditer(text)]
+    if counted and not re.search(r"\bno other\b|\bnothing else\b|\bthe only\b[^.]*\bin the (?:room|frame|shot)", text, re.I):
+        F.add("G54", "warn", sid, f"L11 {label} 给物件写了数量（{', '.join(sorted(set(counted))[:4])}）却没有同类排他句：补 There are no other boxes, chairs or … anywhere in the room，否则模型按「场景应该有」多补一件")
+    for x in sents:
+        if _NEAR_RE.search(x) and not _DEPTH_RE.search(x) and not re.search(r"\b(camera|lens|shot)\b", x, re.I):
+            F.add("G54", "warn", sid, f"L12 {label} 用「{_NEAR_RE.search(x).group(1)}」写位置但没写前后（以镜头为准）：「{x.strip()[:70]}」；补 on the far side of … from the camera / between … and the back wall / nearest the camera")
+            break
+    for x in sents:
+        m = _OPENABLE_RE.search(x)
+        if m and not _OPEN_QTY_RE.search(x) and not re.search(r"\b(?:does not|do not|never|won't|cannot|can't)\s+(?:\w+\s+)?open\b", x, re.I):
+            F.add("G54", "warn", sid, f"L13 {label} 写了「{m.group(0)}」但没写开度：写成 open about one hand's width, roughly 15 degrees 加画面参照，并与上一镜 end_state 一致")
+            break
+    if video and any(_OPENABLE_RE.search(x) and not re.search(r"\b(?:does not|do not|never)\s+(?:\w+\s+)?open\b", x, re.I) for x in sents) and not _STILL_RE.search(text) and not re.search(r"\b(opens|closes|swings|slides|pushes|pulls|shuts)\b", text, re.I):
+        F.add("G54", "warn", sid, f"L13 {label} 里有开着的门窗却没写全程不动：补 the study door does not move throughout the entire clip")
 
 
 def adversarial_findings(F: "Findings", owner: str | None, items, sources: list[str], *, code: str = "G52") -> None:
@@ -339,9 +543,15 @@ def adversarial_findings(F: "Findings", owner: str | None, items, sources: list[
         F.add(code, "warn", owner, f"adversarial_preflight 只有 {len(good)} 条：提交前写 3 条「完全符合字面但最差」的成品和各自的堵法"
               "（[{\"worst\": …, \"blocked_by\": 提示词原句或「验收：…」}]，video-prompts-general §2b 第五部分）；不满 3 条 produce.py 拒绝提交")
     worsts = [norm(str(x["worst"])) for x in good]
-    if len(set(worsts)) != len(worsts):
+    if any(SequenceMatcher(None, worsts[i], worsts[j]).ratio() > 0.8 for i in range(len(worsts)) for j in range(i + 1, len(worsts))):
         F.add(code, "error", owner, "adversarial_preflight 的 worst 有重复：三条要从不同角度想（人、手、时间、声音、镜头、可见性）")
     hay = "\n".join(sources)
+    acc = [str(x.get("blocked_by") or "").strip() for x in good if str(x.get("blocked_by") or "").strip().startswith("验收：")]
+    if len(acc) > 1:
+        F.add(code, "error", owner, f"L29 adversarial_preflight 有 {len(acc)} 条 blocked_by 靠「验收：」：最多 1 条推给审片，其余要在提示词里堵住")
+    for b in acc:
+        if not re.search(r"\d|帧|秒", b):
+            F.add(code, "error", owner, f"L29 验收条「{b[:40]}」没有可核对的数字/帧/秒：写成「验收：第 1.2–1.8 秒逐帧数人数=2」这类能数出来的条件")
     for x in good:
         b = str(x.get("blocked_by") or "").strip()
         if not b:
@@ -621,7 +831,13 @@ def check(project: Project, ep: str) -> Findings:
             if re.search(r"\b(?:either|or else|alternatively)\b|\(or\b|\bor\b(?=[^.]*\b(?:maybe|possibly|optionally)\b)|或者|二选一|任选|可选", plain, re.I) and not sh.get("alternatives_ok"):
                 F.add("G22", "warn", sid, f"{label} 里像是留了分支（or / 或者 / 可选）；提示词要定稿，不给模型二选一")
         if vp and not _waived(sh, "G54"):
-            loophole_findings(F, sid, vp, sh.get("seconds"))
+            loophole_findings(F, sid, vp, sh.get("seconds"), head=project.get("video_prompt_head") or "", sh=sh)
+            drift_findings(F, sid, vp, sh, refs)
+        seal_findings(F, sid, vp, sh, one)   # L15 是 error，豁免不掉
+        if not _waived(sh, "G54"):
+            set_findings(F, sid, "frame_prompt", fp, video=False)
+            set_findings(F, sid, "video_prompt", vp, video=True)
+            frame_findings(F, sid, fp)
 
         # G12 后期叠加
         for ov in sh.get("overlay") or []:
@@ -944,6 +1160,9 @@ def check(project: Project, ep: str) -> Findings:
         if bad:
             F.add("G36", "warn", None, f"画风 {preset} 的 drama.json video_prompt_head 含 {sorted(set(bad))}（真人头句）；按 styles.md §1 换成本画风的视频头句和保持句")
     fx = sorted({m.group(0).lower() for m in HEAD_FX_RE.finditer(head_) if not NEG_BEFORE_RE.search(head_[max(0, m.start() - 30):m.start()])})
+    shk = _neg_hit(_SHAKE_RE, head_)
+    if shk:
+        F.add("G54", "error", None, f"L14 drama.json video_prompt_head 含 {sorted(set(w.lower() for w in shk))}：头句会拼进每一镜，全剧镜头都在晃、锁定句全部失效；头句只写锁定机位，要手持感就在那一镜正文写 the camera shakes slightly around a fixed position")
     if fx:
         F.add("G36", "warn", None, f"drama.json video_prompt_head 含运镜/特效词 {fx}：每镜都会被加上漂移的机位和多余的粒子雾气；头句用锁定机位（Locked-off camera on a tripod; real-time speed.），运镜写进需要的那一镜")
     # G39 AI 生成标识：drama.json 要明确写 ai_label（大陆发行写标识文字，海外写 null 并记决策）
@@ -1031,6 +1250,8 @@ def check(project: Project, ep: str) -> Findings:
         est_final = sum(min(float(s.get("seconds") or 0) - 0.5, float(s.get("seconds") or 0) * 0.9) for s in shots)
         if est_final < target * 0.7 or est_final > target * 1.35:
             F.add("G14", "warn", None, f"按每镜约留 90% 估成片 {est_final:.0f}s，目标 {target:.0f}s，偏差超过 30%")
+    light_findings(F, [sh for sh in shots if not _waived(sh, "G54")])
+    prop_phrase_findings(F, shots)
     if not shots:
         F.add("G01", "error", None, "shots 为空")
     return F
@@ -1049,6 +1270,11 @@ def check_refs(project: Project) -> Findings:
         if not p:
             F.add("G18", "error", rid, "缺 prompt")
             continue
+        lr_findings(F, rid, "参考图 prompt", p)
+        if r.get("refs"):   # 编辑类（挂了上游参考图）才查集合词
+            col = sorted({m.group(1).lower() for m in _COLLECTIVE_RE.finditer(p)})
+            if col:
+                F.add("G54", "warn", rid, f"L27 编辑类参考图 prompt 用了集合词 {col}：模型不知道集合里有什么，逐件点名要保留/要改的东西")
         if re.search(r"[\u3040-\u30ff\u4e00-\u9fff]", p):
             F.add("G18", "error", rid, "参考图提示词必须是英文（机器字段）")
         if "no text" not in low and "no readable text" not in low:

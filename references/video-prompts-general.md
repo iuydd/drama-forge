@@ -12,9 +12,9 @@
 
 ## 2. 先锁定，再写变化
 
-真实首帧已随请求提交时，不复述外貌、服装和场景装修；容易漂移的身份锚点、持物和连续性锁照写，§2b 的封闭清单每条正文都写全（首帧只管第一帧，人数、站位和声音在运动中会被重新发明）。只有文字计划、未提交真实图片时，必须把必要静态事实写完整。
+真实首帧已随请求提交时，不复述外貌、服装和场景装修；容易漂移的身份锚点只写 refs.json 该人物条目 `drift_anchors` 里的短语（每人最多 3 项：发型、主色外衣、标志物），正文每次提到此人都带同一个短语（`Mio (short black bob, navy blazer)`），其余外貌一律不写——锚点是判定标准，不由写的人临场挑（G54 L22）；持物和连续性锁照写，§2b 的封闭清单每条正文都写全（首帧只管第一帧，人数、站位和声音在运动中会被重新发明）。只有文字计划、未提交真实图片时，必须把必要静态事实写完整。
 
-固定主体称呼并遵循目标方言。画面方向写 screen-left/right，人物左右手写 his/her left/right hand，场景中的门窗和通路用固定地理参照；不要把三种左右混用。
+固定主体称呼并遵循目标方言。**左右只有一套口径**（全技能以此为准，storyboard、H3、L01 都指回这里）：方向先用画面里的实物做参照（朝门、背对洗手台）；没有可用实物才写 `screen-left` / `screen-right`，并在同一句写人物朝向；人物身体部位写 his/her left hand / foot / shoulder；**禁止裸 left/right，也禁止 `to his left`、`on her right` 这类人物相对方位**（人物对着镜头时必读反，G54 L01、L20）。
 
 ## 2b. 封闭世界：把生成模型当成钻字面空子的对手
 
@@ -24,7 +24,7 @@
 
 - 视频一律图生视频，起始帧必须是已经单张目检通过的图；模型支持且终点要精确时加尾帧。
 - 时长贴合动作和台词（§4 容量算法），不留空余秒数给模型自由发挥。
-- 机位默认锁定，剧情需要才写一次运动。项目 `video_prompt_head` 和风格句也按本节审：两句都不写运镜许可（`smooth motivated camera`、`handheld … sway`），也不写特效和大气词（粒子、雾、体积光）；锁定或运动只写在正文的镜头一行，特效只在本镜需要时按 §6 写明在哪、多大、何时。错误表 E19 的运镜要求以本条为准。
+- 机位默认锁定，剧情需要才写一次运动。项目 `video_prompt_head` 和风格句也按本节审：两句都不写运镜许可（`smooth motivated camera`、`handheld … sway`；头部句出现 handheld、sway、shake、camera 任一词即 G54 L14 error），需要手持感的镜只在正文镜头行写 `the camera shakes slightly around a fixed position; the framing stays a medium shot, no pan, no tilt, no zoom`，同一镜不再写 locked——「可以晃」和「锁定」同时出现，模型会每秒晃一点累积成一次摇镜，也不写特效和大气词（粒子、雾、体积光）；锁定或运动只写在正文的镜头一行，特效只在本镜需要时按 §6 写明在哪、多大、何时。错误表 E19 的运镜要求以本条为准。
 - 一镜的人数和接触动作尽量少；复杂动作拆镜，同一个人连续的戏合并成长镜头（§3b）。
 - 每张参考图只担一个功能，分工句写明"只取什么、不取什么"（visual-assets §7、§8）。
 
@@ -32,25 +32,32 @@
 
 | 自由度 | 写死什么 | 会怎么钻 | 验收 |
 |---|---|---|---|
-| 人 | 画内正好几人、各是谁、每人一次：`Exactly two people in the frame, each appears once:`；单人镜也写死人数（项目单人固定句即可）；前景的背、肩、后脑算一个人，画中人、屏幕里的人也算；倒影和墙上的人形影子写死在哪（`his shadow falls behind him on the floor; the wall behind him shows no shadow`） | 多画一个、同一人画两次、漏人、多出倒影或影子 | 在原分辨率的首、中、尾三帧上逐个数人头、逐人认脸；2fps 接触表只用来找中途进出画的可疑格，可疑格回原分辨率帧核（E34） |
-| 位置 | 逐人写画左画右、前中后景、谁在谁前面 | 换边、叠成一团、主角被挡 | 三帧核左右与前后 |
-| 朝向与视线 | 身体朝哪、看谁，和轴线、`gaze` 一致；表情写强度上限（`slightly`、`a small …`），和台词 `emotion` 的强度一致 | 全体背对、看镜头、看错人、表情推到极端 | 三帧核朝向、视线和表情强度 |
+| 人 | 画内正好几人、各是谁、每人一次：`Exactly two people in the frame, each appears once:`；单人镜也写死人数（项目单人固定句即可）；前景的背、肩、后脑算一个人，画中人、屏幕里的人也算；倒影和墙上的人形影子写死在哪（`his shadow falls behind him on the floor; the wall behind him shows no shadow`） | 多画一个、同一人画两次、漏人、多出倒影或影子 | 全片 4fps 自动计数（人头检测），每格计数写进 review 的 `count_trace`；与 `scene_state` 不符的格必须回原分辨率帧核，核验截图路径写进 `verify_frames`，没路径不算验收；再在首、中、尾三帧逐人认脸（E34） |
+| 位置 | 人和物件都按三个方向写：左右（screen-left / screen-right 或画面里的实物）、前后（以镜头为参照：`between the desk and the back wall`、`on the far side of the desk from the camera`、`in front of the desk, nearest the camera`）、高度（`on the floor`、`on the desktop`、`at knee height`）；谁在谁前面、谁挡谁写死；裸 `beside` / `next to` / `near` / `by` 不算写了位置（L12） | 换边、叠成一团、主角被挡、物件从桌子后面挪到靠镜头一侧 | 三帧核左右、前后（以镜头为准）和高度 |
+| 朝向与视线 | 身体朝哪、看谁，和轴线、`gaze` 一致；表情按三档写，对应台词 `emotion` 的强度：弱 = 一个肌群、写 `barely`；中 = 两个信号、写 `slightly`；强 = 两个信号、写 `clearly`，并加一个上限锚（`her mouth stays closed`、`he does not bare his teeth`）；脸的档和声音的档分开写、各自对 `emotion` | 全体背对、看镜头、看错人、表情推到极端、`slightly` 做成面瘫 | 三帧核朝向和视线；中间帧表情对档，高一档或低一档都记 `acting_ok` false |
 | 姿势与支撑 | 站、坐、靠在什么实物上（地面、台阶、两端固定在墙上的横杆）；设定里本来会悬浮的角色写离地多高、正下方是什么实物、跟着谁移动，并写其余每个人都在实物上 | 站在云上、坐在悬空的杆上 | 每人脚下或身下是实物 |
 | 手 | 每只可见的手属于谁、拿什么、怎么握；手臂从画框哪条边伸入、主人在画外哪侧 | 凭空的手、第三只手、握错东西 | 逐只数手、找到主人 |
-| 道具 | `one single …` / `exactly N`，归属、状态、位置；已被拿走的不在原处再出现；接触的道具写接触面和上下关系（`the flat of the blade rests on top of the back of his hand; blade and hand touch but do not pass into each other`） | 多一件、两人手里各一件、状态回退、穿模 | 数件数、核归属和状态、接触处无穿插 |
+| 道具 | `one single …` / `exactly N`，归属、状态、位置；已被拿走的不在原处再出现；外观写颜色 + 材质 + 与手或躯干的尺寸比（`one single cream paper envelope about the size of his palm`），同一件道具全集逐字用同一个短语（G54 L26）；接触的道具写接触面和上下关系（`the flat of the blade rests on top of the back of his hand; blade and hand touch but do not pass into each other`） | 多一件、两人手里各一件、状态回退、穿模、换色换材质、跨镜变大变小 | 数件数、核归属和状态、接触处无穿插 |
+| 陈设清点 | 画内看得见的每一类可数物件（箱子、椅子、花架、灯、杯子、书堆）都写 `exactly N` 并逐件写三方向位置（上一行），不论剧情用不用它；清单从 `scene_state` 抄；最后一句写同类排他句 `There are no other boxes, crates or containers anywhere in the room.`（每个写了数量的类别各一句，可合并成 `no other boxes, chairs or stands`）；起始帧和视频正文逐字用同一句 | 场景「应该有」的东西被补出来：多一只箱子、多一把椅子、墙角多一堆杂物 | 三帧逐类数件数，对 `scene_state`；多出的一件即不过（L11） |
 | 空间结构 | 栏杆、门、玻璃、台阶、崖沿两侧各是什么，每人在哪一侧；进出走哪条真实路线 | 牢房套牢房、站进栏里、穿墙 | 核两侧归属和路线 |
 | 画外在场者 | 默认不写：对本镜不起作用（不发声、不被看、不递物）的画外人正文不提，只记在 `scene_state` 供对账，靠机位朝向和景别把他排除在画外（写一次外观就召唤一次，E4）；需要防他闯入或他要发声、被看时，只写名字和方位、不写外观（`Xiao Lie stands outside the frame on screen-right`），紧跟人数排他句；链式出帧的 Picture 1 里有而本镜画外的人，分工句写 `X from Picture 1 is now outside the frame on screen-<side>`；没有别人写 `the corridor is otherwise empty` | 中途冒人、已离场的人回来、被点名的人被画进来 | 与剧本在场行、`scene_state` 对账 |
 | 镜头 | 景别、机位高度、角度；视频写锁定或唯一一次运动，`single continuous take, no cuts, no transitions, no flash to white, no zoom`（头部句已有的部分正文不重复） | 自作主张推拉变焦、镜内硬切、闪白转场、整体镜像 | 首尾景别符合所写、无跳切、未镜像（对上一镜末帧） |
-| 时间 | 关键动作在第几秒开始、持续多久、完成后保持什么状态直到片尾 | 把关键动作拖到片尾被剪掉，或只在中间一闪 | 实测动作区间写进 review |
-| 速度 | 全片实时：`real-time speed throughout the clip, no slow motion, no speed ramp`（头部句已写 real-time 的可省） | 整段慢放、先快后慢、台词被拉长或压缩 | 实测动作用时对 `planned_action_window`，差超过一半算不过；ASR 每秒字数偏离 `speech_rates` 超过 30% 标出复核 |
-| 全程不变量 | `throughout the entire clip`：同一镜头、人数不变、身份不漂、没有人进出画；本镜不变的环境状态（裂纹范围、门的开关、火把数量、地面干湿）写成一句 `the cracks, the boundary stone and the ground stay exactly as in the opening frame` | 中途换脸、加人、换景、环境状态回退 | 三帧比对 |
+| 时间 | 先后顺序加时长锚点（持续多久）；只有物理动作和台词落点写起始秒（§4）；完成后保持什么状态直到片尾 | 把关键动作拖到片尾被剪掉，或只在中间一闪 | 实测动作区间写进 review |
+| 速度 | 全片实时：`real-time speed throughout the clip, no slow motion, no speed ramp`（头部句已写 real-time 的可省） | 整段慢放、先快后慢、台词被拉长或压缩 | 实测动作用时对 `planned_action_window`：物理动作（L05 命中、shots.json `physics: true`）容差 ±30% 且绝对差不超过 0.3 秒，其他动作 ±50%；ASR 每秒字数偏离 `speech_rates` 超过 30% 标出复核 |
+| 全程不变量 | `throughout the entire clip`：同一镜头、人数不变、身份不漂、没有人进出画；本镜不变的环境状态逐个点名写成一句（`the cracks, the boundary stone and the wet patch on the ground stay where they are in the opening frame`）；不写 `everything / the scene / the room / the background stays exactly …`、不写 `Keep … exactly`——集合式保持会被读成整体定格，人物动作跟着被压住（G54 L16）；**能连续变化的状态**（门、窗、抽屉、帘子、柜门的开度，灯的亮灭和亮度，水位、火势）不写开/关二值，写可量的开度加参照物（`the study door stands open about one hand's width, roughly 15 degrees, its edge just short of the desk corner`），并写 `the study door does not move throughout the entire clip`；本镜要动的，按「时间」一行写几秒开始、开到多大、然后停住；开度与上一镜 `end_state` 逐字一致（L13） | 中途换脸、加人、换景、环境状态回退、门自己开大关小 | 三帧比对；门窗开度对上一镜末帧 |
 | 声音 | 逐句写说话人（外观 + 位置）、语言、逐字台词；`only her lips move`；最后一句后写 `These are the only words spoken in this shot, each said exactly once; nobody speaks before the first line or after the last. The only other human sound is <剧本有来源的喘气或惊呼，没有就写 his breathing>.`；无对白镜写 `No one speaks, laughs, shouts or cries out; the only human sound is <…>.`；声景末尾写 `These are the only sounds in the shot.`，声景就是声音的封闭清单（画内乐声也按它排除）；配乐按 §9 排除 | 补字、重复、口型挂错人、画外乱语、多出笑声冷哼惨叫、多出音效或"画内"琴声、音色串成异性 | ASR 逐字比对；`speech_window` 内 4 fps 抽帧签 `speaker_face_ok`（quality-contract）；`asr` 列出的 `extra_vocal_segments`（`speech_window` 外 ASR 识别到的人声）逐段核来源，剧本没来源的话、笑、叫、哼记 `asr_ok` false（ASR 认不出的笑、哼靠听审和接触表）；`voice_mismatch` 标出的镜交真人听或重拍 |
 | 文字 | 画面无字；招牌、书页、屏幕写成无字表面（`blank sign board`） | 字幕、乱码招牌 | 逐帧无可读字 |
-| 可见性 | 关键动作和物件 `clearly visible, in focus, not blocked, fully inside the frame`；人物头顶和关键的手不出框；承担 `must_show` 或关键动作的物件画面长边不小于画高 1/8、人物身高不小于画高 1/6，达不到是分镜问题（远景只建空间和站位，动作交给中景或插入镜，storyboard-keyframes §7），不靠措辞补 | 被挡、出框、虚焦、小到看不见 | 原分辨率抽帧能看清关键事实、量得到占比 |
-| 风格与光 | 光向、色温、画风与同场上一镜一致；参考图只取分工句指定的东西 | 画风漂、参考图背景或人串进来 | 与上一镜末帧对照 |
+| 可见性 | 关键动作和物件 `clearly visible, in focus, not blocked, fully inside the frame`，并写朝向和无遮挡比例：识别特征（刀刃、信封封口、屏幕）朝镜头，至少三分之二面积无遮挡（`the seal side faces the camera, at least two thirds of it unobstructed`）；人物头顶和关键的手不出框；承担 `must_show` 或关键动作的物件画面长边不小于画高 1/8、人物身高不小于画高 1/6，达不到是分镜问题（远景只建空间和站位，动作交给中景或插入镜，storyboard-keyframes §7），不靠措辞补 | 被挡、出框、虚焦、小到看不见、只露一条边、识别面背对镜头 | 原分辨率抽帧能看清关键事实、量得到占比 |
+| 风格与光 | 光写成一句：光源个数、来自哪个实物、软硬、阴影落向哪个实物，并排他（`a single soft key light from the window; shadows fall toward the bookshelf; no other light source is visible`），同场各镜逐字复制同一句；参考图分工句写两半：`Picture 2 sets only his face and hair; clothing, pose, background and lighting come from this description, not from Picture 2`；场景里写一个不对称锚点（`the door is on the screen-left side of the window`）防整张镜像 | 画风漂、多出第二个光源、阴影与光源不符、冷暖跳变、参考图的背景服装串进来、整张水平翻转 | 同场光句逐字对账（G54 L25）；每张起始帧对底板的不对称锚点，不只对上一镜 |
 | 终点 | 结束时的位置、姿态、持物写死，并写 `remains … until the end of the clip` | 结尾乱动、状态回退 | 尾帧对 `end_state` |
 
+**全覆盖原则**：画面里看得见的一切，要么逐项写死（数量、三方向位置、状态），要么被一句排他句覆盖（`no other …`、`the rest of the room is bare wall and floor`）；不存在「没提到所以随它」的东西。剧情用不到的陈设也照写——模型改动的恰恰是没人盯的那部分。
+
 清单从剧本场首的 `[连续性] 在场：` 行和分镜 `scene_state`（scene-state-and-reveal）抄，不即兴写。它和首帧内容重复不算冗余：§2 的"不复述"只省外貌、服装和装修，不省这张表。**长短不设上限也不设目标**：表里一行都不能少，表外只写本镜变化需要的内容；不因为"太长"删清单项（E24：短而含糊比长而具体代价大）。但一行不等于一句：同一主体的位置、朝向、支撑、手合写成一句。
+
+**二b、静帧清单**（起始帧、参考图、尾帧图用这一份，不从上表挑行）：人数排他句 → 逐人位置（三方向）、朝向与视线、姿势与支撑、手 → 道具与陈设清点（件数、三方向位置、颜色材质尺寸、同类排他句）→ 门窗开度 → 空间结构 → 画外在场者（按上表规则）→ 景别与机位高度（**不写任何运动词**：pan、tilt、zoom、cut、then、slowly 都不进静帧，G54 L21）→ 光句 → 不对称锚点 → 尺度锚点 → 参考图分工句 → 无字句 → 版式句 → Style。尾帧图另加「终点」一行。storyboard-keyframes §6 的写作顺序就是这一份。
+
+**必备句**（缺一句 G54 L15 报 error，produce.py 拒绝提交）：人数句（`Exactly N people in the frame, each appears once` 或单人固定句）；`These are the only sounds in the shot.`；有对白写 `These are the only words spoken in this shot, each said exactly once`，无对白写 `No one speaks, laughs, shouts or cries out`；终点写 `… remains … until the end of the clip`。
 
 **正文顺序**：封口句全堆在前面会把主动作和台词挤到中段（H3 §4 的优先级是台词与说话人在前）。按这个顺序写：①人数排他句一句（名字、画左画右；需要写的画外在场者紧跟）→ ②主动作与台词 → ③终点 → ④其余封口合并成三句：空间与支撑一句，道具与手一句，全程不变量加可见性一句 → ⑤镜头与速度 → 声音封口句落在最后一句台词和声景末尾。
 
@@ -61,11 +68,13 @@
 - 同一个人全文用同一个称呼加一个区别外观，不用 he/she 连续指代。
 - **有物理参与的镜头按常识写**（用户 2026-09-26 定）：摔、滑、撞、掉、泼、推倒这类动作，先想清楚现实里它怎么发生——多快（滑倒从脚离地到身体着地不到半秒）、往哪边倒（顺着惯性和重心）、有没有失控（真摔不会屈膝慢慢放下自己）、落地什么样（砸下、反弹、溅水、声音）、东西落在哪。把速度、失控和撞击写进提示词，否则模型会用慢而可控的动作交差（滑倒拍成坐下，E36）。攻击任务书同样要求检查这一点。
 - **方向不用左右，用画面里的实物做参照**：写「朝洗手台迈步」「往门那边倒」「落在靠门那条画框边外」，不写 left/right——人物对着镜头时他的左就是画面右，模型和写的人都会读反（E36）。起始帧里人物朝哪写死一句（`her toes point toward the vanity and her heels toward the door`）。画面里确实没有可用的实物时才写 `screen-left`，而且同一句带上人物朝向。
-- 不用模糊词充当规格：适当、自然、合理、相应、若干、一些、appropriately、naturally、some、several、as needed，每处换成谁、哪侧、几个、到哪（方言固定头部句除外）。
+- 不用模糊词充当规格：适当、自然、合理、相应、若干、一些、appropriately、naturally、some、several、as needed、a little、a bit、somewhat、briefly、a moment、gently（G54 L28；`slightly` 只按「朝向与视线」一行的三档用，时长一律写秒数），每处换成谁、哪侧、几个、到哪（方言固定头部句除外）。
 
-**四、排他句封口，点名否定只留给有证据的高风险项**。通用负面词会把名词召唤出来（`no extra people` 里的 people），所以用排他式的正面句封口：`the only object on the table is the sealed letter`、`these two people are the only people in the frame for the whole clip`。正面句写完后，最多再写两句点名否定；表中"写死什么"列给出的固定封口句（`no cuts, no transitions …`、台词唯一句、声音封闭句、无字句）和 §5 改写表里的 `not …` 限定语不计入这两句。每句必须指向本镜一个具体的人、物或运动轨迹，有证据（错误表条目、上一 take 的实际错误），并紧跟在对应的正面句后面，例如 `Xiao Lie has already left and is not in this shot`、`he does not fly outward; he drops straight down along the rock face`。没有对象的通用否定（`no bad hands, no deformation`）一律不写；§11"不罗列否定项"指的就是这种。
+**四、排他句封口，点名否定只留给有证据的高风险项**。通用负面词会把名词召唤出来（`no extra people` 里的 people），所以用排他式的正面句封口：`the only object on the table is the sealed letter`、`these two people are the only people in the frame for the whole clip`。正面句写完后，最多再写两句点名否定。**固定句白名单**只有四类，逐字使用、不计入两句限额：①镜头封口 `single continuous take, no cuts, no transitions, no flash to white, no zoom` / `no pan, no tilt, no shake, no reframing`；②声音封口（台词唯一句、`No one speaks …`、`These are the only sounds in the shot.`）；③无字句 `no text, no letters, no logos, no watermark`；④版式句 `no borders, no panel dividers`；另加 §5 改写表里的 `not …` 限定语和上表的同类排他句（`no other boxes …`）。白名单之外的 no / not / never 全部计入两句限额，不许自称固定句。每句必须指向本镜一个具体的人、物或运动轨迹，有证据（错误表条目、上一 take 的实际错误），并紧跟在对应的正面句后面，例如 `Xiao Lie has already left and is not in this shot`、`he does not fly outward; he drops straight down along the rock face`。没有对象的通用否定（`no bad hands, no deformation`）一律不写；§11"不罗列否定项"指的就是这种。
 
-**五、提交前必做：机械检查 + 攻防（SKILL.md 硬约束 11d，最多两轮）**。所有视频提示词先过 G54（[prompt-loopholes.md](prompt-loopholes.md) 已升级的条目）。只有高风险镜头（物理、多人、接触、承担必拍事实、新场景新拍法）和生成不好要重拍的镜头再走攻防：提示词存 `审查/adversary/<ID>-v1.txt`，派攻击子代理：第 1 轮 `isolated_agent.sh <项目> <任务书> adversary`（Sonnet 5，medium），任务书用 `assets/templates/攻击任务书.md`，只填模型与参数、这一镜的目的、起始帧路径、提示词文件路径。它只交最致命的 5 条不违反字面又最让导演失望的成品和修补，并找物理上做不到、和起始帧矛盾、方向可读反的句子（模型遇到做不到的描述会换成它做得到的动作，E36）。主会话判断：**问题大**（物理做不到、和起始帧矛盾、方向可读反、主动作能被省事路径替代、要改结构）且仅需局部、明确的修补时，修复后提交；**问题不大（含未发现问题），或第一轮修复涉及动作路径、人物关系、镜头结构的大幅修改**，修复后必须再派第 2 轮 `adversary2`（Opus 5.5，low，全新子代理，不给第 1 轮清单），第二轮审修复后的当前版本，修完提交。不做第 3 轮。第一轮问题不大可能是遗漏了隐蔽漏洞，大幅修复则可能引入新漏洞，因此这两种情况都要由强模型复查。修补能用一句话堵的改句，堵不住的改结构（拆镜、锁机位、换起始帧、加尾帧、改时长、减人）；不堆负面词，按本节第四部分写排他句。判断、修了哪几条、是否涉及上述大幅修改以及第二轮是否触发写在清单末尾；最致命的几条写进本镜（或参考图条目）的 `adversarial_preflight`（`[{"worst": "…", "blocked_by": "提示词原句，或「验收：…」"}]`，至少 3 条），机械门 G52：少于 3 条报 warn、`produce.py` 拒绝提交；worst 重复、引句不在提示词里报 error——提示词改过就同步改。
+**五、提交前必做：机械检查 + 攻防（SKILL.md 硬约束 11d，最多两轮）**。所有视频提示词先过 G54（[prompt-loopholes.md](prompt-loopholes.md) 已升级的条目）。只有高风险镜头（物理、多人、接触、承担必拍事实、新场景新拍法）和生成不好要重拍的镜头再走攻防：提示词存 `审查/adversary/<ID>-v1.txt`，派攻击子代理：第 1 轮 `isolated_agent.sh <项目> <任务书> adversary`（Sonnet 5，medium），任务书用 `assets/templates/攻击任务书.md`，只填模型与参数、这一镜的目的、起始帧路径、提示词文件路径。它只交最致命的 5 条不违反字面又最让导演失望的成品和修补，并找物理上做不到、和起始帧矛盾、方向可读反的句子（模型遇到做不到的描述会换成它做得到的动作，E36）。主会话判断：**问题大**（物理做不到、和起始帧矛盾、方向可读反、主动作能被省事路径替代、要改结构）且仅需局部、明确的修补时，修复后提交；**问题不大（含未发现问题），或第一轮修复涉及动作路径、人物关系、镜头结构的大幅修改**，修复后必须再派第 2 轮 `adversary2`（Opus 5.5，low，全新子代理，不给第 1 轮清单），第二轮审修复后的当前版本，修完提交。不做第 3 轮。第一轮问题不大可能是遗漏了隐蔽漏洞，大幅修复则可能引入新漏洞，因此这两种情况都要由强模型复查。修补能用一句话堵的改句，堵不住的改结构（拆镜、锁机位、换起始帧、加尾帧、改时长、减人）；不堆负面词，按本节第四部分写排他句。判断、修了哪几条、是否涉及上述大幅修改以及第二轮是否触发写在清单末尾；攻击清单每条必须引用提示词原句（连续 8 词以上）并写出一个具体坏画面（谁、第几秒、做了什么），不引原句的条目作废，主会话不收泛泛之谈（「可能手崩」）；最致命的几条写进本镜（或参考图条目）的 `adversarial_preflight`（`[{"worst": "…", "blocked_by": "提示词原句，或「验收：…」"}]`，至少 3 条），机械门 G52：少于 3 条报 warn、`produce.py` 拒绝提交；worst 重复（归一化后相似度超过 0.8 也算）、引句不在提示词里报 error；`blocked_by` 写「验收：」的最多 1 条，而且必须写成可量的检查（帧号、计数、秒数区间）并出现在 review 的检查项里，否则 error（G54 L29）——提示词改过就同步改。
+
+**七、审查者也按对手处理**。审片模型、攻击子代理和主会话自己都会偷懒：只看抽帧、只数人头不数物件、ASR 抓不到的声音当作没有。所以验收只认留下证据的检查：人数、陈设件数和门窗开度用全片 4fps 计数写 `count_trace`，不符的格回原分辨率核并写 `verify_frames` 路径；review 对 `scene_state` 里每个人、每件陈设、每扇门都给出计数或开度，缺项视为未审；全片跑人声活动检测（VAD），`speech_window` 内非台词人声超过 0.3 秒、窗口外任何人声，都逐段交听审并写 `vocal_ok`。缺这些字段目前由审片.md 的「审片覆盖提醒」报 warn（G54 L30），`review_tool.py mark` 补上产出后升为 error。
 
 **六、例外理由过搬家测试**：`single_reason`、`multi_person_reason`、`split_reason`、`gaze_reason`、`fast_cut_reason` 等理由，原样挪到同场另一镜仍然成立的就是套话，按没写算；理由要引用本镜可核对的事实（剧本原句、镜号、谁在哪）。
 
@@ -91,7 +100,7 @@
 
 同一个人连续做事、连续说两句，合并成一个长镜头生成（storyboard-keyframes §7b；时长上限 `shot_seconds.max`，H3 为 15 秒）。长镜头的提示词不是把两条短提示词拼起来，而是写成一条有先后的节拍链：
 
-- **节拍按顺序写，每拍一句**：起点 → 节拍 1（动作或台词）→ 节拍 2 → … → 终点。用顺序词连接（`first … then … after the line … finally …`），每拍只写一个主变化；拍与拍之间写一个过渡（一次呼吸、视线移动、重心变化），不写"停住不动"。
+- **节拍按顺序写，每拍一句**：起点 → 节拍 1（动作或台词）→ 节拍 2 → … → 终点。用顺序词连接（`first … then … after the line … finally …`），每拍只写一个主变化；拍与拍之间写一个过渡，只能从三种里选一种、不超过 0.5 秒：`she breathes in` / `her eyes drop to <已在场的物件> and return` / `she shifts her weight to the other foot`——自由发挥的过渡会被做成转身、踱步、摸头发，盖过主节拍；节拍之间不写"停住不动"，终点可以定住，写 `holds still … until the end of the clip`。
 - **多句台词各挂在自己那一拍**：每句台词紧跟在它发生时的可见动作后面，逐字、按剧本顺序；两句之间写清间隔里人在做什么（`she lowers her eyes to the cup, then looks back toward screen left and adds:`），不让模型把两句连成一口气念完。
 - **运镜变化只写一次、写在它服务的那一拍**：例如前半段锁定中景，第二句前缓慢推近到近景强调表情；写成 `the camera holds a medium shot, then slowly pushes in to a close-up as she says the second line`。一条长镜头最多一次运镜变化；需要两次以上景别跳变的，说明这里该拆（写 `split_reason`）。
 - **时间容量**：发声时长 + 动作不能并行的时长 + 每拍之间约 0.5 秒过渡 + 结尾 0.8 秒余态，就是秒数下限（节奏下限 storyboard-keyframes §7c）；算出来超过 `shot_seconds.max`，先删同质节拍。

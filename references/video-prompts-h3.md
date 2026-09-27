@@ -110,7 +110,7 @@ On 「回るよ」 one hand opens outward in a small shrug; after the line one c
 
 ## 6. 运镜：5 秒人物镜常用八种
 
-运镜词属于方言。H3 官方运镜词表 [官方]：`Push In / Pull Out`、`Zoom In / Zoom Out`、`Pan Left / Right`、`Truck Left / Right`、`Tilt Up / Down`、`Pedestal Up / Down`、`Arc Shot`、`Tracking Shot`、`Static Shot`、`Shake Slightly / Strongly`、`POV`、`Roll Clockwise / Counterclockwise`。**官方表里没有 `handheld`**；实战头部句里的 `Handheld camera with small natural breathing sway` 属于本项目在真人画风上实测通过的写法 [自测]，只在真人画风用，想换成官方词时写 `the camera shakes slightly`，先做 A/B 再替换。表外的运镜写成画面关系变化（"主体占画比慢慢变大"）。
+运镜词属于方言。H3 官方运镜词表 [官方]：`Push In / Pull Out`、`Zoom In / Zoom Out`、`Pan Left / Right`、`Truck Left / Right`、`Tilt Up / Down`、`Pedestal Up / Down`、`Arc Shot`、`Tracking Shot`、`Static Shot`、`Shake Slightly / Strongly`、`POV`、`Roll Clockwise / Counterclockwise`。**官方表里没有 `handheld`**。旧项目头部句里的 `Handheld camera with small natural breathing sway` 已停用：头部句不许带任何运镜词（video-prompts-general §2b 一，G54 L14），它和正文的锁机位同时出现时，模型会把轻晃累积成摇镜。需要手持感的镜只在正文镜头行写 `the camera shakes slightly around a fixed position; the framing stays <景别>, no pan, no tilt, no zoom`，同一镜不写 locked。表外的运镜写成画面关系变化（"主体占画比慢慢变大"）。
 
 `[Push in]`、`[Truck left, Pan right]` 这类方括号运镜指令只属于 MiniMax-Hailuo 2.x 与 I2V-01-Director，不属于 H3 [官方]；H3 正文里的运镜一律写成自然句，不混方括号指令。
 
@@ -126,7 +126,7 @@ On 「回るよ」 one hand opens outward in a small shrug; after the line one c
 | `tilts up` | 从鞋或手摇到脸：登场、站起反击 |
 | 一次快推 `pushes in at fast speed` | 反派看到底牌的一瞬；一场戏只用一次 |
 | 小幅弧线 `makes an arc shot with small amplitude` | 反击时从正面转到侧面，背景变化表现权力翻转 |
-| 克制 handheld（本项目真人实测写法；官方词 `shakes slightly` 待 A/B） | 憋屈、被围时轻晃；反击成功后切回稳定；非真人画风不用 |
+| 正文写 `the camera shakes slightly around a fixed position`（不进头部句，不和 locked 同镜） | 憋屈、被围时轻晃；反击成功后切回稳定；非真人画风不用 |
 | 反向跟拍 `Tracking shot: the camera moves backward as she walks toward it` | 主角正面走向镜头逼近画外对手 |
 
 景别随心理防线收紧：憋屈段守在中近景/过肩，底牌与反击才进近景、大特写。
@@ -224,9 +224,9 @@ H3 官方另有只给尾帧、由模型推断开场的模式，本流程不用�
 
 ## 台词表演（情绪要写到模型听得出来）
 
-形容词+音量（`furious, fast and loud`）只会被演成「大声」。每句台词在 `<d>` 前写四层，缺一层情绪就会变平；第 4 层"脸与身体"受 §5「两个信号预算」约束，只挑当前景别读得到的两个信号、写强度上限，其余交给声音层：
+形容词+音量（`furious, fast and loud`）只会被演成「大声」。每句台词在 `<d>` 前写四层，缺一层情绪就会变平；第 4 层"脸与身体"受 §5「两个信号预算」约束，只挑当前景别读得到的两个信号、按 video-prompts-general §2b「朝向与视线」一行的三档写强度，脸的档和声音的档各自对 `emotion`，其余交给声音层：
 
-1. **内心与原因**：`indignant and humiliated, the place he earned is being stolen in front of him`
+1. **内心**：只写成声音的色彩，`in a voice of humiliated indignation`；不写事件从句（`the place he earned is being stolen in front of him`、`because …`）——模型会把事件照字面画出来，比如让一个人进画来「偷位置」（G54 L23）
 2. **声音质感**：`through gritted teeth, his voice cracking at the top` / `trembling with suppressed rage` / `a choked, disbelieving whisper` / `cold and slow, each word bitten off`
 3. **重音与节奏**：`stressing "我"`, `rising sharply at the end`, `said in one smooth unbroken breath, each syllable exactly once`；气息写在开口前的动作里（`he sucks in a sharp breath, then says`）；句中、句后不写 pause / beat / silence（E31：模型会在停顿处补字）
 4. **脸与身体**（挑两个）：`brows knotted`、`eyes reddening`、`jaw clenched`、`nostrils flaring`

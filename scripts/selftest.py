@@ -460,6 +460,82 @@ def main() -> int:
     require({"L01", "L02", "L03", "L05", "L06"} <= _codes, f"G54 该报的漏洞都报出来（实际 {sorted(_codes)}）")
     _ok = _F(); loophole_findings(_ok, "X", "[Shot 1] Locked-off camera, no pan, no tilt, no zoom, no cuts. At 1.2 seconds her shoe shoots out across three tiles toward the vanity side of the frame in a fraction of a second and she slams down hard onto the tile.", 5)
     require(not _ok.warns(), f"写全了的提示词不报 G54（实际 {[f['msg'][:3] for f in _ok.warns()]}）")
+    from shots_tool import set_findings
+    _sb = _F(); set_findings(_sb, "X", "video_prompt", "Exactly two people. A single box sits beside the desk. Exactly one cardboard box. The study door is half open.", video=True)
+    _sc = {f["msg"][:3] for f in _sb.warns()}
+    require({"L11", "L12", "L13"} <= _sc, f"G54 陈设/前后/开度漏洞都报出来（实际 {sorted(_sc)}）")
+    _sg = _F(); set_findings(_sg, "X", "video_prompt", "Exactly one cardboard box sits on the floor between the desk and the back wall, on the far side of the desk from the camera. There are no other boxes, crates or containers anywhere in the room. The study door stands open about one hand's width, roughly 15 degrees, and does not move throughout the entire clip. The lid does not open.", video=True)
+    require(not _sg.warns(), f"陈设写全了不报 L11–L13（实际 {[f['msg'][:3] for f in _sg.warns()]}）")
+    # G54 L14–L30：每条一坏一好
+    import shots_tool as _st
+    from review_quality import coverage_warnings
+
+    def _lw(fn, *a, **k):
+        f_ = _F(); fn(f_, *a, **k)
+        return {x["msg"][:3] for x in f_.items}
+    _h0 = pr.cfg.get("video_prompt_head")
+    pr.cfg["video_prompt_head"] = "Single continuous take. Handheld camera with slight sway."
+    require(any(f["msg"].startswith("L14") for f in check(pr, "EP001").errors()), "L14 头句含 handheld/sway 报 G54 error")
+    pr.cfg["video_prompt_head"] = "Single continuous take. Locked-off camera on a tripod, no pan, no tilt, no zoom, no cuts."
+    require(not any(f["msg"].startswith("L14") for f in check(pr, "EP001").items), "L14 锁定头句不报")
+    pr.cfg["video_prompt_head"] = _h0
+    _cam = "The camera stays at eye level, no pan, no tilt, no zoom, no cuts. "
+    require("L14" in _lw(loophole_findings, "X", "Locked-off camera, no pan, no tilt, no zoom, no cuts. Handheld sway throughout.", 5), "L14 正文锁定+手持冲突报 warn")
+    require("L14" not in _lw(loophole_findings, "X", "The camera shakes slightly around a fixed position. She sits.", 5), "L14 只写小幅晃动不报")
+    _sh1 = {"dialogue": [{"speaker": "A", "text": "はい"}]}
+    require("L15" in _lw(_st.seal_findings, "X", "She nods. <d>はい</d>", _sh1), "L15 缺封口句报 error")
+    require(not _lw(_st.seal_findings, "X", "Exactly one person is in the frame. She nods until the end of the clip. <d>はい</d> These are the only words spoken in this shot. These are the only sounds in the shot.", _sh1), "L15 封口句写全不报")
+    require(not _lw(_st.seal_findings, "X", "Only one person in the frame. The cup stays still until the end of the clip. No one speaks. These are the only sounds in the shot.", {}), "L15 无对白写 No one speaks 不报")
+    require("L16" in _lw(loophole_findings, "X", _cam + "The room stays exactly as it is.", 5), "L16 模糊保持报 warn")
+    require("L16" not in _lw(loophole_findings, "X", _cam + "The desk, the lamp and the box do not move.", 5), "L16 逐项写不动不报")
+    require("L02" in _lw(loophole_findings, "X", "Locked-off camera, no pan. There are no people and a slow tilt, zoom and cut.", 5), "L17 no 后面跨词拼接不算封口")
+    require("L02" in _lw(loophole_findings, "X", "Medium shot. A gunshot rings out.", 5), "L17 medium shot/gunshot 不算写了镜头")
+    require("L02" not in _lw(loophole_findings, "X", "Locked-off camera, no pan, tilt or zoom, no cuts. She sits.", 5), "L17 同句逗号串接算封口")
+    require("L05" in _lw(loophole_findings, "X", _cam + "She slips and falls backward. She looks up at the ceiling. Later it is fast and she lands on the tile.", 5), "L18 证据不在动作句及下一句报 L05")
+    require("L05" in _lw(loophole_findings, "X", _cam + "She slips and falls backward hard onto the floor.", 5), "L18 hard 不再算速度")
+    require("L05" not in _lw(loophole_findings, "X", _cam + "She slips and falls backward in a fraction of a second and lands flat onto the tile.", 5), "L18 同句写了速度落地不报")
+    require("L06" in _lw(loophole_findings, "X", _cam + "He is dragged out of the frame toward the door.", 5), "L19 出画没写哪条边报 L06")
+    require("L19" in _lw(loophole_findings, "X", _cam + "He walks out of the frame through the right edge of the frame.", 5), "L19 走出画报 warn")
+    require(not {"L06", "L19"} & _lw(loophole_findings, "X", _cam + "He walks out of the frame through the right edge of the frame.", 5, sh={"walk_exit_ok": True}), "L19 walk_exit_ok 不报")
+    require("L01" in _lw(loophole_findings, "X", _cam + "She turns to her left.", 5), "L20 to her left 报 L01")
+    require("L01" not in _lw(loophole_findings, "X", _cam + "She raises her left hand toward screen-right.", 5), "L20 her left hand 不报")
+    _fb = _lw(_st.frame_findings, "X", "She stands on the left of the desk, then slowly turns. Keep the rest exactly as Picture 1.")
+    require({"L01", "L16", "L21", "L27"} <= _fb, f"L21 静帧里的左右/模糊保持/运动词/集合词都报（实际 {sorted(_fb)}）")
+    require(not _lw(_st.frame_findings, "X", "She stands at screen-left of the desk, facing the door. There are no other people in the room."), "L21 干净的静帧不报")
+    _rf = {"IMG-A": {"kind": "identity", "subject": "遥", "drift_anchors": ["low ponytail", "charcoal grey blazer"]}}
+    require("L22" in _lw(_st.drift_findings, "X", "She sits in a charcoal grey blazer.", {"subject": "遥"}, _rf), "L22 漂移锚点缺一条报 warn")
+    require(not _lw(_st.drift_findings, "X", "Her low ponytail, her charcoal grey blazer.", {"in_frame": ["遥"]}, _rf), "L22 锚点逐字都在不报")
+    require("L23" in _lw(loophole_findings, "X", _cam + "She says in Japanese — humiliated, she is being mocked by all of them: <d>はい</d>", 5), "L23 台词前内心从句报 warn")
+    require("L23" not in _lw(loophole_findings, "X", _cam + "She lifts her hand to chest height in front of her own body and says: <d>はい</d>", 5), "L23 站位的 in front of her own body 不报")
+    require("L24" in _lw(_st.picture_findings, "X", "frame_prompt", "Picture 2 sets only her face and build."), "L24 分工句缺 not from 报 warn")
+    require(not _lw(_st.picture_findings, "X", "frame_prompt", "Picture 2 sets only her face and build; her pose comes from this description, not from Picture 2."), "L24 写了 not from 不报")
+    _ls = [{"id": "S1", "scene": "SC1", "frame_prompt": "A single key light from the window at screen left."},
+           {"id": "S2", "scene": "SC1", "frame_prompt": "A single key light from the lamp behind her."}]
+    require("L25" in _lw(_st.light_findings, _ls), "L25 同场主光句不一致报 warn")
+    _ls[1]["frame_prompt"] = _ls[0]["frame_prompt"]
+    require(not _lw(_st.light_findings, _ls), "L25 主光句逐字一致不报")
+    _ps = [{"id": "S1", "scene_state": {"start": {"props": {"头盔": {"en": "helmet"}}}}, "video_prompt": "He holds the cracked blue helmet."},
+           {"id": "S2", "video_prompt": "He lifts the helmet."}]
+    require("L26" in _lw(_st.prop_phrase_findings, _ps), "L26 道具短语跨镜不一致报 warn")
+    _ps[1]["video_prompt"] = "He lifts the cracked blue helmet."
+    require(not _lw(_st.prop_phrase_findings, _ps), "L26 道具短语一致不报")
+    require("L28" in _lw(loophole_findings, "X", _cam + "She pauses briefly and smiles a little.", 5), "L28 模糊量词报 warn")
+    require("L28" not in _lw(loophole_findings, "X", _cam + "She pauses for 0.5 seconds. <d>a little</d>", 5), "L28 台词里的词不算")
+    from shots_tool import adversarial_findings as _adv
+    _a1 = _F(); _adv(_a1, "X", [{"worst": "他转过脸来说话", "blocked_by": "验收：看一遍"}, {"worst": "多出第三个人", "blocked_by": "验收：第 2 秒数人数"},
+                                 {"worst": "他转过脸来开口说话", "blocked_by": "No one speaks."}], ["No one speaks."])
+    _m1 = " ".join(f["msg"] for f in _a1.errors())
+    require("有 2 条 blocked_by" in _m1 and "没有可核对" in _m1 and "重复" in _m1, f"L29 验收后门、无数字、近似重复都报 error：{_m1}")
+    _a2 = _F(); _adv(_a2, "X", [{"worst": "他转过脸来说话", "blocked_by": "No one speaks."}, {"worst": "多出第三个人", "blocked_by": "验收：第 2 秒数人数=2"},
+                                 {"worst": "镜头摇走", "blocked_by": "No one speaks."}], ["No one speaks."])
+    require(not _a2.errors(), f"L29 合规预演不报：{_a2.errors()}")
+    _cw = coverage_warnings({"physics": True, "planned_action_window": [1.0, 2.0]}, {"assessment": {"action_window": [1.0, 2.6]}, "extra_vocal_segments": [[3, 4, "あ"]]})
+    require(sum(w.startswith("L30") for w in _cw) == 4, f"L30 缺 count_trace/verify_frames/vocal_ok、物理动作超容差都报：{_cw}")
+    _vf = tmp / "vf.jpg"; _vf.write_bytes(b"x")
+    require(not coverage_warnings({"physics": True, "planned_action_window": [1.0, 2.0]},
+                                  {"assessment": {"action_window": [1.0, 2.2], "count_trace": [{"t": 1.5, "people": 2}], "verify_frames": [str(_vf)], "vocal_ok": True},
+                                   "extra_vocal_segments": [[3, 4, "あ"]]}), "L30 覆盖齐全、容差内不报")
+    require(not [f for f in check(pr, "EP001").items + check_refs(pr).items if f["msg"][:1] == "L"], "示例项目不触发任何 G54 L 条")
     sp.write_text(good_sp, encoding="utf-8")
     ep2 = root / "EP002"
     ep2.mkdir(exist_ok=True)

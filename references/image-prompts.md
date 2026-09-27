@@ -150,7 +150,7 @@ Keep the same person from Picture 1: same face, hairline, skin tone, build and h
 ```text
 目标：哪条 IMG、哪个对象、哪个区域
 变化：看得见、有边界的变化（位置、方向、范围、程度、材质颜色结果）
-保留：最容易被误改的高价值事实——在场人数与每人的位置、朝向、持物（逐人点名，不写 everyone）、脸与体形、未变的服装部件、固定地理、道具轮廓、构图机位、光向、未选区域
+保留：最容易被误改的高价值事实——在场人数与每人的位置、朝向、持物（逐人点名，不写 everyone、everything else、the rest、all other、other elements 这类集合词，G54 L27）、脸与体形、未变的服装部件、固定地理、道具轮廓、构图机位、光向、未选区域
 连续性影响：对应哪个已登记的状态或变体，影响哪些镜头的 frame_refs；没有影响写"无"并说明理由
 ```
 
@@ -158,7 +158,7 @@ Keep the same person from Picture 1: same face, hairline, skin tone, build and h
 - **一次编辑只改一组相关的变化**；几处互不相干的修改拆成几次，否则保留清单会失焦。复杂重构改做新变体或新底板。
 - **太宽的要求先拆细**："改背景""让她更狼狈"不能直接写成提示词，要落到具体区域和可观察结果。
 - **改的是上游事实就不算编辑**：挪门窗、改身份、改道具状态要先改视觉设定（visual-assets §2、§4），不能在编辑提示词里偷改。
-- 局部删人这类编辑，变化和保留都要明说：`Remove the man on the right side of the frame completely. Keep every other person, their positions and poses, the background and the lighting exactly as they are.`
+- 局部删人这类编辑，变化和保留都要明说：`Remove the man on the screen-right side of the frame completely. Mio (short black bob, navy blazer) stays on screen-left facing the window, her right hand on the desk; the desk, the single lamp and the window stay where they are; the light still comes only from the window.`（保留项逐个点名，不写 `Keep every other person … exactly`）
 - **改机位的链式编辑**（storyboard-keyframes §1 用上一镜末帧出下一镜起始帧）：改的是相机，人和物在世界里不动。先写相机怎么动，再按 video-prompts-general §2b 逐人写他在新画面里的位置；相机换方向后画左画右会跟着变，按轴线算好写死，不写 `same positions`：`Move the camera to the cliff rim, looking back toward the stone path. Keep exactly three people, each once: Gu Changsheng in the grey robe, now on screen-right with his heels on the rim, facing screen-left; Yan Chong in the black robe, on screen-left, facing him; the sword spirit in white, behind Gu's left shoulder, facing screen-left. Keep the light and the single sword in Gu's right hand.` 目检逐个数人头、核朝向，并和上一镜末帧对照有没有被整体镜像。
 - 旧图不覆盖：重出改名归档（硬约束 8），refs.json 里记下这次改了什么、为什么。
 - 自然语言修订（用户说"工作服换成深蓝，但保留脸和袖口油渍"）自动执行：读当前视觉设定和 refs.json 条目，分清哪些是提示词措辞、哪些要先改视觉设定；改完在 `项目开发/决策记录.md` 记一行改前、改后、保留项、受影响镜头。用户说"更有电影感"这类含糊要求时，不堆风格词，由 art-director 在光比、构图、色彩关系里选一个可观察的方向执行并记录理由。

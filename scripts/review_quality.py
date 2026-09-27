@@ -271,6 +271,34 @@ def take_quality(path: Path, shot: dict, rec: dict, *, audio_only: bool = False)
     return problems
 
 
+def coverage_warnings(shot: dict, rec: dict, base: Path | None = None) -> list[str]:
+    """L30 审片覆盖（warn 级，不挡剪辑）：逐镜要留 count_trace（按帧计数）和 verify_frames（真实存在的帧路径）；
+    ASR 报了台词窗口外人声要写 vocal_ok；physics:true 的镜实测动作时长对 planned_action_window 容差 ±30% 且绝对 ≤0.3 秒。
+    目前 review 流程还不产出 count_trace / verify_frames / vocal_ok，所以只提醒，不进 take_quality。"""
+    a = rec.get("assessment") or {}
+    if not a:
+        return []
+    out = []
+    if not a.get("count_trace"):
+        out.append("L30 缺 count_trace（逐帧数人数/物件数的记录，例 {\"t\": 1.5, \"people\": 2}）")
+    frames = a.get("verify_frames")
+    if not isinstance(frames, list) or not frames:
+        out.append("L30 缺 verify_frames（看过的帧图路径列表）")
+    else:
+        gone = [f for f in frames if not (Path(f) if Path(f).is_absolute() or base is None else base / f).is_file()]
+        if gone:
+            out.append(f"L30 verify_frames 里的帧不存在：{gone[:3]}")
+    if rec.get("extra_vocal_segments") and a.get("vocal_ok") is None:
+        out.append("L30 台词窗口外有人声段（VAD），没写 vocal_ok（听过判断是否可接受）")
+    plan, got = shot.get("planned_action_window"), a.get("action_window")
+    if shot.get("physics") and valid_window(plan) and valid_window(got):
+        pd, gd = plan[1] - plan[0], got[1] - got[0]
+        tol = min(0.3 * pd, 0.3)
+        if abs(gd - pd) > tol + 1e-9:
+            out.append(f"L30 物理动作实测 {gd:.2f}s，计划 {pd:.2f}s，超出容差 ±{tol:.2f}s（±30% 且 ≤0.3s）：慢放摔倒/快放推搡都不算按常识拍出来，重拍")
+    return out
+
+
 def verified_action(rec: dict):
     value = (rec.get("assessment") or {}).get("action_window")
     return (float(value[0]), float(value[1]), "reviewed_take") if valid_window(value) else None
