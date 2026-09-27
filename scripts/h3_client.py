@@ -380,7 +380,7 @@ class Client:
                 raise RuntimeError(f"provider failed {jid}: {j.get('error') or st}")
             time.sleep(poll or self.poll)
 
-    def download(self, job: dict, kind: str, out: Path) -> Path:
+    def download(self, job: dict, kind: str, out: Path, mark_id: str | None = None) -> Path:
         jid = job.get("id") or job.get("job_id")
         if kind == "image":
             url = job.get("image_download") or f"/api/jobs/{jid}/image"
@@ -402,7 +402,8 @@ class Client:
         tmp = out.with_suffix(out.suffix + ".part")
         tmp.write_bytes(data)
         os.replace(tmp, out)
-        self._mark(jid, "collected", out)
+        # 服务端返回的 id 可能和提交时拿到的任务号不同（h3studio 多机转发）：账本按提交任务号记收回，否则同名任务永远"未收回"
+        self._mark(mark_id or jid, "collected", out, {"server_id": jid} if mark_id and mark_id != jid else None)
         return out
 
     def _mark(self, jid: str, status: str, out: Path, extra: dict | None = None) -> None:
@@ -411,14 +412,14 @@ class Client:
     def collect(self, jid: str, kind: str, out: Path) -> Path:
         job = self.wait_job(jid, poll=10)
         job.setdefault("id", jid)
-        return self.download(job, kind, out)
+        return self.download(job, kind, out, mark_id=jid)
 
     # ---- 一步到位（先查账本里未收回的同名任务，有就收回，不重新 POST） ---------------
     def image(self, prompt: str, out: Path, **kw) -> tuple[str, Path]:
         jid = self.submit_image(prompt, out, **kw)
         job = self.wait_job(jid)
         job.setdefault("id", jid)
-        return jid, self.download(job, "image", out)
+        return jid, self.download(job, "image", out, mark_id=jid)
 
     def video(self, prompt: str, out: Path, frame: Path, **kw) -> tuple[str, Path]:
         # 账本记起始帧 sha 与完整提示词 sha（可灵会截断提示词，所以记截断前的）；review_quality.provenance_issues 用它核对来源
@@ -430,7 +431,7 @@ class Client:
             self._submit_extra = None
         job = self.wait_job(jid)
         job.setdefault("id", jid)
-        return jid, self.download(job, "video", out)
+        return jid, self.download(job, "video", out, mark_id=jid)
 
 
 def main(argv: list[str] | None = None) -> int:

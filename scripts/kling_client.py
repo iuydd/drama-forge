@@ -120,7 +120,7 @@ class KlingClient(Client):
                 raise RuntimeError(f"可灵任务失败 {jid}: {d.get('task_status_msg')}")
             time.sleep(poll or self.poll)
 
-    def download(self, job: dict, kind: str, out: Path) -> Path:
+    def download(self, job: dict, kind: str, out: Path, mark_id: str | None = None) -> Path:
         jid = job["id"]
         vids = ((job.get("task_result") or {}).get("videos")) or []
         url = (vids[0] or {}).get("url") if vids else ""

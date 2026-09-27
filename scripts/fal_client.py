@@ -127,7 +127,7 @@ class FalClient(Client):
                 return job
             time.sleep(poll or self.poll)
 
-    def download(self, job: dict, kind: str, out: Path) -> Path:
+    def download(self, job: dict, kind: str, out: Path, mark_id: str | None = None) -> Path:
         jid = job["id"]
         url = ((job.get("video") or {}).get("url")) or ""
         if not url:
@@ -263,7 +263,7 @@ class FalImageClient(FalClient):
                                       "images": refs}, jid, out, request_id=request_id, fingerprint=fingerprint)
             return jid
 
-    def download(self, job: dict, kind: str, out: Path) -> Path:
+    def download(self, job: dict, kind: str, out: Path, mark_id: str | None = None) -> Path:
         if kind != "image":
             return super().download(job, kind, out)
         jid = job["id"]
