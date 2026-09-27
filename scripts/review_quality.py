@@ -259,16 +259,12 @@ def take_quality(path: Path, shot: dict, rec: dict, *, audio_only: bool = False)
                 problems.append("sync_failed")
         elif (assessment.get("checks") or {}).get(key) != "pass":
             problems.append(f"{key}_not_passed")
-    if not audio_only and spoken(shot) and assessment.get("speaker_face_ok") is not True:
-        # 纯视觉：本句说话人的嘴在动、其他人嘴不动（口型落错人是生成模型常见的"合字面最差成品"）
-        problems.append("speaker_face_not_verified（有台词的镜要看过是说话人本人在张嘴、别人闭嘴：mark --speaker-face-ok true --evidence …）"
-                        if assessment.get("speaker_face_ok") is None else "speaker_face_failed（口型落在别人脸上或多人同时张嘴：重拍）")
+    if assessment.get("speaker_face_ok") is False:
+        problems.append("speaker_face_failed（口型落在别人脸上或多人同时张嘴：重拍）")
     if not str(assessment.get("evidence") or "").strip():
         problems.append("missing_evidence")
-    if (audio_only or (shot.get("dialogue") and not shot.get("audio_from"))) and not valid_window(assessment.get("speech_window")):
-        problems.append("missing_verified_speech_window")
-    if not audio_only and action_required(shot) and not valid_window(assessment.get("action_window")):
-        problems.append("missing_verified_action_window")
+    # 2026-09-27 大改：speech_window / action_window / speaker_face_ok 不再是放行前提（放行以逐帧原图观察 + 独立子代理为准），
+    # 写了就用于剪点保护，没写不拦。
     return problems
 
 

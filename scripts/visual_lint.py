@@ -3,7 +3,7 @@
 
   visual_lint.py <项目> [EP001 ...] [--json]     不写集号就查全部已有 shots.json 的集
 
-补 shots_tool.py 的 G 门没覆盖到的几条（references/image-prompts.md、visual-assets.md §6b）：
+补 shots_tool.py 的 G 门没覆盖到的几条（references/3-视觉设定与图片.md、3-视觉设定与图片.md §6b）：
   V01 error  转面板（refs.json 里 "layout": "multi_view"）直接挂进了起始帧 frame_refs
   V02 warn   派生参考图（refs 非空）第一句没有点名保留 Picture 1 的身份/地点
   V03 warn   派生参考图用了整体改写动词（transform / turn into / make it look like …）

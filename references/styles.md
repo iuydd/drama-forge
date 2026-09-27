@@ -1,6 +1,6 @@
 # 风格库：七种画风的写法
 
-阶段 A 定风格（写 `drama.json` 的 `style_preset` 和 `style`），阶段 D 写身份图与底板、阶段 E 写起始帧与视频提示词时读本文件。来源：原本地套件的六张制作形态卡（实拍、二维动态漫、风格化三维、水墨笔触、Q 版表达、国漫二次元，已并入 §1b 与 §13）、题材卡（仙侠修真、古装权谋）、漫剧关键帧词表、H3 与 Seedance 方言，以及本 skill 的 [video-prompts-general.md](video-prompts-general.md) 与 `按一下回到十秒前` EP001 复盘。标注：**[自测]** 本项目实测；**[套件]** 本地 skill 已有结论；**[推断]** 由多条来源推出、未在本项目实测。
+阶段 A 定风格（写 `drama.json` 的 `style_preset` 和 `style`），阶段 D 写身份图与底板、阶段 E 写起始帧与视频提示词时读本文件。来源：原本地套件的六张制作形态卡（实拍、二维动态漫、风格化三维、水墨笔触、Q 版表达、国漫二次元，已并入 §1b 与 §13）、题材卡（仙侠修真、古装权谋）、漫剧关键帧词表、H3 与 Seedance 方言，以及本 skill 的 [4-分镜与视频提示词.md](4-分镜与视频提示词.md) 与 `按一下回到十秒前` EP001 复盘。标注：**[自测]** 本项目实测；**[套件]** 本地 skill 已有结论；**[推断]** 由多条来源推出、未在本项目实测。
 
 ## 目录
 
@@ -32,7 +32,7 @@
 - **怎么选**：先看题材，再看预算和后端。都市打脸、职场、校园、豪门默认 `live_modern`；朝堂、宅斗选 `live_period`；修仙、宗门、御剑在真人和动画之间选——要"像电视剧"选 `live_xianxia`，要大场面法术、飞行、群战而且不怕观众觉得是动画，选 `guoman_3d`；点子来自日系轻小说、校园异能选 `anime_cel`；来自韩国条漫、复仇重生、霸总爽文，要竖屏精修脸选 `manhwa`；要科幻、末日、怪物、机甲又想保留写实质感选 `cg_realistic`。判不出选 `live_modern`，写进决策记录。
 - **全剧锁定一种**：立项定下后，全剧所有身份图、底板、道具图、起始帧都用同一句 `style`，不在单集、单场、单镜里换风格（回忆、梦境也不换；需要区分就改色调和光，不改画风）。中途确实要换，只能整剧回到阶段 D 重出全部参考图，写进决策记录。
 - **风格句只放一次**：起始帧提示词的结尾 `Style: …` 就是 `drama.json.style` 原句；分镜里不再堆别的风格词。风格句和视频头句只写画风质感和实时速度，不写运镜许可和特效、大气词（粒子、雾、体积光）：写进全剧固定句，就等于每一镜都许可了运镜和特效；需要时只在那一镜正文写（video-prompts-general §2b 一）。下文各画风关键词里的这类词同理。风格词不能顶替身份、地理、尺度、构图事实（[套件] 漫剧关键帧词表：事实先于审美词）。
-- **视频提示词也要带风格**（只锁起始帧不够）：图片用 `style`，视频用下表的"视频保持句"，两句互不替代。视频保持句只点名"整条镜头必须保住的画面质感"和拒绝项，不复述首帧里已经画出的外观。做法：立项时按画风选下表的视频头句，把视频保持句接在它后面，一起写进 `drama.json` 的 `video_prompt_head`，全剧不变。**非真人画风的头句和保持句只以本表为准**（video-prompts-h3 §9 只引用本表，不另写一份）。`video-prompts-h3.md` §9 的实战头句（realistic human behaviour）**只适用于 live_* 和 `cg_realistic`**；非真人画风写这个词（以及 handheld），会把动画往真人方向拉。任何画风的头句都不写运镜和特效词（G36）。[官方][社区]
+- **视频提示词也要带风格**（只锁起始帧不够）：图片用 `style`，视频用下表的"视频保持句"，两句互不替代。视频保持句只点名"整条镜头必须保住的画面质感"和拒绝项，不复述首帧里已经画出的外观。做法：立项时按画风选下表的视频头句，把视频保持句接在它后面，一起写进 `drama.json` 的 `video_prompt_head`，全剧不变。**非真人画风的头句和保持句只以本表为准**（video-prompts-h3 §9 只引用本表，不另写一份）。`4-分镜与视频提示词.md` §9 的实战头句（realistic human behaviour）**只适用于 live_* 和 `cg_realistic`**；非真人画风写这个词（以及 handheld），会把动画往真人方向拉。任何画风的头句都不写运镜和特效词（G36）。[官方][社区]
 
   | preset | 视频头句（接在 `integrated_multimodal_description: [Shot 1]` 之后） | 视频保持句 |
   |---|---|---|
@@ -44,7 +44,7 @@
   | `manhwa` | `Single continuous take, no cuts, no transitions, starting exactly from the opening frame. Real-time speed. Only small refined movements: hair strands, eyelashes and fabric edges move, the mouth moves in simple shapes with the words. No subtitles, captions, speech bubbles, panel borders or on-screen text at any time.` | `The whole take stays a polished webtoon illustration: thin clean line art, soft gradient shading, luminous skin; no speech bubbles or panel borders appear.` |
   | `guoman_3d` | `Single continuous take, no cuts, no transitions, starting exactly from the opening frame. Real-time animation timing. Stylized 3D character animation with weighty body mechanics; hair strands and silk layers follow every movement. No subtitles, captions or on-screen text at any time.` | `The whole take stays a stylized Chinese 3D animation frame: individually rendered hair strands, layered silk, consistent rim light; it never turns photographic or flat 2D.` |
 
-- **起始帧镜头词按画风换**：动漫类（`anime_cel`、`manhwa`）不写焦段、bokeh、cinematic lighting、volumetric、4k 这类摄影与渲染词，它们会把 2D 拉成 3D；具体写法见 [storyboard-keyframes.md](storyboard-keyframes.md) §6b 第 8 项的补充说明。[社区]
+- **起始帧镜头词按画风换**：动漫类（`anime_cel`、`manhwa`）不写焦段、bokeh、cinematic lighting、volumetric、4k 这类摄影与渲染词，它们会把 2D 拉成 3D；具体写法见 [4-分镜与视频提示词.md](4-分镜与视频提示词.md) §6b 第 8 项的补充说明。[社区]
 - **题材色调（可选，与画风正交）**：悬疑、赛博朋克这类题材改的是光、色和环境动态，不是渲染方式，不新增 preset。需要时把下面一句接在 `style` 句的色彩部分，和 `style` 一起全剧锁定。[社区][推断]
   - 悬疑惊悚：`one hard visible light source, deep shadows yet faces and clues stay readable, cold desaturated palette, high contrast`。镜头多用慢推、证据特写，手持只给慌乱的时刻；环境动态写灯管闪一下、门缝影子移动、滴水。最常见的翻车是太暗、脸和证据看不清。
   - 赛博朋克：`neon glow from off-frame signs in cyan and magenta, wet reflective ground, thin rain, signs carry only abstract shapes`。主色只用两种，第三种只给强调物；环境动态写雨丝、全息广告闪、井盖冒蒸汽。霓虹不能把脸染到认不出，招牌不出字。
@@ -81,10 +81,10 @@
 
 不管哪种画风，下面几条都不放松，写在各风格规则之前：
 
-1. **比例真实**：人物和环境的比例按现实世界（护栏到腰、门比人高约 1.2 倍、一级台阶约 17 cm），动漫、Q 版也只改头身比，不改环境尺度。写法见 [visual-assets.md](visual-assets.md) §12。
+1. **比例真实**：人物和环境的比例按现实世界（护栏到腰、门比人高约 1.2 倍、一级台阶约 17 cm），动漫、Q 版也只改头身比，不改环境尺度。写法见 [3-视觉设定与图片.md](3-视觉设定与图片.md) §12。
 2. **场景合理**：门后不接门、下楼的楼梯不接上楼的楼梯、窗外景和楼层一致。见 visual-assets §4b。
-3. **环境运动按需**：自然存在或承担情节时写清；静止本身不判失败。见 video-prompts-general.md §6。
-4. **台词有情绪**：每句写 `emotion`（情绪·强度·语速·音量）。见 [screenplay.md](screenplay.md) §4b。
+3. **环境运动按需**：自然存在或承担情节时写清；静止本身不判失败。见 4-分镜与视频提示词.md §6。
+4. **台词有情绪**：每句写 `emotion`（情绪·强度·语速·音量）。见 [2-剧本.md](2-剧本.md) §4b。
 5. **生成画面不出字**：动漫的拟声字、修仙的符箓文字、韩漫的对话框一律不让模型画，后期叠加或做成无字图形。视频提示词同样写 `No subtitles, captions or on-screen text at any time`，日漫、韩漫的视频保持句再写 no speech bubbles、no panel borders——视频模型不写拒绝项时会自己加字幕和转场。[社区]
 6. **因果可见**：法宝、援兵、异象第一次出现前要有铺垫镜（`setup_for` / `requires_setup`，G32）。
 7. **远景不给正脸**：全景、远景里的主要人物用背影、后四分之三侧或侧剪影，正脸只在中近景和特写给；远处的小正脸最容易崩脸、换脸（H3 官方仙侠示例也这样处理）。[官方][自测]
@@ -341,15 +341,15 @@ Photorealistic cinematic CG frame, high-end film visual effects quality, physica
 | 特效（法术、粒子） | 偏弱，改写成"后果镜" | 时长长，适合一镜多拍 |
 | 台词口型 | 原生口型最好 | 同轨生成音频 [套件] |
 | 时间控制 | 会把台词拉长填满镜长，开口常晚 1–2 秒 [自测] | 整数秒时间段，仍有偏差 [套件] |
-| 本 skill 写法 | [video-prompts-h3.md](video-prompts-h3.md) | [video-prompts-seedance.md](video-prompts-seedance.md) |
+| 本 skill 写法 | [4-分镜与视频提示词.md](4-分镜与视频提示词.md) | [4-分镜与视频提示词.md](4-分镜与视频提示词.md) |
 
-两个后端都按 [video-prompts-general.md](video-prompts-general.md) 的通则写（节拍、环境动态、表情避坑、接触同框、时序以实测为准）；以后接入别的图生视频模型也一样，只新增它的方言文件。
+两个后端都按 [4-分镜与视频提示词.md](4-分镜与视频提示词.md) 的通则写（节拍、环境动态、表情避坑、接触同框、时序以实测为准）；以后接入别的图生视频模型也一样，只新增它的方言文件。
 
 同一剧里混用后端时，风格句不变；如果某后端让画风漂移（例如 H3 把动漫人物拍成真人），列出受影响的镜和 2–3 个候选后端交用户定（硬约束 1b），不自己换；定了之后那一类镜头统一换，不在同一场里混。
 
 ## 11. 风格审查问题
 
-reviewer 看视觉设定和分镜时的风格必答问题统一在 [review-checklists.md](review-checklists.md)：画风匹配见 §A-8，台词腔调与术语解释见 §D-9，头身比与尺度见 §D-5，风格句、常见翻车、法术三拍、视频头句、漂移诱因词、系统面板、制作形态卡与叙事职责见 §E5（第 1–9 条）。写作者按本文件 §1–§10、§13 写完后可用同一清单自查。
+reviewer 看视觉设定和分镜时的风格必答问题统一在 [6-审片与剪辑.md](6-审片与剪辑.md)：画风匹配见 §A-8，台词腔调与术语解释见 §D-9，头身比与尺度见 §D-5，风格句、常见翻车、法术三拍、视频头句、漂移诱因词、系统面板、制作形态卡与叙事职责见 §E5（第 1–9 条）。写作者按本文件 §1–§10、§13 写完后可用同一清单自查。
 
 ## 12. 系统面板主题预设（后期叠加的弹窗、面板、卷轴）
 

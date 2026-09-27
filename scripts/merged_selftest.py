@@ -335,7 +335,7 @@ def test_task_pack() -> None:
 
 
 def main(argv: list[str]) -> int:
-    # 兼容两种写法：merged_selftest.py NAME 与 merged_selftest.py -k NAME（references/providers.md 用后者）
+    # 兼容两种写法：merged_selftest.py NAME 与 merged_selftest.py -k NAME（references/5-生成.md 用后者）
     only = argv[argv.index("-k") + 1] if "-k" in argv[:-1] else (argv[1] if len(argv) > 1 else "")
     tests = [(n, f) for n, f in sorted(globals().items()) if n.startswith("test_") and callable(f) and only in n]
     failed = 0

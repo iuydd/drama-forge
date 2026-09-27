@@ -166,11 +166,10 @@ class QualityTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             protect_interval(0,3,5,(1,6,"reviewed_take"))
 
-    def test_action_and_speech_windows_required(self):
-        with self.assertRaises(ValueError):
-            self.approve(action_window=None)
-        with self.assertRaises(ValueError):
-            self.approve(speech_window=None)
+    def test_action_and_speech_windows_optional(self):
+        # 2026-09-27 大改：动作/台词区间不再是放行前提
+        self.approve(action_window=None, speech_window=None)
+        self.assertFalse(self.issues())
 
     def test_speed_change_requires_listening_again(self):
         self.approve()
@@ -313,10 +312,8 @@ class QualityTests(unittest.TestCase):
         fr = self.project.load_review("EP001")["shots"]["EP001-S01"]["frame_review"]
         self.assertEqual((fr["take"], fr["sha256"]), (1, media_digest(f1)))
 
-    def test_dialogue_take_needs_speaker_face_check(self):
-        with self.assertRaises(ValueError) as cm:
-            self.approve(speaker_face_ok="unset")
-        self.assertIn("speaker_face", str(cm.exception))
+    def test_dialogue_take_speaker_face_failed_blocks(self):
+        self.approve(speaker_face_ok="unset")      # 没写口型结论不拦（大改后）
         with self.assertRaises(ValueError):
             self.approve(speaker_face_ok=False)
         self.approve()

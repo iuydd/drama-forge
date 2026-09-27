@@ -298,9 +298,11 @@ def produce_videos(project: Project, ep: str, sids: list[str] | None = None, ret
 
 def _jobs(project: Project, kind: str, requested: int | None) -> int:
     """并发镜数。h3studio（{kind}_provider 没写）：默认用服务端槽位数 capacity.slots_total，--jobs 只能调小；
-    fal / kling：默认 1，--jobs N 要用户单独授权（SKILL 硬约束 2）。"""
-    if project.get(f"{kind}_provider") in ("fal", "kling"):
-        return max(1, requested or 1)
+    fal / kling：默认一批全提（用户 2026-09-27「并行永远是最多」；付费批次本身仍要用户点头），可灵试用包上限 5。"""
+    if project.get(f"{kind}_provider") == "fal":
+        return max(1, requested or 999)
+    if project.get(f"{kind}_provider") == "kling":
+        return max(1, min(requested or 5, 5))
     slots = _client(project).slots()
     return max(1, min(requested or slots, slots))
 

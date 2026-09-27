@@ -31,7 +31,7 @@ from project_tool import REVIEW_FILES  # noqa: E402
 SKILL = Path(__file__).resolve().parents[1]
 TEMPLATES = SKILL / "assets" / "task-templates.json"
 SCHEMA = "drama-forge/task-pack/v1"
-TOOLS = ("SKILL.md", "references/rules-detail.md", "assets/task-templates.json", "scripts/task_pack.py", "scripts/isolated_agent.sh",
+TOOLS = ("SKILL.md", "assets/task-templates.json", "scripts/task_pack.py", "scripts/isolated_agent.sh",
          "scripts/stage_checks.py", "scripts/common.py", "scripts/project_tool.py")
 LOOSEN = re.compile(r"从宽|宽松|放宽|只看格式|不用查|不必查|无需查|不用审|跳过|忽略|放行|放过|走个过场|差不多就行|已审过")
 DEFAULT_MAX = 150000
@@ -44,14 +44,11 @@ class PackError(Exception):
 def stage_rules(stage: str) -> str:
     """整份 SKILL.md（已精简为五条硬规则 + 底线）加细则里本阶段那一行。"""
     text = (SKILL / "SKILL.md").read_text(encoding="utf-8").split("---\n", 2)[-1].strip()
-    detail = (SKILL / "references" / "rules-detail.md").read_text(encoding="utf-8")
-    sections = re.split(r"(?m)^(## .+)\n", detail)
-    table = dict(zip(sections[1::2], sections[2::2])).get("## 阶段与门", "")
-    rows = [line for line in table.splitlines() if line.startswith(f"| {stage} ")]
+    flow = text.split("## 4. 流程", 1)[-1].split("\n## ", 1)[0]
+    rows = [line for line in flow.splitlines() if re.match(rf"\| (?:[A-J]\d? [^|]*/ )?{re.escape(stage)} ", line)]
     if len(rows) != 1:
         raise PackError(f"阶段表缺少或重复：{stage}；拒绝生成不完整规则包")
-    return (text + "\n\n## 本阶段细则（rules-detail.md 阶段表）\n\n"
-            "| 阶段 | 做什么 | 读 | 产出 | 门 / 命令 |\n|---|---|---|---|---|\n" + rows[0]
+    return (text + "\n\n## 本阶段\n\n" + rows[0]
             + "\n\n只执行任务包指定的阶段和岗位；其他阶段的执行步骤由主会话负责。\n")
 
 
@@ -97,7 +94,7 @@ def build(root, stage: str, role: str, episode: str | None, request_file: str, m
     if episode and episode not in pr.episodes:
         raise PackError(f"集号 {episode} 不在本项目 {pr.episodes[0]}–{pr.episodes[-1]} 里")
     prev = f"EP{int(episode[2:]) - 1:03d}" if episode and episode != "EP001" else None
-    # light（补账、格式、机械门修复、逐章抽取，不改剧情）复用本阶段 worker 模板，只是模型不同（references/model-routing.md）
+    # light（补账、格式、机械门修复、逐章抽取，不改剧情）复用本阶段 worker 模板，只是模型不同（references/5-生成.md）
     tpl, reviewer = st["worker" if role == "light" else role], role == "reviewer"
     fill = lambda s: s.replace("{ep}", episode or "").replace("{prev}", prev or "")  # noqa: E731
 

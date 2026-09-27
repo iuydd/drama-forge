@@ -80,7 +80,7 @@ take 从 1 起，只增不删；哪个 take 进成片由 `review.json` 决定，
 | G 起始帧 | shots.json + 参考图 | `起始帧/F_*_t*.png` | 模型逐张看原图目检：画内人数与提示词一致、朝向、持物、构图留空、无字、身份像参考图 | `--retake`，最多用户授权的 take 数 | 每镜有通过的 take，`mark --frame-take N --evidence` 记了具体观察（写进 `frame_review`），sha 与当前文件一致（提交视频前脚本查） |
 | G2 预演粗剪 | 通过的起始帧 + shots.json 镜序与计划取用 + 台词表 + 情绪集纲 | `审查/<EP>-预演.mp4`（带临时对白草音或字幕、动作起止与反应拍标记）、`<EP>-预演.jpg`、`<EP>-预演.md` | 模型按时间看完逐条答：情节点看得到/只靠台词/看不到；每条 `must_show` 在哪一镜第几秒看得到（只靠台词不算过）；对白说不完就切、重要信息后缺反应拍、只说不做的段落；能力规则是否重复解释（G48 口径）；相邻镜景别角度主体至少变一项；回溯镜同构图；总长与 `target_seconds` 的差（production-and-review §3b） | 有"看不到"、必拍事实只靠台词或复述不出 → 回 E 改分镜或回 G 重出起始帧 | `<EP>-预演.md` 首行「结论：PASS」、逐条答案非空且不是模板原文、必拍事实表逐条「看得到」、预演输入指纹与当前输入一致、预演片存在（脚本都查；结论由模型判）；金丝雀一镜之外的视频都在这之后提交 [社区][自测] |
 | H 视频 | 起始帧与提示词 | 视频 take | ASR 差异提供线索，仍需听审 | 授权范围内诊断后重拍 | 有候选素材 |
-| I 审片 | 视频、接触表、听审 | 每 take assessment/edit/verdict、每镜 `must_show_check`、声音三项 | visual/audio/continuity 通过且指纹有效；`must_show_check` 全部 pass（unverified 和缺项在正式剪辑里等同 fail，脚本拦）；`asr_ok` / `listen_ok` / `sync_ok` 分开记，null 如实为"未验证"，`listen_ok` 只由真人签（quality-contract） | 必拍事实 fail → 重拍、改分镜或回剧本，不许以"台词能解释/观众数不出来"放行（production-and-review §5c） | 详见 [质量契约](quality-contract.md) |
+| I 审片 | 视频、接触表、听审 | 每 take assessment/edit/verdict、每镜 `must_show_check`、声音三项 | visual/audio/continuity 通过且指纹有效；`must_show_check` 全部 pass（unverified 和缺项在正式剪辑里等同 fail，脚本拦）；`asr_ok` / `listen_ok` / `sync_ok` 分开记，null 如实为"未验证"，`listen_ok` 只由真人签（quality-contract） | 必拍事实 fail → 重拍、改分镜或回剧本，不许以"台词能解释/观众数不出来"放行（production-and-review §5c） | 详见 [质量契约](6-审片与剪辑.md) |
 | J 剪辑 | review.json + shots.json | `成片/EPxxx.mp4`、`成片/EPxxx.overlays.json`、`剪辑单.md`、`审查/<EP>-final-qa.json`、`<EP>-final-qa.md`、`<EP>-成片终验.md` | 删镜/改剪点前做因果自检（edit-and-delivery §2d，G46 查承担镜仍在 cut_order）；时长在目标 ±30%；响度 −16 LUFS；`ai_label` 有值时前 3 秒可见 AI 生成标识，剪辑单记"AI 标识：有/无（理由）"；成片终验逐项验必拍事实、文字排版（数字专名不断行、不压脸眼、长文字分屏）、台词边界（入点不切进台词或语气词、字幕 = 成片可听内容）、切点、片尾无拖尾停帧、声音三项（edit-and-delivery §7b） | 超长 → 回 I 收紧取用；过短 → 记录、不硬凑；终验不过 → 排版类改叠加重出成片，台词边界类放宽剪点或回剧本，剧情事实类回生产 | `project_tool.py next` 不再指向该集阶段 J：它读 `final-qa.json` 的 `conclusion`（不读可手改的 md）且 `video_sha256` 等于当前交付文件、`成片终验.md` 首行 PASS；草剪产物一律 REVISE。REVISE 只在每条已知问题都有用户看过清单后点到编号的原话（决策记录 `拍板人: 用户`）时算交付，否则写"待确认"、汇报为未交付；剧情事实类缺陷不能靠用户确认放行 |
 
 写作阶段（A0–E）可以多集并行；生产阶段（F–H，含 G2）按阶段顺序推进，阶段内的生成按 h3studio 槽位并发（`capacity.slots_total`）。G2 不花生成的钱，只用已有起始帧和临时对白拼片。
@@ -190,7 +190,7 @@ take 从 1 起，只增不删；哪个 take 进成片由 `review.json` 决定，
                        // 系统面板样式：主题 tech / xianxia / scroll（styles.md §12），其余键覆盖主题默认；字段说明 edit-and-delivery §4
 ```
 
-`video_dialect`：视频提示词方言，`minimax-h3`（默认）| `seedance-2.0` | `seedance-2.5`；只在用户指定模型后改，按它只读一份方言文件（video-prompts-general 开头）。当前门脚本 G09/G10/G17/G44 与 `produce.py` 只认 H3 写法，用 Seedance 的暂行做法见 video-prompts-seedance §7；官方接口通道用 `providers.py`（providers.md）。
+`video_dialect`：视频提示词方言，`minimax-h3`（默认）| `seedance-2.0` | `seedance-2.5`；只在用户指定模型后改，按它只读一份方言文件（video-prompts-general 开头）。当前门脚本 G09/G10/G17/G44 与 `produce.py` 只认 H3 写法，用 Seedance 的暂行做法见 video-prompts-seedance §7；官方接口通道用 `providers.py`（5-生成.md）。
 
 `project_tool.py init … --style-preset live_xianxia` 写入 `style_preset`；换 preset 时 `style` 句也要按 styles.md 那一节换。
 
@@ -215,7 +215,7 @@ take 从 1 起，只增不删；哪个 take 进成片由 `review.json` 决定，
 
 ## 6. `审查/<EP>-review.json` 字段
 
-审片结构与 CLI 以 [quality-contract.md](quality-contract.md) 为准。旧顶层 in/out/mode/speed 不再用于正式剪辑；须对当前 take 重审。
+审片结构与 CLI 以 [6-审片与剪辑.md](6-审片与剪辑.md) 为准。旧顶层 in/out/mode/speed 不再用于正式剪辑；须对当前 take 重审。
 
 ```jsonc
 {"episode":"EP001","shots":{"EP001-S01":{
@@ -308,11 +308,11 @@ take 从 1 起，只增不删；哪个 take 进成片由 `review.json` 决定，
 | G51 | warn | 豁免写法：旧写法 `"waive": ["G05"]`、缺 reason（≥8 字）或 decision（D-xxx）、豁免任何不在可豁免 warn 门清单里的门号（含全部 error 门）、decision 在 `项目开发/决策记录.md` 的表里没有这一行——这些豁免都不生效并逐条报出（总则第 7 条） |
 | G52 | error/warn | 恶意执行预演 `adversarial_preflight`（镜头与参考图，video-prompts-general §2b 五）：少于 3 条报 warn（`produce.py` 提交前按缺失拒绝提交）；worst 重复、缺 blocked_by、blocked_by 既不是当前提示词里的原句也不以「验收：」开头报 error |
 | G53 | error | 对话看得见对象（SKILL 11c）：有镜内台词的人物镜只写单人句又没写 `single_reason`（或少于 10 字）；同一句 `single_reason` 用在两镜；多人镜 `in_frame` 人数与 exactly N 不一致、名单里有不在 `scene_state` 在场名单的人；没写 `in_frame` 时 exactly N 多于在场人数 |
-| G54 | warn | 提示词漏洞机械检查（SKILL 11d）：逐镜查 video_prompt，按 references/prompt-loopholes.md 已升级的条目报 L01 裸写左右、L02 锁机位没写全、L03 位移没距离、L04 时间窗塞多个动作、L05 物理动作没写速度或落地、L06 出画没写路径；逐条改，确属误报按总则 7 豁免 |
+| G54 | warn | 提示词漏洞机械检查（SKILL 11d）：逐镜查 video_prompt，按 references/4-分镜与视频提示词.md 已升级的条目报 L01 裸写左右、L02 锁机位没写全、L03 位移没距离、L04 时间窗塞多个动作、L05 物理动作没写速度或落地、L06 出画没写路径；逐条改，确属误报按总则 7 豁免 |
 
 `shots_tool.py check-refs` 跑 G18–G20 和 G34 的参考图部分；其余在 `check`。预演粗剪（阶段 G2）和成片终验（阶段 J）不是编号门：预演按 §1 `<EP>-预演.md` 那一行查；成片终验按阶段表 J 的完成标准查（edit-and-delivery §7b）。逐条答案由模型判，不过就写「结论：REVISE」，不许写 PASS 放行。G31–G53 里的 warn：写作者判断后可以按 §4 的 `waive` 对象豁免；它们挡的是"没写"，写得对不对由目检（production-and-review §4b 细节与比例清单、§10 听感）和 reviewer 判。每次 check 追加 `脚本/gates.jsonl`（哪些门响了），无人值守时靠它看哪条规则最常被违反。
 
-error 必须清零，`waive` 对 error 门无效；warn 逐条判断，豁免写成 `waive` 对象（门号、理由、决策记录编号），缺一项不生效。门只能证明"没犯这些错"，不能证明戏好；戏好坏由 reviewer 子代理按 [review-checklists.md](review-checklists.md) 判。
+error 必须清零，`waive` 对 error 门无效；warn 逐条判断，豁免写成 `waive` 对象（门号、理由、决策记录编号），缺一项不生效。门只能证明"没犯这些错"，不能证明戏好；戏好坏由 reviewer 子代理按 [6-审片与剪辑.md](6-审片与剪辑.md) 判。
 
 非编号的格式检查（只读，不进 G 编号、不写 gates.jsonl）：`screenplay_lint.py`（SP，剧本格式，screenplay §1）、`visual_lint.py`（V01–V06，参考图与起始帧提示词，image-prompts）、`review_md_check.py`（RV，审查文件结构，review-checklists §0.3–0.4）。有 error 时退出码 1，按同样的规矩修到 0 error、warn 逐条判断。
 
@@ -354,14 +354,14 @@ error 必须清零，`waive` 对 error 门无效；warn 逐条判断，豁免写
 | 起始帧参考图 | 默认 2 张（底板 + 身份），接触同框 3 张，不超过 3 张 | 中近景以上绑 `-FACE`；同机位反复出现用 `frame_parent` |
 | AI 生成标识 | `ai_label: null`（默认不叠） | 用户明确要求才写文字，cut.py 叠在前 3 秒右上角 |
 | 新的模型行为结论 | 先记 `项目开发/模型观察.md`（新旧写法的成功与失败、范围、混杂因素） | 成功三次只形成候选经验；采用与退出按 audience-feedback §4，生产中不自动修改 skill |
-| API 连不上 | 写作阶段照做；生产阶段停，写明原因 | 其他停止条件包括未决提交、预算边界与 STOP/DEADLINE，见 runtime-boundaries.md |
+| API 连不上 | 写作阶段照做；生产阶段停，写明原因 | 其他停止条件包括未决提交、预算边界与 STOP/DEADLINE，见 5-生成.md |
 
 ## 9. 续跑、中止与收回
 
 - 已有产物只在规格（提示词、起始帧、参考图、档位）没变时跳过；变了就重出，影响范围按依赖算（总则第 8 条），旧 take 不能重新 mark 成 ok 冒充新规格。中断后先核对账本，未决提交必须先 reconcile，不能盲目重跑；`project_tool.py next` 告诉你下一步。
 - 每次提交立刻写 `脚本/ids.log`（人读）和 `脚本/jobs.jsonl`（机读；所有通道先写 `submission_intent`，子代理 `DF_SUBAGENT=1` 在这一步被拒；H3/fal/可灵通道的视频 intent/submitted 记录带 `frame_sha256` 和 `source_prompt_sha256`（providers.py 通道不带，审片对它只核收回记录），collected 记录带产物 `sha256`，审片用它们核对 take 来源）；进程被杀后先 `h3_client.py collect --job <id> --kind video --out <路径>` 收回，不重发 POST。
 - `STOP` 文件：当前任务做完后停；`DEADLINE=YYYYmmddHHMM`：到点不再提交。
-- 只重试 GET；POST 响应未知会阻止后续提交。提交前 intent 刷盘，按[运行边界与恢复](runtime-boundaries.md)对账后 collect 或确认未受理。
+- 只重试 GET；POST 响应未知会阻止后续提交。提交前 intent 刷盘，按[运行边界与恢复](5-生成.md)对账后 collect 或确认未受理。
 
 ## 10. 硬约束
 
@@ -372,8 +372,8 @@ error 必须清零，`waive` 对 error 门无效；warn 逐条判断，豁免写
 5. 生成画面里不出任何字；字幕、面板、印章字全部后期叠加；手机屏幕背对镜头。
 6. 台词逐字等于剧本；剧本和 shots.json 漂移由 G09/G10 挡。
 7. 能力规则/装置条款先改系列简报再进剧本；剧中不得先写出契约里没有的能力。
-8. 在用户已授权范围内连续执行，常规决定写入决策记录；模型/档位/尺寸缺失、触及预算、STOP/DEADLINE、提交结果未知或真实创作分叉时暂停依赖工作。具体边界见 runtime-boundaries.md。
-9. 维持项目画风、物理空间与角色状态。世界内因果成立，观众获知顺序服从叙事；环境运动按需。详见 scene-state-and-reveal.md 与 quality-contract.md。
+8. 在用户已授权范围内连续执行，常规决定写入决策记录；模型/档位/尺寸缺失、触及预算、STOP/DEADLINE、提交结果未知或真实创作分叉时暂停依赖工作。具体边界见 5-生成.md。
+9. 维持项目画风、物理空间与角色状态。世界内因果成立，观众获知顺序服从叙事；环境运动按需。详见 2-剧本.md 与 6-审片与剪辑.md。
 10. 视频提交前必过预演粗剪（阶段 G2，带临时对白与节奏标记）；预演按 shots.json 镜序拼，不调换先后。
 11. 台词是目标语言母语者的日常口语；配音语言参数、参考音频语言都等于台词语言；专名按 reading 校对（screenplay §4c、production-and-review §10）。
 12. 每个事件交代起因、每个关键物品交代来源（storyboard-keyframes §2c）；说话人看着说话对象（§4）；系统面板走 `overlays.panel` 样式（styles.md §12）。
@@ -386,6 +386,6 @@ error 必须清零，`waive` 对 error 门无效；warn 逐条判断，豁免写
 - 模型观察表与升级门槛：zenstory-ai/drama-skills `evaluations/model-behavior-probes.md` https://github.com/zenstory-ai/drama-skills
 - AI 生成显式标识：《人工智能生成合成内容标识办法》https://www.cac.gov.cn/2025-03/14/c_1743654684782215.htm
 - 可生成性预算：飞书 OpenClaw 漫剧流程的选题五维 https://www.feishu.cn/content/article/7643731845971987667
-- 画风漂移诱因词、头肩身份图、参考图数量、单句长度：分别见 styles.md、visual-assets.md、screenplay.md 文末来源
+- 画风漂移诱因词、头肩身份图、参考图数量、单句长度：分别见 styles.md、3-视觉设定与图片.md、2-剧本.md 文末来源
 - G46–G49、预演粗剪、成片终验、声音三项：2026-09-26 用户转来的外部深度审查（7 个成片、235 个剪辑镜头；鉴宝 EP002 道具数量与认输表演、谎话 EP002 金额断行遮脸、挨拳 EP001 入点切进语气词与能力重复解释）[自测]
 - G42–G45、面板样式、台词本地化与配音口音、事件起因：2026-09-26 用户看完「按一下回到十秒前」EP001 后的反馈（`按一下回到十秒前/审查/EP001-复盘.md`：日语配音口音、镜头 1–2 秒一切、空箱凭空出现）[自测]

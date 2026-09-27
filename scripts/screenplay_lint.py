@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""剧本格式检查（screenplay.md §1）：只读，不改剧本。
+"""剧本格式检查（2-剧本.md §1）：只读，不改剧本。
 
 用法：
   screenplay_lint.py <项目目录> <EP>            读 <项目>/<EP>/剧本.md，说话人清单取 <EP>/视觉设定.md 的人物

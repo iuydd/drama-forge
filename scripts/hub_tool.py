@@ -6,7 +6,7 @@
   hub_tool.py measure <项目> <EP> [--write]                  成片只报数字：时长、画幅帧率、LUFS/真峰、静音占比、逐镜亮度与蓝减红
   hub_tool.py grade <项目> <EP>                              按 审查/<EP>-grade.json 逐镜校色、加颗粒，输出 成片/<EP>_graded.mp4
 
-说明见 references/project-hub.md 与 references/edit-and-delivery.md §5b、§7。本工具不提交生成任务、不做 git。
+说明见 references/5-生成.md 与 references/6-审片与剪辑.md §5b、§7。本工具不提交生成任务、不做 git。
 """
 from __future__ import annotations
 

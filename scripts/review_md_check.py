@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""审查文件结构检查（review-checklists.md §0.3–0.4）：只读。
+"""审查文件结构检查（6-审片与剪辑.md §0.3–0.4）：只读。
 
 用法：review_md_check.py 审查/EP001-审查.md [--json]；有 error 时退出码 1。
 

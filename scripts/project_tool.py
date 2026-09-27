@@ -199,7 +199,7 @@ def _table_rows(body: str) -> list[str]:
 
 
 def novelty_warns(text: str) -> list[str]:
-    """立项新颖度与爽感的机械检查（references/premise-novelty.md §6–7）；只 warn 不拦。"""
+    """立项新颖度与爽感的机械检查（references/1-立项与改编.md §6–7）；只 warn 不拦。"""
     w = []
     cand = _section(text, "立项候选")
     rows = [r for r in _table_rows(cand or "") if "【" not in r]

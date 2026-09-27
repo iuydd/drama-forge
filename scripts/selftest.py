@@ -25,6 +25,11 @@ if sys.version_info < MINIMUM_PYTHON:
     raise SystemExit("selftest.py requires Python 3.10 or newer")
 
 
+class _AllCodes:
+    def __contains__(self, x):
+        return True
+
+
 def require(cond: bool, msg: str) -> None:
     if not cond:
         raise AssertionError(msg)
@@ -192,6 +197,9 @@ def main() -> int:
     from project_tool import init, next_step, status
     from common import Project, ffprobe_duration
     from shots_tool import check, check_refs, coverage, render
+    import shots_tool as _stmod
+    _hard = _stmod.HARD_ERRORS
+    _stmod.HARD_ERRORS = _AllCodes()   # 本段测门的检出逻辑：全部按原级别；降级策略另测
     import produce
     import review_tool
     import cut as cut_mod

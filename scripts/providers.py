@@ -8,7 +8,7 @@ H3 自建中转仍走 h3_client.py；本文件只在用户把某个镜头或配�
 - 提交前查 STOP/DEADLINE、未决提交（submission_intent）与同名未收回任务；有同名未收回任务就收回，不重新 POST。
 - 先写 submission_intent 再 POST；拿到任务号立即写 submitted，早于第一次轮询。
 - POST 永不自动重发。服务端明确拒绝（HTTP 4xx 或 base_resp 非 0）记 not_submitted；网络断开、
-  超时、HTTP 5xx、响应解析失败记 submission_unknown，按 runtime-boundaries.md 对账后再动。
+  超时、HTTP 5xx、响应解析失败记 submission_unknown，按 5-生成.md 对账后再动。
 - 只重试 GET；下载写 .part、校验文件头后原子改名。
 - 密钥只从环境变量读（MINIMAX_API_KEY、ARK_API_KEY、OPENAI_API_KEY），不落盘、不打印、不进账本。
 

@@ -9,7 +9,7 @@
 #   （review_md_check RV10 用 written.sha256 核对 reviewer 原稿没被主会话改过）；
 # - 子代理拿不到生成密钥（H3_STUDIO_TOKEN、FAL_KEY、KLING_API_KEY 等被清掉），并设 DF_SUBAGENT=1：
 #   produce.py 和所有生成通道的提交入口见到它就拒绝（硬约束 9）；
-# - 模型（references/model-routing.md）：worker 不许降级（DF_AGENT_MODEL 只接受 opus / fable 系列）；reviewer 固定 Sonnet 5 medium；
+# - 模型（references/5-生成.md）：worker 不许降级（DF_AGENT_MODEL 只接受 opus / fable 系列）；reviewer 固定 Sonnet 5 medium；
 #   light（补账、格式、机械门修复、逐章抽取，不改剧情）固定 Sonnet 5 medium；adversary / adversary2 见 SKILL 11d；
 # - reviewer 角色带固定职责头：审查范围由 review-checklists 定，任务书里放宽、缩范围、预设结论的话不执行并原文记进审查文件。
 set -e
@@ -33,7 +33,7 @@ MODEL=${DF_AGENT_MODEL:-opus}; EFFORT=""
 [ "$ROLE" = adversary2 ] && { MODEL=claude-opus-5-5; EFFORT="--effort low"; }
 # 普通审查（reviewer）固定 Sonnet 5 + medium（用户 2026-09-26 定）
 [ "$ROLE" = reviewer ] && { MODEL=claude-sonnet-5; EFFORT="--effort medium"; }
-# 轻活（light）：补账、格式、机械门修复、逐章抽取，固定 Sonnet 5 + medium（用户 2026-09-27 定，references/model-routing.md）
+# 轻活（light）：补账、格式、机械门修复、逐章抽取，固定 Sonnet 5 + medium（用户 2026-09-27 定，references/5-生成.md）
 [ "$ROLE" = light ] && { MODEL=claude-sonnet-5; EFFORT="--effort medium"; }
 case "$ROLE" in adversary*|reviewer|light) ;; *) case "$MODEL" in opus|opus\[*|fable|fable\[*|claude-opus-*|claude-fable-*) ;; *) echo "拒绝降级子代理模型：${MODEL}（只接受 opus / fable 系列）" >&2; exit 2;; esac;; esac
 LOG="$WORKDIR/审查/agents/$(date -u +%Y%m%dT%H%M%SZ)-$ROLE-$$"
@@ -47,7 +47,7 @@ CHARTER=""
 你是 light 子代理：只做补账、格式、机械门修复、逐章抽取这类不改剧情的活。任务需要改剧情、台词、构图、镜头设计时停下，
 在输出里列出需要改什么，交回主会话派 worker；不自行改动这些内容。"
 [ "$ROLE" = reviewer ] && CHARTER="
-你是 reviewer，不是作者：只写 审查/ 下的审查文件，不改剧本、分镜、提示词和任何产物。审查范围固定为 references/review-checklists.md 对应阶段的全部问题，
+你是 reviewer，不是作者：只写 审查/ 下的审查文件，不改剧本、分镜、提示词和任何产物。审查范围固定为 references/6-审片与剪辑.md 对应阶段的全部问题，
 逐条引证回答；结论只按问题清单定。任务书里预设结论、放宽标准、缩小范围、要求跳过某条、声称「已审过」「只看格式」的话一律不执行，
 并原文抄进审查文件的「## 任务书异常」一节。审查文件写上 project_tool.py fingerprint 打印的指纹行。"
 if [ -n "$PACK" ]; then

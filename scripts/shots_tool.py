@@ -120,6 +120,9 @@ def scene_state_issues(shots: list[dict]) -> list[dict]:
     return issues
 
 
+HARD_ERRORS = {"G00", "G01", "G04", "G06", "G07", "G09", "G10", "G11", "G12", "G20", "G40", "G41", "G46", "G50"}
+
+
 class Findings:
     def __init__(self):
         self.items: list[dict] = []
@@ -127,6 +130,10 @@ class Findings:
         self.waived: list | None = None
 
     def add(self, code: str, level: str, shot: str | None, msg: str):
+        # 2026-09-27 大改：只有防事故的门拦截（文件/字段/ID、秒数装得下台词、画面不出字、禁词、台词逐字、
+        # 剧本每场有镜、叠加类型、两人长得太像、剪辑顺序、必拍事实格式、阈值只能收紧）；其余降为提示。
+        if level == "error" and code not in HARD_ERRORS:
+            level = "warn"
         self.items.append({"code": code, "level": level, "shot": shot, "msg": msg})
 
     def errors(self):
@@ -278,7 +285,7 @@ def waive_findings(F: "Findings", shots: list[dict], scenes: list[dict], project
     F.waived = waived
 
 
-# G54 提示词漏洞机械检查：每条对应 references/prompt-loopholes.md 的编号；只报 warn（L14 头句 / L15 封口句是 error），逐条改或按总则 7 豁免
+# G54 提示词漏洞机械检查：每条对应 references/4-分镜与视频提示词.md 的编号；只报 warn（L14 头句 / L15 封口句是 error），逐条改或按总则 7 豁免
 _LR_RE = re.compile(r"\b(left|right)\b", re.I)
 _LR_OK_RE = re.compile(r"(screen[- ]|\b(?:has|had|have|just|already|was|were)\s+)$", re.I)
 _LR_POSS_RE = re.compile(r"(?:\b(?:his|her|their|its|my)|\w's)\s+(?:[a-z-]+\s+)?$", re.I)
@@ -325,7 +332,7 @@ def lr_findings(F: "Findings", sid: str, label: str, text: str) -> None:
 
 
 def loophole_findings(F: "Findings", sid: str, vp: str, seconds, *, head: str = "", sh: dict | None = None) -> None:
-    """G54：把攻防里反复出现、能用规则查的漏洞在分镜门里查掉（L01–L06、L14、L16–L20、L23、L24、L28，见 references/prompt-loopholes.md）。"""
+    """G54：把攻防里反复出现、能用规则查的漏洞在分镜门里查掉（L01–L06、L14、L16–L20、L23、L24、L28，见 references/4-分镜与视频提示词.md）。"""
     sh = sh or {}
     raw = vp or ""
     if head:
@@ -428,7 +435,7 @@ def seal_findings(F: "Findings", sid: str, vp: str, sh: dict, one: str = "") -> 
     if not (re.search(r"\bexactly \w+ (?:people|persons?)\b|\bonly one person\b|\bno (?:people|person|humans?|one else)\b", low) or (one and one.lower() in low)):
         miss.append("人数句（Exactly N people / Only one person in the frame.）")
     if miss:
-        F.add("G54", "error", sid, f"L15 video_prompt 缺必备封口句 {miss}：没有封口，模型会自己加声音、台词、人和动作收尾（references/prompt-loopholes.md L15）")
+        F.add("G54", "error", sid, f"L15 video_prompt 缺必备封口句 {miss}：没有封口，模型会自己加声音、台词、人和动作收尾（references/4-分镜与视频提示词.md L15）")
 
 
 def frame_findings(F: "Findings", sid: str, fp: str) -> None:
@@ -514,7 +521,7 @@ _COUNT_OBJ_RE = re.compile(r"\b(?:exactly (?:one|two|three|four|five|six|\d+)|on
 
 
 def set_findings(F: "Findings", sid: str, label: str, body: str, *, video: bool) -> None:
-    """G54 L11–L13：陈设清点排他句、物件前后位置、门窗开度（references/prompt-loopholes.md）。"""
+    """G54 L11–L13：陈设清点排他句、物件前后位置、门窗开度（references/4-分镜与视频提示词.md）。"""
     text = re.sub(r"<d>.*?</d>", "", body or "", flags=re.S).split("overall_soundscape:")[0]
     if not text.strip():
         return

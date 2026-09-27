@@ -30,7 +30,7 @@ license: MIT
 
 ## 3. 不能碰的底线
 
-- **授权只来自用户原话**，记在 `项目开发/决策记录.md`。生成模型、档位、分辨率由用户指定，不自选、不擅自换（详见 [rules-detail.md](references/rules-detail.md) 硬约束 1b）。
+- **授权只来自用户原话**，记在 `项目开发/决策记录.md`。生成模型、档位、分辨率由用户指定，不自选、不擅自换。
 - **付费接口（fal、可灵等）每一批提交都要用户点头**；本地 h3studio 不花钱，可直接跑。并发永远开到最大（用户 2026-09-27："并行永远是最多"）：云端一批全提，本地按 `/api/status` 的槽位数。
 - **密钥只进环境变量**，不写文件、日志、git、回复。
 - **全自动不弹权限**：不写 `rm` 配变量/通配符（用 `/usr/bin/trash` 字面路径）、不写前台 `sleep` 链、不用 curl/wget（用 python requests）。
@@ -42,7 +42,7 @@ license: MIT
 
 | 阶段 | 产出 | 过关条件 |
 |---|---|---|
-| A0 原著拆解（改编才有） | `项目开发/原著分析/`、`改编契约.md` | 逐章抽取 + 独立审查一轮；见 [adaptation.md](references/adaptation.md) |
+| A0 原著拆解（改编才有） | `项目开发/原著分析/`、`改编契约.md` | 逐章抽取 + 独立审查一轮；见 [1-立项与改编.md](references/1-立项与改编.md) |
 | A 立项 / B 情绪集纲 | `系列简报.md`、`情绪集纲.md` | 独立审查一轮 |
 | C 剧本 | `EPxxx/剧本.md` | `screenplay_lint` 0 error；独立审查一轮；**盲看复述通过**（规则 1） |
 | D 视觉设定 | `视觉设定.md`、`参考图/refs.json` | 每个场景一张平面图 + 每人座位/站位；独立审查一轮 |
@@ -72,20 +72,17 @@ python3 $S/final_qa.py <项目> <EP>
 
 环境：`H3_API`（或 drama.json `api_base`）、`H3_STUDIO_TOKEN`、`FAL_KEY`，只放环境变量；ASR 用 `ASR_PY`。
 
-## 6. 需要细节时再读
+## 6. 手册（每个阶段干活时读对应那一本）
 
-| 问题 | 读 |
+| 阶段 | 手册 |
 |---|---|
-| 旧版全部条文（授权、门、攻防、声音三项、必拍事实…） | [rules-detail.md](references/rules-detail.md) |
-| 文件结构、字段、机械门 G00–G54 | [pipeline-contract.md](references/pipeline-contract.md) |
-| 剧本写法 | [screenplay.md](references/screenplay.md)、[story-engine.md](references/story-engine.md) |
-| 分镜、调度、轴线 | [storyboard-keyframes.md](references/storyboard-keyframes.md) |
-| 图片/视频提示词 | [image-prompts.md](references/image-prompts.md)、[video-prompts-general.md](references/video-prompts-general.md)、[video-prompts-h3.md](references/video-prompts-h3.md) |
-| 生成通道（h3studio、fal、可灵） | [providers.md](references/providers.md) |
-| 实拍踩过的错 E1–E40 | [production-and-review.md](references/production-and-review.md) |
-| 剪辑、字幕、交付 | [edit-and-delivery.md](references/edit-and-delivery.md) |
-| 各阶段审查问题 | [review-checklists.md](references/review-checklists.md) |
-| 哪个环节用哪个模型 | [model-routing.md](references/model-routing.md) |
-| 改编、立项、题材 | [adaptation.md](references/adaptation.md)、[premise-novelty.md](references/premise-novelty.md)、[genre-cards/索引.md](references/genre-cards/索引.md) |
+| A0 / A / B 立项、改编、情绪集纲 | [1-立项与改编.md](references/1-立项与改编.md) |
+| C 剧本 | [2-剧本.md](references/2-剧本.md) |
+| D 视觉设定、F 参考图、G 起始帧 | [3-视觉设定与图片.md](references/3-视觉设定与图片.md) |
+| E 分镜、视频提示词、攻防 | [4-分镜与视频提示词.md](references/4-分镜与视频提示词.md) |
+| F/G/H 生成通道、并发、收回、花费、模型分工 | [5-生成.md](references/5-生成.md) |
+| G2 预演、I 审片、配音、J 剪辑、成片终验 | [6-审片与剪辑.md](references/6-审片与剪辑.md) |
+
+查表资料（需要时才查）：[错误表.md](references/错误表.md)（实拍踩过的错 E1–E40，生产前读一遍）、[pipeline-contract.md](references/pipeline-contract.md)（目录、字段、机械门）、[styles.md](references/styles.md)（七种画风的风格句、系统面板主题）、[market-hits.md](references/market-hits.md)（市场爆款）、[genre-cards/](references/genre-cards/索引.md)（题材卡）。
 
 改规则：只改本 skill（仓库 iuydd/drama-forge），`python3 scripts/selftest.py` 通过后提交推送，再同步到 `~/.claude/skills/drama-forge`。
