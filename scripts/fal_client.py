@@ -186,8 +186,17 @@ class FalClient(Client):
             os.replace(up, out)
         self._append({"request_id": rid, "status": "upscaled", "name": out.stem, "kind": "upscale",
                       "out": str(out.resolve()), "src": str(src.resolve()), "profile": ep,
-                      "billed_seconds": res.json().get("duration")})
+                      "billed_seconds": res.json().get("duration"), "sha256": _sha256(out)})
         return out
+
+
+def _sha256(path: Path) -> str:
+    import hashlib
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for b in iter(lambda: f.read(1 << 20), b""):
+            h.update(b)
+    return h.hexdigest()
 
 
 def _atomic_write(path: Path, data: bytes) -> None:

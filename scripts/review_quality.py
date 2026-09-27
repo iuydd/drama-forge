@@ -138,14 +138,15 @@ def provenance_issues(project, ep: str, sid: str, take: int, shot: dict, review:
     # 按「EPxxx/视频/V_…mp4」尾部比对，纯字符串：项目搬过机器（账本里是旧绝对路径）也对得上，且不对账本路径做文件系统调用
     # （/home/... 这类路径在 macOS 上会触发 autofs，逐条 resolve 会卡住）
     want = Path(path).parts[-3:]
-    col = [r for r in jobs if r.get("status") == "collected" and r.get("out") and Path(str(r["out"])).parts[-3:] == want]
+    col = [r for r in jobs if r.get("status") in ("collected", "upscaled", "derived") and r.get("out") and Path(str(r["out"])).parts[-3:] == want]
     if not col:
         return ["no_ledger_provenance（账本 脚本/jobs.jsonl 里没有收回这个文件的记录：不是本流水线生成的，可能是从别的镜/别的 take 复制来的）"]
     rec = col[-1]
     out = []
     if rec.get("sha256") and rec["sha256"] != media_digest(path):
         out.append("media_changed_since_collect（文件在收回后被替换过）")
-    sub = next((r for r in reversed(jobs) if r.get("status") == "submitted" and r.get("job") == rec.get("job")), None)
+    base = next((r for r in reversed(col) if r.get("status") == "collected"), rec)
+    sub = next((r for r in reversed(jobs) if r.get("status") == "submitted" and r.get("job") == base.get("job")), None)
     if sub:
         cur = text_digest(shot.get("video_prompt") or "")
         if sub.get("source_prompt_sha256"):
