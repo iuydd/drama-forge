@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import subprocess
 import sys
 from pathlib import Path
 
@@ -206,6 +207,19 @@ def produce_frames(project: Project, ep: str, sids: list[str] | None = None, ret
         take = (takes[-1] + 1) if takes else 1
         if take > int(project.sub("budget")["max_takes"]):
             print(sid, "take 用尽", takes)
+            continue
+        prev = sh.get("start_from_prev")   # 同机位连续动作：直接用上一镜所选视频的末帧当起始帧（不生成、不花钱）
+        if prev:
+            vt = project.chosen_take(ep, prev, "video")
+            vp = project.video_path(ep, prev, vt) if vt else None
+            if not vp or not vp.is_file():
+                print(sid, "上一镜", prev, "还没有视频，末帧接续等它出完再跑")
+                continue
+            out = project.frame_path(ep, sid, take)
+            out.parent.mkdir(parents=True, exist_ok=True)
+            subprocess.run(["ffmpeg", "-v", "error", "-y", "-sseof", "-0.08", "-i", str(vp), "-frames:v", "1", str(out)], check=True)
+            print("OK", sid, f"take{take}", "末帧接续自", vp.name, out)
+            done.append(sid)
             continue
         refs = [project.ref_png(r) for r in sh.get("frame_refs") or []]
         parent = sh.get("frame_parent")   # 同机位派生：父镜通过的起始帧作 Picture 1，frame_refs 顺延（pipeline-contract §4，G40）

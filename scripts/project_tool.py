@@ -255,7 +255,7 @@ def _next_eps(project: Project, st: dict) -> str:
             return f"阶段 E：写 {ep}/shots.json（分镜 + 冻结关键帧 + 起始帧提示词 + 视频提示词）"
         if e.get("门", {}).get("errors"):
             return f"阶段 E：修 {ep} 的门：python3 scripts/shots_tool.py check <项目> {ep}"
-        if e.get("E审查"):
+        if e.get("E审查") and project.get("require_storyboard_review"):   # 2026-09-27 起分镜靠规格完整与 G55/G56，默认不再派审查
             return f"阶段 E：{ep} 分镜审查没放行：" + "；".join(e["E审查"][:3])
         missing_refs = [r for r, ok in st["参考图"].items() if not ok]
         if missing_refs:

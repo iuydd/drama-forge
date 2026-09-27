@@ -105,7 +105,7 @@ def animatic_inputs_fp(project, ep: str, review: dict | None = None) -> str:
     rows = []
     for sid in order:
         sh = by.get(sid) or {}
-        t = project.chosen_take(ep, sid, "frame", review)
+        t = None if sh.get("start_from_prev") else project.chosen_take(ep, sid, "frame", review)   # 末帧接续镜的帧在视频后才有，不进预演指纹
         p = project.frame_path(ep, sid, t) if t else None
         rows.append([sid, {k: sh.get(k) for k in ANIMATIC_KEYS}, t, media_digest(p) if p and p.is_file() else None])
     facts = [f for sc in data.get("scenes") or [] for f in sc.get("must_show") or []]

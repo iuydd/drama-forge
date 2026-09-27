@@ -465,6 +465,7 @@ def animatic(project: Project, ep: str, tts: bool = True) -> tuple[Path, Path, l
     label = cut_mod.find_font(cut_mod.PANEL_FONTS["zh"] + cut_mod.PANEL_FONTS["any"] + cut_mod.FONT_DEFAULTS["sub"])
     fonts = {"label": label, "terms": cut_mod.text_terms(project, project.load_shots(ep))}
     missing, frames_used = [], []
+    by_id = {x["id"]: x for x in project.load_shots(ep).get("shots") or []}
     with tempfile.TemporaryDirectory() as td:
         tdp = Path(td)
         seg_list = []
@@ -472,6 +473,11 @@ def animatic(project: Project, ep: str, tts: bool = True) -> tuple[Path, Path, l
             sid = row["shot"]
             ft = project.chosen_take(ep, sid, "frame", review)
             frame = project.frame_path(ep, sid, ft) if ft else None
+            src = sid
+            while not ft and by_id.get(src, {}).get("start_from_prev"):   # 末帧接续镜：预演借上一镜的起始帧
+                src = by_id[src]["start_from_prev"]
+                ft = project.chosen_take(ep, src, "frame", review)
+                frame = project.frame_path(ep, src, ft) if ft else None
             if not ft:
                 missing.append(sid)
             frames_used.append([sid, ft, media_digest(frame) if frame and frame.is_file() else None])

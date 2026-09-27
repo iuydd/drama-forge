@@ -87,7 +87,7 @@ class TaskPackTests(unittest.TestCase):
         skill = (tp.SKILL / "SKILL.md").read_text(encoding="utf-8")
         pk = self.build()
         rules = pk["system_prompt"]
-        for title in ("2. 五条硬规则", "3. 不能碰的底线"):
+        for title in ("2. 六条硬规则", "3. 不能碰的底线"):
             section = skill.split("## " + title + "\n", 1)[1].split("\n## ", 1)[0]
             self.assertIn(section.strip(), rules)
         self.assertIn("| C 剧本 |", rules)

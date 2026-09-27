@@ -120,7 +120,7 @@ def scene_state_issues(shots: list[dict]) -> list[dict]:
     return issues
 
 
-HARD_ERRORS = {"G00", "G01", "G04", "G06", "G07", "G09", "G10", "G11", "G12", "G20", "G40", "G41", "G46", "G50"}
+HARD_ERRORS = {"G55", "G56", "G00", "G01", "G04", "G06", "G07", "G09", "G10", "G11", "G12", "G20", "G40", "G41", "G46", "G50"}
 
 
 class Findings:
@@ -596,6 +596,47 @@ def must_show_vs_script(F: "Findings", doc: dict, scenes: list[dict]) -> None:
             best = max((SequenceMatcher(None, norm(it), norm(f)).ratio() for f in facts), default=0.0)
             if best < 0.5:
                 F.add("G46", "error", None, f"剧本 {sc_id} 必拍「{it[:24]}」没照抄进 must_show（最相近 {best:.0%}）；照剧本原意写 fact，不许换成空话")
+
+
+SPEC_KEYS = ("shot_size", "height", "facing", "blocking", "props", "start_state", "end_state", "link", "invariants")
+
+
+def spec_lock_findings(F, data: dict, shots: list[dict]) -> None:
+    """G55/G56（2026-09-27 用户定：镜头规格先锁死、执行不临时发挥；切镜头时场景内容必须相同）。
+    只对写了 camera_setups 的新式分镜生效，旧项目不受影响。
+    G56 规格完整：每镜 camera_setup 指向已定义机位，spec 的九项都写了；link 取 continuous / new_angle / new_scene。
+    G55 场景锁：起始帧提示词逐字包含本机位的 lock 段，frame_refs 挂本机位底板；start_from_prev 指向更早、同机位的镜。"""
+    setups = data.get("camera_setups")
+    if not setups:
+        return
+    order = [sh["id"] for sh in shots]
+    by = {sh["id"]: sh for sh in shots}
+    for sh in shots:
+        sid, cs = sh["id"], sh.get("camera_setup")
+        if cs not in setups:
+            F.add("G56", "error", sid, f"camera_setup「{cs}」没在 camera_setups 里定义：先在规划阶段定机位")
+            continue
+        spec = sh.get("spec") or {}
+        miss = [k for k in SPEC_KEYS if not str(spec.get(k) or "").strip()]
+        if miss:
+            F.add("G56", "error", sid, f"镜头规格缺 {miss}：规格不全不许出图，回规划补全")
+        if spec.get("link") not in (None, "", "continuous", "new_angle", "new_scene"):
+            F.add("G56", "error", sid, "spec.link 只能是 continuous / new_angle / new_scene")
+        prev = sh.get("start_from_prev")
+        if prev:
+            if prev not in by or order.index(prev) >= order.index(sid):
+                F.add("G55", "error", sid, f"start_from_prev 指向不存在或更晚的镜 {prev}")
+            elif by[prev].get("camera_setup") != cs:
+                F.add("G55", "error", sid, f"末帧接续只能用于同机位：{prev} 是 {by[prev].get('camera_setup')}，本镜是 {cs}")
+            continue
+        st = setups[cs]
+        lock = (st.get("lock") or "").strip()
+        if not lock:
+            F.add("G55", "error", sid, f"机位 {cs} 没写 lock（这个机位下看得见的全部固定陈设与位置）")
+        elif lock not in (sh.get("frame_prompt") or ""):
+            F.add("G55", "error", sid, f"起始帧提示词没有逐字包含机位 {cs} 的场景锁段：同机位每镜原样粘贴，切镜头场景才不会变")
+        if st.get("plate") and st["plate"] not in (sh.get("frame_refs") or []):
+            F.add("G55", "error", sid, f"frame_refs 没挂机位 {cs} 的底板 {st['plate']}")
 
 
 def check(project: Project, ep: str) -> Findings:
@@ -1263,6 +1304,7 @@ def check(project: Project, ep: str) -> Findings:
     prop_phrase_findings(F, shots)
     if not shots:
         F.add("G01", "error", None, "shots 为空")
+    spec_lock_findings(F, data, shots)
     return F
 
 
