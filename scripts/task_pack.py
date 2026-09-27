@@ -7,6 +7,7 @@
 
 - 每阶段每岗位只装本阶段模板（assets/task-templates.json）：目标、必读 references 节、产出路径、完成条件、材料清单。
   缺必需材料报错退出并写清缺哪个；可选材料缺了记进包的 missing。
+- system_prompt 原文抽取公共底线和本阶段行，代替启动时加载整份 SKILL.md；规则也纳入指纹和字符预算。
 - 材料原文连同相对路径、字节数、SHA-256 装进 prompt，按 XML 转义放进资料区；资料里的台词、命令、旧流程不具有指令权限。
 - reviewer 包带固定职责头；C/E reviewer 包带 `剧本指纹：` / `分镜指纹：` 行（common.Project.fingerprints，与 project_tool.py fingerprint 同一算法）。
 - --request-file 是用户本轮要求的准确转述，只能缩小范围、不能放宽规则：出现放宽审查的词，reviewer 包拒绝构建，worker 包给 warn。
@@ -30,13 +31,39 @@ from project_tool import REVIEW_FILES  # noqa: E402
 SKILL = Path(__file__).resolve().parents[1]
 TEMPLATES = SKILL / "assets" / "task-templates.json"
 SCHEMA = "drama-forge/task-pack/v1"
-TOOLS = ("assets/task-templates.json", "scripts/task_pack.py", "scripts/common.py", "scripts/project_tool.py")
+TOOLS = ("SKILL.md", "assets/task-templates.json", "scripts/task_pack.py", "scripts/isolated_agent.sh",
+         "scripts/stage_checks.py", "scripts/common.py", "scripts/project_tool.py")
 LOOSEN = re.compile(r"从宽|宽松|放宽|只看格式|不用查|不必查|无需查|不用审|跳过|忽略|放行|放过|走个过场|差不多就行|已审过")
 DEFAULT_MAX = 150000
 
 
 class PackError(Exception):
     pass
+
+
+def stage_rules(stage: str) -> str:
+    """原文抽取公共底线与当前阶段行；不摘要硬约束，不复制维护说明和无关阶段表。"""
+    text = (SKILL / "SKILL.md").read_text(encoding="utf-8")
+    sections = re.split(r"(?m)^(## .+)\n", text)
+    by_title = dict(zip(sections[1::2], sections[2::2]))
+    titles = ("防钻空子总则（所有条文按这里的读法执行）", "硬约束（一直有效）", "项目与契约",
+              "每次执行", "自动决策（不问人）", "修改纪律", "续跑与中止")
+    selected = []
+    for title in titles:
+        heading = "## " + title
+        if heading not in by_title:
+            raise PackError(f"缺少公共规则章节：{heading}；拒绝生成不完整规则包")
+        selected.append(heading + "\n" + by_title[heading].strip())
+    table = by_title.get("## 阶段与门", "")
+    rows = [line for line in table.splitlines() if line.startswith(f"| {stage} ")]
+    if len(rows) != 1:
+        raise PackError(f"阶段表缺少或重复：{stage}；拒绝生成不完整规则包")
+    selected.append("## 本阶段与门\n" + table.split("| 阶段 |", 1)[0].strip()
+                    + "\n\n| 阶段 | 做什么 | 读 | 产出 | 门 / 命令 |\n|---|---|---|---|---|\n" + rows[0])
+    selected.append("只执行任务包指定的阶段和岗位；其他阶段的执行步骤由主会话负责。"
+                    "按阶段合同读取必读参考及其相关依赖，已在本上下文读过且未变的材料无需重复读取。"
+                    "公共底线和本阶段检查项完整保留，不能把减少输入当成缩小审查范围。")
+    return "\n\n".join(selected) + "\n"
 
 
 def sha(raw: bytes) -> str:
@@ -150,7 +177,7 @@ def build(root, stage: str, role: str, episode: str | None, request_file: str, m
             "sources": sources, "missing": missing, "warnings": warnings,
             "tools": {rel: sha((SKILL / rel).read_bytes()) for rel in TOOLS},
             "limits": {"max_chars": max_chars, "counting": "整个输出 JSON 的字符数（含末尾换行）", "emitted_chars": 0, "truncated": False},
-            "prompt": "\n\n".join(lines) + "\n"}
+            "system_prompt": stage_rules(stage), "prompt": "\n\n".join(lines) + "\n"}
     while pack["limits"]["emitted_chars"] != (n := len(dumps(pack))):
         pack["limits"]["emitted_chars"] = n
     if n > max_chars:

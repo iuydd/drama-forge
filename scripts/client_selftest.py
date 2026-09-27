@@ -5,7 +5,9 @@ from __future__ import annotations
 import json
 import os
 import tempfile
+import threading
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -21,6 +23,7 @@ class ClientTests(unittest.TestCase):
         self.client = Client(api="https://invalid.example", token="test-only", root=self.root, poll=0.001)
         self.client.s = Mock()
         self.client.s.post.return_value.json.return_value = {"id": "job-1"}
+        self.client.status = Mock(return_value={"capacity": {"slots_total": 1, "slots_free": 1, "queued": 0}})
         self.client.wait_idle = Mock()
         self.out = self.root / "test.png"
         self.env = patch.dict(os.environ, {}, clear=False)
@@ -82,14 +85,14 @@ class ClientTests(unittest.TestCase):
             self.client.reconcile("unknown", job=None, not_submitted=True, evidence=" ")
 
     def test_stop_after_idle_prevents_post(self):
-        self.client.wait_idle.side_effect = lambda: (self.root / "STOP").touch()
+        self.client.status.side_effect = lambda **kw: ((self.root / "STOP").touch() or {})
         with self.assertRaises(Stop):
             self.submit()
         self.client.s.post.assert_not_called()
         self.assertEqual(self.client.ledger(), [])
 
     def test_deadline_after_idle_prevents_post(self):
-        self.client.wait_idle.side_effect = lambda: os.environ.__setitem__("DEADLINE", "200001010000")
+        self.client.status.side_effect = lambda **kw: (os.environ.__setitem__("DEADLINE", "200001010000") or {})
         with self.assertRaises(Stop):
             self.submit()
         self.client.s.post.assert_not_called()
@@ -205,6 +208,71 @@ class ClientTests(unittest.TestCase):
         payload = self.client.s.post.call_args.kwargs["json"]
         self.assertEqual((payload["profile"], payload["res"]), ("custom-profile", "custom-size"))
         self.assertFalse(self.client.unresolved())
+
+    def test_posts_overlap_but_respect_shared_slot_limit(self):
+        self.client.status = Mock(return_value={"capacity": {"slots_total": 2, "slots_free": 2, "queued": 0}})
+        entered = threading.Condition()
+        release = threading.Event()
+        active = peak = 0
+
+        def post(*args, **kwargs):
+            nonlocal active, peak
+            with entered:
+                active += 1
+                peak = max(peak, active)
+                entered.notify_all()
+            release.wait(2)
+            with entered:
+                active -= 1
+            response = Mock()
+            response.json.return_value = {"id": f"job-{threading.get_ident()}"}
+            return response
+
+        self.client.s.post.side_effect = post
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            futures = [pool.submit(self.submit, name=f"shot-{i}") for i in range(2)]
+            with entered:
+                self.assertTrue(entered.wait_for(lambda: active == 2, timeout=1), "POSTs did not overlap")
+            release.set()
+            [f.result(timeout=2) for f in futures]
+        self.assertEqual(peak, 2)
+
+    def test_live_intents_do_not_block_next_free_slot(self):
+        self.client.status = Mock(return_value={"capacity": {"slots_total": 9, "slots_free": 9, "queued": 0}})
+        entered = threading.Condition()
+        release = threading.Event()
+        active = 0
+
+        def post(*args, **kwargs):
+            nonlocal active
+            with entered:
+                active += 1
+                entered.notify_all()
+            release.wait(2)
+            response = Mock()
+            response.json.return_value = {"id": f"job-{threading.get_ident()}"}
+            return response
+
+        self.client.s.post.side_effect = post
+        with ThreadPoolExecutor(max_workers=3) as pool:
+            futures = [pool.submit(self.submit, name=f"shot-{i}") for i in range(3)]
+            with entered:
+                self.assertTrue(entered.wait_for(lambda: active == 3, timeout=1),
+                                "a live submission_intent blocked a free slot")
+            release.set()
+            [f.result(timeout=2) for f in futures]
+        self.assertEqual(self.client.s.post.call_count, 3)
+
+    def test_interrupted_post_leaves_blocking_intent(self):
+        self.client.s.post.side_effect = KeyboardInterrupt()
+        with self.assertRaises(KeyboardInterrupt):
+            self.submit()
+        restarted = Client(api="https://invalid.example", token="test-only", root=self.root)
+        restarted.s = Mock()
+        restarted.status = Mock(return_value={"capacity": {"slots_total": 2, "slots_free": 2, "queued": 0}})
+        with self.assertRaises(SubmissionUnknown):
+            restarted.submit_image("new", self.root / "new.png", profile="p", res="1K", name="new")
+        restarted.s.post.assert_not_called()
 
 
 def run_tests():

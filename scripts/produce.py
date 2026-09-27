@@ -40,6 +40,11 @@ def _preflight(project: Project, ep: str | None, kind: str, sids: list[str] | No
         print("[warn] drama.json 有 profiles 但没写 profiles_source（决策记录里用户指定档位那一行的编号，如 \"D-003\"）；"
               "档位只能由用户定（SKILL 硬约束 1b）")
     bad = []
+    # 只把参考图当「风格」用、不照参考图内容编辑的档位（h3studio krea2 系列：max_refs 3 作 STYLE references，No editing）。
+    # 用它出挂底板/父帧的起始帧或派生参考图，房间结构会被重新编一个（2026-09-27 用户实拍：给了餐厅底板换角度，出来是另一个房间）。
+    style_only = tuple(project.cfg.get("style_only_profiles") or ("krea2",))
+    def _style_only(profile) -> bool:
+        return bool(profile) and str(profile).startswith(style_only)
     def _adv_missing(items) -> bool:   # G52：提交前恶意执行预演 ≥3 条（格式错误由 shots_tool check 报 error）
         return len([x for x in (items if isinstance(items, list) else []) if isinstance(x, dict) and str(x.get("worst") or "").strip()]) < 3
     if kind == "refs":
@@ -49,6 +54,10 @@ def _preflight(project: Project, ep: str | None, kind: str, sids: list[str] | No
         if adv:
             raise SystemExit("这些参考图没写恶意执行预演 adversarial_preflight（≥3 条 {worst, blocked_by}），不提交：" + "、".join(adv)
                              + "（video-prompts-general §2b 第五部分；写完跑 shots_tool.py check-refs <项目> 看 G52）")
+        derived = [rid for rid in todo if refs_all[rid].get("refs") and _style_only(refs_all[rid].get("profile") or prof.get("ref"))]
+        if derived:
+            raise SystemExit("这些派生参考图（挂了母图）用的是只收风格参考的档位，母图的空间结构不会被保留：" + "、".join(derived)
+                             + "；派生图（反打底板、同机位变体）要用能按参考图编辑的档位（如 qwen21），见 SKILL 硬约束 6d 与 image-prompts")
         for rid, r in refs_all.items():
             if r.get("profile") and r["profile"] not in (prof.get("ref"), prof.get("frame")):
                 bad.append(f"refs.json {rid}.profile={r['profile']}")
@@ -72,6 +81,13 @@ def _preflight(project: Project, ep: str | None, kind: str, sids: list[str] | No
             bad.append(f"{sh['id']}.{key}={sh[key]}")
     if bad:
         raise SystemExit("镜头级档位与 drama.json profiles 不同，需用户授权：写进 profiles（并记 profiles_source）或删掉镜头级值：" + "；".join(bad))
+    if kind == "frames" and _style_only(prof.get("frame")):
+        refs_all = project.load_refs()
+        plated = [sh["id"] for sh in want if sh.get("frame_parent")
+                  or any((refs_all.get(r) or {}).get("kind") == "plate" for r in sh.get("frame_refs") or [])]
+        if plated:
+            raise SystemExit(f"起始帧档位 {prof.get('frame')} 只把参考图当风格用，不照底板/父帧的空间出图，这些镜挂了底板或父帧：" + "、".join(plated[:8])
+                             + "；起始帧要用能按参考图编辑的档位（如 qwen21），并挂与本镜机位一致的底板，不在出帧时要求换角度（SKILL 硬约束 6d）")
     adv = [sh["id"] for sh in want if _adv_missing(sh.get("adversarial_preflight"))]
     if adv:
         raise SystemExit("这些镜没写恶意执行预演 adversarial_preflight（≥3 条 {worst, blocked_by}，blocked_by 引当前提示词原句或「验收：…」），不提交：" + "、".join(adv)

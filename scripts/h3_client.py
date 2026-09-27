@@ -102,8 +102,7 @@ class Client:
 
     @contextmanager
     def submit_lock(self):
-        """空闲检查 + POST 用一把文件锁包住：同一台机器上两个提交者不会往同一通道同时提交。
-        锁按通道分：一个通道等空闲时不挡别的通道。"""
+        """短暂保护共享账本；绝不在锁内等待槽位或执行 POST。"""
         self.log_dir.mkdir(parents=True, exist_ok=True)
         lock_path = self.log_dir / (".submit.lock" if self.channel == DEFAULT_CHANNEL else f".submit.{self.channel}.lock")
         f = open(lock_path, "a+")
@@ -115,6 +114,40 @@ class Client:
             if fcntl:
                 fcntl.flock(f, fcntl.LOCK_UN)
             f.close()
+
+    @contextmanager
+    def _request_lock(self, request_id: str):
+        """A held per-request lock identifies a live POST; stale intents remain blocking after a crash."""
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+        f = open(self.log_dir / f".submit.{request_id}.lock", "a+")
+        try:
+            if fcntl:
+                fcntl.flock(f, fcntl.LOCK_EX)
+            yield
+        finally:
+            if fcntl:
+                fcntl.flock(f, fcntl.LOCK_UN)
+            f.close()
+
+    def _live_intents(self) -> list[dict]:
+        """Count in-flight reservations; an abandoned intent is not live and blocks submissions."""
+        live = []
+        for rec in self.unresolved():
+            f = open(self.log_dir / f".submit.{rec['request_id']}.lock", "a+")
+            try:
+                if not fcntl:
+                    return self.unresolved()
+                try:
+                    fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                except BlockingIOError:
+                    live.append(rec)
+                else:
+                    fcntl.flock(f, fcntl.LOCK_UN)
+                    if any(r["request_id"] == rec["request_id"] for r in self.unresolved()):
+                        raise SubmissionUnknown("存在中断后未对账的 submission_intent；禁止重投")
+            finally:
+                f.close()
+        return live
 
     def _append(self, rec: dict) -> None:
         """Persist safety-critical state before proceeding; write errors must stop submission.
@@ -167,38 +200,58 @@ class Client:
             raise ValueError("missing explicit resolution; set the accepted project resolution or --res")
         fingerprint = hashlib.sha256(json.dumps(payload, sort_keys=True, ensure_ascii=False,
                                                 separators=(",", ":")).encode()).hexdigest()
-        with self.submit_lock():
-            unknown = self.unresolved()
-            if unknown:
-                raise SubmissionUnknown("先对账未决提交，再继续生产：" + ", ".join(r["request_id"] for r in unknown))
-            pending = self.pending(name)
-            if pending and rec_channel(pending) != self.channel:
-                raise PendingElsewhere(rec_channel(pending), pending)
-            if pending:
-                if (pending.get("kind") != kind or Path(pending["out"]).resolve() != out.resolve()
-                        or pending.get("fingerprint") not in (None, fingerprint)):
-                    raise SubmissionUnknown("同名未收回任务与当前输入不同；先 collect 原任务，不重新提交")
-                return pending["job"]
-            self.guard()
-            self.wait_idle()
+        while True:
             self.guard()
             request_id = uuid.uuid4().hex
             intent = {"request_id": request_id, "status": "submission_intent", "name": name,
                       "kind": kind, "out": str(out.resolve()), "fingerprint": fingerprint,
                       "profile": payload["profile"], "res": payload["res"]}
-            self._append(intent)
-            # No invented provider idempotency header: the relay contract does not expose one.
-            try:
-                response = self.s.post(self.api + path, json=payload, timeout=120)
-                response.raise_for_status()
-                jid = response.json()["id"]
-                if not isinstance(jid, str) or not jid.strip():
-                    raise ValueError("missing nonempty provider job id")
-            except (requests.RequestException, KeyError, ValueError, TypeError) as exc:
-                self._append({**intent, "status": "submission_unknown", "error_type": type(exc).__name__})
-                raise SubmissionUnknown(f"提交结果未知：{request_id}；先查供应商任务记录并 reconcile，禁止直接重投") from exc
-            self._log(name, kind, payload, jid, out, request_id=request_id, fingerprint=fingerprint)
-            return jid
+            with self._request_lock(request_id):
+                with self.submit_lock():
+                    # One fresh capacity read per reservation. This is a short critical section;
+                    # waiting for capacity and the POST itself happen after releasing the lock.
+                    st = self.status(before_submit=True)
+                    cap = st.get("capacity")
+                    total = int(cap.get("slots_total") or 1) if isinstance(cap, dict) else 1
+                    free = (int(cap.get("slots_free") or 0) - int(cap.get("queued") or st.get("queued") or 0)
+                            if isinstance(cap, dict) else int(st.get("running") in (None, 0) and st.get("queued") in (None, 0)))
+                    live = self._live_intents()
+                    unknown = self.unresolved()
+                    if len(live) >= total:
+                        available = False
+                    else:
+                        live_ids = {r["request_id"] for r in live}
+                        stale = [r["request_id"] for r in unknown if r["request_id"] not in live_ids]
+                        if stale:
+                            raise SubmissionUnknown("先对账未决提交，再继续生产：" + ", ".join(stale))
+                        pending = self.pending(name)
+                        if pending and rec_channel(pending) != self.channel:
+                            raise PendingElsewhere(rec_channel(pending), pending)
+                        if pending:
+                            if (pending.get("kind") != kind or Path(pending["out"]).resolve() != out.resolve()
+                                    or pending.get("fingerprint") not in (None, fingerprint)):
+                                raise SubmissionUnknown("同名未收回任务与当前输入不同；先 collect 原任务，不重新提交")
+                            return pending["job"]
+                        available = free > len(live)
+                        if available:
+                            self.guard()
+                            self._append(intent)
+                if not available:
+                    self.guard()
+                    time.sleep(min(self.poll, 1.0))
+                    continue
+                # No invented provider idempotency header: the relay contract does not expose one.
+                try:
+                    response = self.s.post(self.api + path, json=payload, timeout=120)
+                    response.raise_for_status()
+                    jid = response.json()["id"]
+                    if not isinstance(jid, str) or not jid.strip():
+                        raise ValueError("missing nonempty provider job id")
+                except (requests.RequestException, KeyError, ValueError, TypeError) as exc:
+                    self._append({**intent, "status": "submission_unknown", "error_type": type(exc).__name__})
+                    raise SubmissionUnknown(f"提交结果未知：{request_id}；先查供应商任务记录并 reconcile，禁止直接重投") from exc
+                self._log(name, kind, payload, jid, out, request_id=request_id, fingerprint=fingerprint)
+                return jid
 
     def require_token(self) -> None:
         if not self.api:
