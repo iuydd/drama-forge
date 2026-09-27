@@ -25,14 +25,14 @@
       "episode": false,
       "worker": {
         "goal": "按市场爆款题材库定首发平台与形态，出 ≥6 个机制不同的立项候选并按爽感检查表打分选一；写清爽点四问、主类型、人物与反派手段、装置条款、分集走向、可生成性预算；锁定画风 style_preset、视频头句和 ai_label。",
-        "read": ["references/market-hits.md", "references/1-立项与改编.md", "references/1-立项与改编.md §1–2", "references/1-立项与改编.md §0–4、§10", "references/genre-cards/索引.md（选定主类型后读对应题材卡）", "references/styles.md §1", "超过一季或集数多：references/1-立项与改编.md"],
+        "read": ["references/编剧/00-编剧总流程.md §A–C", "references/编剧/01-爽感引擎.md", "references/编剧/02-原创性引擎.md", "references/编剧/03-优势无敌与成长.md", "references/编剧/04-人物对手与世界.md", "references/编剧/09-批量生产与项目记忆.md §1–3", "references/1-立项与改编.md §1（文件落点）；改编项目另读 §2–4", "references/market-hits.md §1–3", "references/genre-cards/索引.md（选定主类型后读对应题材卡）", "references/styles.md §1"],
         "sources": ["drama.json", "?项目开发/系列简报.md", "?项目开发/决策记录.md", "?项目开发/改编契约.md"],
         "outputs": ["项目开发/系列简报.md", "drama.json"],
         "done": ["系列简报模板【】全部填掉，含 `## 立项候选`（≥6 行、两两机制不同、每行写对标爆款与新在哪里）和 `## 爽感打分`", "系列简报有观众验证计划：目标观众、一个假设、最早试看片段、预算批次边界和失败后的调整；没有反馈标未验证，不阻断已授权批次", "drama.json 写了 style_preset、style、video_prompt_head、ai_label", "`python3 scripts/project_tool.py next <项目>` 不再指向 A；G33、G36、G39 无 error"]
       },
       "reviewer": {
         "goal": "独立审查立项与系列简报。",
-        "read": ["references/6-审片与剪辑.md §0、§A", "references/1-立项与改编.md §7（打分口径）"],
+        "read": ["references/6-审片与剪辑.md §0、§A", "references/编剧/08-审稿评分与修复.md（打分口径）"],
         "sources": ["项目开发/系列简报.md", "drama.json", "?项目开发/决策记录.md", "?项目开发/改编契约.md"],
         "outputs": ["审查/系列简报-审查.md"],
         "done": ["review-checklists §A 每一问都有引证回答", "review_md_check 0 error", "结论 PASS / REVISE / BLOCKED 与未关闭问题一致"]
@@ -43,7 +43,7 @@
       "episode": false,
       "worker": {
         "goal": "每集一行：受什么气、底牌与谁先知道、主角行动、反派失去、兑现、新问题、交接事实；长篇另写跨集记忆。",
-        "read": ["references/1-立项与改编.md §5–6、§8", "长篇或续季：references/1-立项与改编.md §4–5、§8"],
+        "read": ["references/编剧/05-连载架构.md", "references/1-立项与改编.md §1.1（全季大纲→情绪集纲的投影）", "长篇或续季：references/编剧/05-连载架构.md §9、references/编剧/09-批量生产与项目记忆.md"],
         "sources": ["项目开发/系列简报.md", "?项目开发/情绪集纲.md", "?项目开发/跨集记忆.md", "?项目开发/决策记录.md", "?项目开发/改编契约.md"],
         "outputs": ["项目开发/情绪集纲.md", "项目开发/跨集记忆.md（仅长篇或续季）"],
         "done": ["每集一行、每格具体", "反派失去格和交接事实格都非空"]
@@ -61,14 +61,14 @@
       "episode": true,
       "worker": {
         "goal": "把情绪集纲里本集那一行扩成可拍剧本：台词多、反应快、单句短，目标语言母语口语，每句带情绪标签；事件先写起因拍、关键物品先写来源拍；每场 [连续性] 末尾写 3–5 条「必拍：」；集尾与下集开头成对写，开头接上一集末场的 [连续性]。",
-        "read": ["references/2-剧本.md §1、§1b、§2、§2b、§4、§4b、§4c、§5、§5b、§5b3、§8b、§9", "骨架 assets/templates/剧本.md"],
+        "read": ["references/编剧/06-单集写作.md", "references/编剧/07-对白与可影像化.md", "references/编剧/14-开头回报结尾变体库.md", "用了认知差或连续反转：references/编剧/15-认知差风向反转与揭晓.md", "references/2-剧本.md §1–4、§7（格式、情绪标签、心声、必拍、交接）", "骨架 assets/templates/剧本.md"],
         "sources": ["项目开发/系列简报.md", "项目开发/情绪集纲.md", "?项目开发/决策记录.md", "?项目开发/跨集记忆.md", "?项目开发/改编契约.md", "?{ep}/剧本.md", "?{prev}/剧本.md#末场"],
         "outputs": ["{ep}/剧本.md"],
         "done": ["`python3 scripts/screenplay_lint.py <项目> {ep}` 无 error", "`python3 scripts/shots_tool.py check <项目> {ep}` 的剧本部分（G16、G37）无 error", "每场 [连续性] 末尾有 3–5 条「必拍：」"]
       },
       "reviewer": {
         "goal": "独立审查本集剧本：集的形状与爽点、场景、动作与生产事实、对白与母语、因果与知情、秒表与集间接缝、合规。",
-        "read": ["references/6-审片与剪辑.md §0、§A–C、开头因果四问", "改编项目另答 §R2；长篇另答 §S"],
+        "read": ["references/编剧/08-审稿评分与修复.md", "references/2-剧本.md §6（审查手续与加查三项）", "references/6-审片与剪辑.md §0、§A–C、开头因果四问", "改编项目另答 §R2；长篇另答 §S"],
         "sources": ["项目开发/系列简报.md", "项目开发/情绪集纲.md", "项目开发/决策记录.md", "{ep}/剧本.md", "{prev}/剧本.md#末场", "?项目开发/跨集记忆.md", "?项目开发/改编契约.md"],
         "outputs": ["审查/{ep}-审查.md"],
         "done": ["§C1–C10 每一问都有引证回答，含母语审读表、事件起因与关键物品表", "写了剧本指纹行", "review_md_check 0 error（RV12 指纹过期也是 error）"]
