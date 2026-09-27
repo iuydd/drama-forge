@@ -46,7 +46,7 @@ non_diegetic_music: N/A
 
 - 台词镜按 storyboard-keyframes §1：默认听者入画（同框或肩背在前景），多人镜写 `exactly N`、每人一次（video-prompts-general §2b）；已建立空间关系的单人对白写 `single_reason` 并核验视线与切回承接。口型有落到最显眼正脸的风险，所以听者优先背对镜头（`seen from behind, his face never turns toward the camera`），并写明全程只有谁开口。
 - 画内有第二张看得见的脸（听者正脸、接触同框）：`<Other> does not speak; his lips remain completely closed for the whole shot.`
-- 画外台词（`[OS]`）：**H3 不会生成画外人声**（实测三个 take 都没声音）。画外说的话要么改成说话人在镜的台词镜（听者照样入画），要么另生成一个该人物当面说这句的音源镜（不进 `cut_order`），在听者镜上用 `audio_from` 垫音；听者镜正文写 `No one speaks`、嘴唇闭合。小声台词写成低声但每个字清楚、嘴唇可见，不写耳语（耳语会没声）。
+- 画外台词（`[OS]`）：**H3 不会生成画外人声**（实测三个 take 都没声音）。画外说的话要么改成说话人在镜的台词镜（按 11c 让对象可辨，默认听者入画；已建立空间关系的单人对白写 `single_reason` 并验收），要么另生成一个该人物当面说这句的音源镜（不进 `cut_order`），在听者镜上用 `audio_from` 垫音；听者镜正文写 `No one speaks`、嘴唇闭合。小声台词写成低声但每个字清楚、嘴唇可见，不写耳语（耳语会没声）。
 
 ## 3. 台词多、反应快
 

@@ -119,6 +119,8 @@ Keep the same person from Picture 1: same face, hairline, skin tone, build and h
 - 前景/中景/后景是可选的组织方法，不是每块底板都要填满三层；单房、需要留白的画面可以不用。
 - 气氛（压抑、危险、温暖）只能翻译成已有依据的空间选择：通道窄、光比、材质反射、空气状态、色温关系；不许为了气氛新加事故、封死出口、挪动门窗，也不许凭提示词惯性加霓虹、雾、逆光。
 - 底板只画固定陈设和本状态的布景；剧中角色、临时人群、当前动作都不进底板（G19 `No people`），需要人物尺度参照时用门、护栏、桌面这类现实尺寸物件（visual-assets §12）。
+- **先判是否真的换透视**：只收紧景别、取同一底板的桌角或门把手，且门窗桌椅的投影关系不变时，沿已核验视图构图，不为一次特写另编反打底板。相机越过桌、换到门另一侧或看见原图背后的墙时，才是新机位；按 SKILL 6d 先做可见性表：每个固定物件的世界位置｜新视角可见、被谁遮住或出画｜落在画面哪一段。源图看不见的背面布局不能靠旧图的 `screen-left/right` 推出来；先查平面图和已核验的另一机位，缺事实则先补视觉设定，不直接写出图 prompt。
+- **转机位 prompt 只传有效约束**：先写相机落点和视线，再写新画面可见的强锚点及相对关系；不可见的固定物件合并说明为何在画外，最后写数量排他、材质与光。旧视图画左/画右不原样复制；相互矛盾的可见与画外句不能同时留。三条件满足只是允许试拍，不保证模型按要求旋转房间。出图仍是旧视角，或门窗灯桌椅增减、挪位时，按同场空间失败记录原图 SHA；先检查能否在现有同透视机位改分镜，确需新机位才修底板，不用继续加长清单代替空间证据。
 
 ### 3.6 道具图（`IMG-PROP-*`）
 
@@ -154,13 +156,14 @@ Keep the same person from Picture 1: same face, hairline, skin tone, build and h
 连续性影响：对应哪个已登记的状态或变体，影响哪些镜头的 frame_refs；没有影响写"无"并说明理由
 ```
 
-- **每一轮都完整重复保留清单**，只改失败的那一项；只写改动、不写保留，漂移会一轮轮累积（visual-assets §7）。
+- **同透视局部编辑时**每一轮都完整重复相关保留清单，只改失败的那一项；只写改动、不写保留，漂移会一轮轮累积（visual-assets §7）。若相机换方向，先按 §3.5 的可见性表重算画内/画外与画面方位，再写该新视角的保留项，不能把旧视图的 `screen-left/right`、遮挡和裁切清单原样重复。
 - **一次编辑只改一组相关的变化**；几处互不相干的修改拆成几次，否则保留清单会失焦。复杂重构改做新变体或新底板。
 - **太宽的要求先拆细**："改背景""让她更狼狈"不能直接写成提示词，要落到具体区域和可观察结果。
 - **改的是上游事实就不算编辑**：挪门窗、改身份、改道具状态要先改视觉设定（visual-assets §2、§4），不能在编辑提示词里偷改。
 - 局部删人这类编辑，变化和保留都要明说：`Remove the man on the screen-right side of the frame completely. Mio (short black bob, navy blazer) stays on screen-left facing the window, her right hand on the desk; the desk, the single lamp and the window stay where they are; the light still comes only from the window.`（保留项逐个点名，不写 `Keep every other person … exactly`）
 - **改机位的链式编辑**（storyboard-keyframes §1 用上一镜末帧出下一镜起始帧）：改的是相机，人和物在世界里不动。先写相机怎么动，再按 video-prompts-general §2b 逐人写他在新画面里的位置；相机换方向后画左画右会跟着变，按轴线算好写死，不写 `same positions`：`Move the camera to the cliff rim, looking back toward the stone path. Keep exactly three people, each once: Gu Changsheng in the grey robe, now on screen-right with his heels on the rim, facing screen-left; Yan Chong in the black robe, on screen-left, facing him; the sword spirit in white, behind Gu's left shoulder, facing screen-left. Keep the light and the single sword in Gu's right hand.` 目检逐个数人头、核朝向，并和上一镜末帧对照有没有被整体镜像。
 - 旧图不覆盖：重出改名归档（硬约束 8），refs.json 里记下这次改了什么、为什么。
+- 每次修复后按 SKILL.md 总则 12 留简短问题摘要；新图尚未逐张目检时写「未验证」，不能因 prompt 比旧版更完整就宣称空间已修好。
 - 自然语言修订（用户说"工作服换成深蓝，但保留脸和袖口油渍"）自动执行：读当前视觉设定和 refs.json 条目，分清哪些是提示词措辞、哪些要先改视觉设定；改完在 `项目开发/决策记录.md` 记一行改前、改后、保留项、受影响镜头。用户说"更有电影感"这类含糊要求时，不堆风格词，由 art-director 在光比、构图、色彩关系里选一个可观察的方向执行并记录理由。
 - 文件被别的会话或人工改过时，先重读当前条目，把两边的有效改动合并，不用旧版本覆盖。
 
