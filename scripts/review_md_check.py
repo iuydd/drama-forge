@@ -172,7 +172,16 @@ def check_file(p: Path) -> dict:
                 parts = ln.split(None, 1)
                 if len(parts) == 2 and parts[1].strip().lstrip("./") == rel:
                     recs.append(parts[0])
-        if recs and recs[-1] != cur:
+        rel_orig = re.match(r"> 放行版：reviewer 原稿见 (\S+?\.md)", p.read_text(encoding="utf-8"))
+        if rel_orig and (root / rel_orig.group(1)).is_file():
+            # 放行版（2026-09-27：修完 Blocker/Major 由主会话核对）：原稿另存、未改动即可
+            osha = hashlib.sha256((root / rel_orig.group(1)).read_bytes()).hexdigest()
+            orecs = [ln.split(None, 1)[0] for w in (root / "审查" / "agents").glob("*reviewer*/written.sha256")
+                     for ln in w.read_text(encoding="utf-8").splitlines()
+                     if len(ln.split(None, 1)) == 2 and ln.split(None, 1)[1].strip().lstrip("./") == rel_orig.group(1)]
+            if orecs and orecs[-1] != osha:
+                add("RV10", "error", f"放行版引用的 reviewer 原稿 {rel_orig.group(1)} 被改过")
+        elif recs and recs[-1] != cur:
             add("RV10", "error", "这份审查在 reviewer 交稿之后被改过（和 审查/agents/ 里的 written.sha256 不一致）；主会话不改 reviewer 原稿，要改就再派一轮 reviewer")
         elif not recs and r.get("method") and re.search(r"独立|reviewer", r["method"], re.I):
             add("RV10", "warn", "复核方式写独立 reviewer，但 审查/agents/ 里没有这份文件的 reviewer 留档（isolated_agent.sh … reviewer 会自动留档）")
