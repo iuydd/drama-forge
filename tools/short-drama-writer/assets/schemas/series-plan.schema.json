@@ -1,0 +1,128 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Series plan",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "project_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "total_episodes": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "arcs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "episode_start": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "episode_end": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "goal": {
+            "type": "string",
+            "minLength": 1
+          },
+          "payoff": {
+            "type": "string",
+            "minLength": 1
+          },
+          "preserved_gains": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "episode_start",
+          "episode_end",
+          "goal",
+          "payoff",
+          "preserved_gains"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "episodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "episode_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "goal": {
+            "type": "string",
+            "minLength": 1
+          },
+          "obstacle": {
+            "type": "string",
+            "minLength": 1
+          },
+          "protagonist_choice": {
+            "type": "string",
+            "minLength": 1
+          },
+          "payoff": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state_delta": {
+            "type": "string",
+            "minLength": 1
+          },
+          "ending_question": {
+            "type": "string"
+          },
+          "resolution_episode": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          }
+        },
+        "required": [
+          "episode_id",
+          "goal",
+          "obstacle",
+          "protagonist_choice",
+          "payoff",
+          "state_delta",
+          "ending_question",
+          "resolution_episode"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "final_payoff": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "schema_version",
+    "project_id",
+    "total_episodes",
+    "arcs",
+    "episodes",
+    "final_payoff"
+  ],
+  "additionalProperties": false
+}

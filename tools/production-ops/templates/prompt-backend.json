@@ -1,0 +1,12 @@
+{
+  "schema_version": "prompt-backend-1",
+  "profile_id": null,
+  "mode": null,
+  "strategy": null,
+  "native_audio": null,
+  "speech_format": "literal",
+  "max_prompt_bytes": null,
+  "calibration_status": "NOT_RUN",
+  "calibration_evidence": null,
+  "note": "按实际模型/版本/配置与同类镜头实测填入；full_scene/edit_delta/motion_focused按已验证模式选择。长度无限/多参考/原生音频均不可从null推断。"
+}

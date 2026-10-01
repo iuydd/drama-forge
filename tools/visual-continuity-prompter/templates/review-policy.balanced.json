@@ -1,0 +1,26 @@
+{
+  "schema_version": "balanced-review-1",
+  "mode": "balanced",
+  "status": "design_defaults_not_calibrated",
+  "baseline_review_every_artifact": true,
+  "primary_semantic_passes": 1,
+  "targeted_confirmation_passes": 1,
+  "repair_rounds_max": 2,
+  "recheck_per_repair": 1,
+  "hard_review_call_cap_per_artifact_lineage": 4,
+  "additional_deep_spotcheck_fraction": 0.1,
+  "nonempty_batch_minimum_spotchecks": 1,
+  "risk_spotcheck_fraction_after_confirmed_miss": 0.25,
+  "known_hard_failure_blocks": true,
+  "unknown_required_evidence_blocks": true,
+  "style_suggestions_do_not_block": true,
+  "no_fault_quota": true,
+  "optional_minor_categories": [
+    "noncritical_texture_variation",
+    "noncritical_edge_noise"
+  ],
+  "review_wall_seconds_cap": null,
+  "review_token_cap": null,
+  "budget_note": "需用实际后端校准；未知时按调用次数封顶。超时不能自动改成通过。审查次数包含补查与返修复查，不得换job_id重置。",
+  "perceptual_calibration_status": "not_run"
+}

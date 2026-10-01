@@ -1,0 +1,35 @@
+{
+  "schema_version": "drama-deployment-1",
+  "status": "NOT_CONFIGURED",
+  "checks": {
+    "protected_host": {
+      "status": "NOT_RUN",
+      "evidence": null
+    },
+    "submission_adapter": {
+      "status": "NOT_RUN",
+      "evidence": null
+    },
+    "brain_media_input": {
+      "status": "NOT_RUN",
+      "evidence": null
+    },
+    "reviewer_calibration": {
+      "status": "NOT_RUN",
+      "evidence": null
+    },
+    "blind_isolation": {
+      "status": "NOT_RUN",
+      "evidence": null
+    },
+    "text_route": {
+      "status": "NOT_RUN",
+      "evidence": null
+    },
+    "pilot_episode": {
+      "status": "NOT_RUN",
+      "evidence": null
+    }
+  },
+  "note": "填写真实宿主验证记录；doctor只核记录及文件，不能据此冒称已连接、已授权或独立验证安全隔离。"
+}

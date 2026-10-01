@@ -1,0 +1,51 @@
+{
+  "schema_version": "execution-packet-1",
+  "workflow_version": "4.3.0",
+  "workflow_mode": "upfront_only",
+  "policy_version": "4.2.0",
+  "packet_id": null,
+  "revision": null,
+  "episode_id": null,
+  "phase": null,
+  "status": "DRAFT",
+  "decision_owner": "production_supervisor",
+  "example_only": true,
+  "brain_media_review_performed": false,
+  "preproduction_plan": {
+    "path": null,
+    "sha256": null
+  },
+  "asset_registry": {
+    "path": null,
+    "sha256": null
+  },
+  "approval_evidence": {
+    "path": null,
+    "sha256": null
+  },
+  "reviewed_inputs": [],
+  "blocking_questions": [],
+  "tasks": [
+    {
+      "task_id": null,
+      "plan_task_id": null,
+      "status": "PENDING",
+      "request": null,
+      "request_sha256": null,
+      "native_request_sha256": null,
+      "semantic_review": {
+        "request_sha256": null,
+        "result": "NOT_RUN",
+        "reviewer_id": null,
+        "observation": null,
+        "coverage": [],
+        "evidence": {
+          "path": null,
+          "sha256": null
+        }
+      },
+      "fidelity_contract": null,
+      "continuity_plan": null
+    }
+  ]
+}

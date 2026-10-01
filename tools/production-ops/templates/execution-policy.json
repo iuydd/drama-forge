@@ -1,0 +1,26 @@
+{
+  "schema_version": "execution-policy-1",
+  "version": "4.0.0",
+  "mode": "production",
+  "episode_wip_limit": 1,
+  "parallelism": "max_safe_verified_capacity",
+  "fill_ready_slots": true,
+  "subagent_generation_allowed": false,
+  "paid_batch_confirmation": "project_authorization",
+  "quality_changes_allowed": false,
+  "prompt9_required_for_video": true,
+  "stage_reading_required": true,
+  "local_slot_counts": null,
+  "episode_completion_requires": [
+    "accepted_final_file",
+    "state_archive",
+    "lessons_writeback",
+    "cost_status",
+    "channel_ready"
+  ],
+  "note": "在有效授权和实测资源内安全并发，保持已锁画质。默认同一agent沿用冻结前期方案完成生产；外部Brain仅在用户明确选择时启用。现有版本与brain字段为兼容契约，不授权扩大范围或重置门禁。",
+  "brain_decisions_required": true,
+  "executor_creative_changes_allowed": false,
+  "reference_feedback_to_brain": true,
+  "first_frame_feedback_to_brain": true
+}

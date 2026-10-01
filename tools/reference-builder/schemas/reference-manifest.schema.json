@@ -1,0 +1,231 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Reference manifest 1.0",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "project_id",
+    "canon_version",
+    "assets"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0"
+    },
+    "project_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "canon_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "assets": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "asset_id",
+          "entity_id",
+          "version",
+          "view_id",
+          "state_id",
+          "kind",
+          "scene_context",
+          "format",
+          "status",
+          "canonical_parent",
+          "dependencies",
+          "allowed_roles",
+          "spec",
+          "file",
+          "review"
+        ],
+        "properties": {
+          "asset_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "entity_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "version": {
+            "type": "string",
+            "minLength": 1
+          },
+          "view_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "enum": [
+              "character",
+              "costume",
+              "scene",
+              "prop",
+              "layout",
+              "mask"
+            ]
+          },
+          "scene_context": {
+            "anyOf": [
+              {
+                "type": "object",
+                "required": [
+                  "scene_id",
+                  "scene_version",
+                  "view_id",
+                  "state_id"
+                ],
+                "properties": {
+                  "scene_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "scene_version": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "view_id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "state_id": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "format": {
+            "enum": [
+              "single",
+              "diagram",
+              "contact_sheet"
+            ]
+          },
+          "status": {
+            "enum": [
+              "planned",
+              "candidate",
+              "accepted",
+              "rejected",
+              "stale"
+            ]
+          },
+          "canonical_parent": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "dependencies": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "allowed_roles": {
+            "type": "array",
+            "minItems": 1,
+            "uniqueItems": true,
+            "items": {
+              "enum": [
+                "identity",
+                "costume",
+                "scene_base",
+                "prop",
+                "layout",
+                "mask"
+              ]
+            }
+          },
+          "spec": {
+            "type": "object",
+            "required": [
+              "subject",
+              "view",
+              "width",
+              "height",
+              "requires_transparency",
+              "immutable",
+              "critical_unknowns"
+            ],
+            "properties": {
+              "subject": {
+                "type": "string",
+                "minLength": 1
+              },
+              "view": {
+                "type": "string",
+                "minLength": 1
+              },
+              "width": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "height": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "requires_transparency": {
+                "type": "boolean"
+              },
+              "immutable": {
+                "type": "array",
+                "minItems": 1,
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "critical_unknowns": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            }
+          },
+          "file": {
+            "type": "object",
+            "required": [
+              "path",
+              "sha256"
+            ],
+            "properties": {
+              "path": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "sha256": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            }
+          },
+          "review": {
+            "type": "object"
+          }
+        }
+      }
+    }
+  }
+}

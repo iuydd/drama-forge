@@ -1,0 +1,5 @@
+# plan/check use only the Python standard library.
+# Real-image gate/inspect/crop and the tests require Pillow; install only after review.
+Pillow>=10
+# Optional schema validation test:
+jsonschema>=4

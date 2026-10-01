@@ -1,0 +1,38 @@
+{
+  "schema_version": "1.0",
+  "scene_id": "SCENE-ROOM",
+  "scene_version": "1",
+  "status": "candidate",
+  "coordinate_system": "示例世界坐标：X向东，Y向北，Z向上；屏幕坐标左上为原点，x向右y向下。不是实测空间。",
+  "invariants": [
+    {
+      "id": "DOOR-LOCATION",
+      "description": "门固定在北墙偏西；当前VIEW-A中投影到画面左后方。",
+      "kind": "topology"
+    },
+    {
+      "id": "CHAIR-DESIGN",
+      "description": "椅子设计不变；当前状态椅子在桌南侧，座面前缘朝桌，椅背在坐者身后。",
+      "kind": "design"
+    },
+    {
+      "id": "STAIRS",
+      "description": "地面到上平台共三次上升；两块中间踏面加上平台，上平台不另算第四级。",
+      "kind": "topology"
+    }
+  ],
+  "views": [
+    {
+      "view_id": "VIEW-A",
+      "description": "示例固定正面中广景；具体母版尚未提供。",
+      "asset_id": "MASTER-A-1",
+      "state_id": "STATE-000",
+      "path": null,
+      "sha256": null,
+      "status": "candidate"
+    }
+  ],
+  "unknown_geometry": [
+    "用户真实场景尚未提供；示例并非实际测量。"
+  ]
+}

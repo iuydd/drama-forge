@@ -1,0 +1,15 @@
+{
+  "schema_version": "picture-lock-1",
+  "status": "UNLOCKED",
+  "timeline": {
+    "path": null,
+    "sha256": null
+  },
+  "selected_clip_ids": [],
+  "duration_frames": null,
+  "decision_by": null,
+  "decision_evidence": null,
+  "pending_postprocess": [],
+  "final_semantic_acceptance": false,
+  "notes": "锁画面不等于成片终验，也不等于用户亲自批准。"
+}

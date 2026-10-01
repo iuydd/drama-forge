@@ -1,0 +1,53 @@
+{
+  "schema_version": "performance-scene-1",
+  "status": "DRAFT",
+  "project_id": null,
+  "episode_id": null,
+  "scene_id": null,
+  "performance_id": null,
+  "applicability": "仅关键情绪/关系转折或实际失败段，普通台词继承voice-bible，不每字建任务。",
+  "source_script": {
+    "path": null,
+    "sha256": null
+  },
+  "dialogue_contract": {
+    "path": null,
+    "sha256": null
+  },
+  "line_ids": [],
+  "trigger_event_ids": [],
+  "speaker_id": null,
+  "intended_listener_ids": [],
+  "meaning": {
+    "given_circumstances": null,
+    "what_matters": null,
+    "utterance_intent": null,
+    "deliberate_mask": null
+  },
+  "performance": {
+    "start_state": null,
+    "delivery_note": null,
+    "observable_change": null,
+    "listener_response": null,
+    "end_state": null
+  },
+  "binding": {
+    "action_id": null,
+    "shot_ids": [],
+    "action_beat_locations": [],
+    "audio_line_locations": [],
+    "protected_event_ids": []
+  },
+  "timing": {
+    "planned_seconds": null,
+    "measured_speech_seconds": null,
+    "required_response_basis": null,
+    "status": "unplanned"
+  },
+  "review": {
+    "status": "NOT_REVIEWED",
+    "actual_media": null,
+    "merge_into_existing_G2_G3_G4": true,
+    "do_not_score_emotion_from_label_only": true
+  }
+}

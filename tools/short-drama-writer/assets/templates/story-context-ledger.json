@@ -1,0 +1,47 @@
+{
+  "schema_version": "story-context-1",
+  "status": "DRAFT",
+  "project_id": null,
+  "episode_id": null,
+  "source_script": {
+    "path": null,
+    "sha256": null
+  },
+  "entry": {
+    "where_when": null,
+    "current_activity": null,
+    "immediate_goal": null,
+    "stakes_or_value": null,
+    "relationship_cue": null
+  },
+  "items": [],
+  "item_template": {
+    "entity_or_rule_id": null,
+    "kind": null,
+    "first_relevant_scene": null,
+    "origin_or_arrival": null,
+    "who_notices_or_knows": [],
+    "why_it_matters_now": null,
+    "knowledge_class": null,
+    "visible_or_audible_script_locators": [],
+    "first_use_locator": null,
+    "later_reveal_plan": null
+  },
+  "knowledge_classes": [
+    "needed_now",
+    "established_before",
+    "intentional_unknown",
+    "not_story_relevant"
+  ],
+  "policy": "重要新内容在需要理解时有来由；不要求普通布景逐物溯源，不用作者备注代替观众已见信息。",
+  "timing": {
+    "mode": "context_first",
+    "episode_seconds": null,
+    "status": "unplanned",
+    "must_lock_before_production": true
+  },
+  "review": {
+    "status": "NOT_REVIEWED",
+    "reuse_existing_story_and_animatic_review": true
+  }
+}

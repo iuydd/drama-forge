@@ -1,0 +1,28 @@
+{
+  "example_only": true,
+  "style_lock": {
+    "style_id": "STYLE-DEMO",
+    "version": "1",
+    "status": "locked",
+    "prompt_sentence": "写实质感的原创三维动画，克制暖灰配色，统一柔和侧光与自然透视。"
+  },
+  "audio_plan": {
+    "native_spoken_lines": [
+      {
+        "line_id": "DEMO-L01",
+        "speaker_description": "画面右侧穿深蓝外套的年轻男性",
+        "voice_description": "沿用已验收的该男性角色声线",
+        "text_spoken": "钥匙在我手里。"
+      }
+    ],
+    "post_voices": [
+      {
+        "line_id": "DEMO-L02",
+        "source_kind": "inner",
+        "speaker_description": "同一位男性",
+        "text_spoken": "还不能让他知道。"
+      }
+    ]
+  },
+  "note": "虚构结构示例不是用户原著或视频模型实测。post_voices的文字留给后期，不写成原生人物台词。"
+}

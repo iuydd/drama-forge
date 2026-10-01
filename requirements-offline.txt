@@ -1,0 +1,9 @@
+# Core legacy helpers use Python stdlib. These packages support strict v4.2
+# schema/signature/image/text/geometry tests. No provider SDK or fonts included.
+jsonschema>=4.18
+cryptography>=41
+Pillow>=10
+numpy>=1.24
+fonttools>=4.40
+# Actual ffmpeg/ffprobe executables are optional for image-only use and required
+# for video/audio probing and editing; install via the host's approved method.

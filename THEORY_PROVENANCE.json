@@ -1,0 +1,218 @@
+{
+  "package_version": "4.3.2",
+  "source_version": "3.1.2-public",
+  "source_archive": "ai-drama-skill.tar.gz",
+  "source_archive_sha256": "cd730a6ab7257602d98c133142c4e93df50c9900da3a034d2ffd9fd709b0f690",
+  "source_member": "ai-drama-skill/assets/source.md",
+  "source_sha256": "c954bf7a6315e73885324b81c4b60d27a3bdf792f0ea511142346c7b8694ef8d",
+  "theory_file": "assets/legacy-theory-3.1.2-public.md",
+  "theory_sha256": "46e19d4704f2ef677614623461c202b329b7a743a736ae49f26b570b8ab1595f",
+  "sections": [
+    {
+      "anchor": "r00",
+      "bytes": 3210,
+      "sha256": "4b2bb02b4110ef3093b1921a3dee58fdb1da48fa344ef5f0e66248d2eb6526c7"
+    },
+    {
+      "anchor": "r01",
+      "bytes": 5086,
+      "sha256": "a36c4682e24604f8c73a37e91c57ebe4f435a05f7ade4b7965d888fae7a6d960"
+    },
+    {
+      "anchor": "r02",
+      "bytes": 4136,
+      "sha256": "0de2142f2c433549ee624402b4f57f2e0133d973591311452550ec5fcf0db6c5"
+    },
+    {
+      "anchor": "r03",
+      "bytes": 4015,
+      "sha256": "0288177f65b6cbe1c76a759e83b9832f00a450efde3d10257a86390824c3a0bf"
+    },
+    {
+      "anchor": "r04",
+      "bytes": 1376,
+      "sha256": "cb08b6d06692887944f9802b11b8601f1a61b0d4e2723d5cddba73c33aa22135"
+    },
+    {
+      "anchor": "r05",
+      "bytes": 3409,
+      "sha256": "ada70af55802af65f131052a83b37f71fb4aa1657517216f64b756aea86f1744"
+    },
+    {
+      "anchor": "r06",
+      "bytes": 5280,
+      "sha256": "ded3018330540f6a5955d991587bbf2ec8c145ae8f95dd2e8b154b0383621d1f"
+    },
+    {
+      "anchor": "r07",
+      "bytes": 3472,
+      "sha256": "2e282212595d2454467de67ea0f1c295a26689e20eef090037bdb5019eae75dc"
+    },
+    {
+      "anchor": "r08",
+      "bytes": 5103,
+      "sha256": "3fe6543610bc2f58ef44a73d91d873d9692f73fa795777740e2934329f69ceac"
+    },
+    {
+      "anchor": "r09",
+      "bytes": 4855,
+      "sha256": "9acaa6cb8bfffade146591cb52f59994f0868f7ce29888a679f8c947f7a8c516"
+    },
+    {
+      "anchor": "runtime-blind-brief",
+      "bytes": 727,
+      "sha256": "9249486d399f9d0b09a7e28637814ad5e02c5209508b0898a906e1a3e4f41fd8"
+    }
+  ],
+  "omitted_modules": {},
+  "original_complete_source_retained": true,
+  "workflow_version": "4.3.0",
+  "media_policy_version": "4.2.0",
+  "original_text_rewritten": false,
+  "active_source_is_original": true,
+  "active_modules_have_no_added_text": true,
+  "all_sections": [
+    {
+      "anchor": "r00",
+      "bytes": 3210,
+      "sha256": "4b2bb02b4110ef3093b1921a3dee58fdb1da48fa344ef5f0e66248d2eb6526c7"
+    },
+    {
+      "anchor": "r01",
+      "bytes": 5086,
+      "sha256": "a36c4682e24604f8c73a37e91c57ebe4f435a05f7ade4b7965d888fae7a6d960"
+    },
+    {
+      "anchor": "r02",
+      "bytes": 4136,
+      "sha256": "0de2142f2c433549ee624402b4f57f2e0133d973591311452550ec5fcf0db6c5"
+    },
+    {
+      "anchor": "r03",
+      "bytes": 4015,
+      "sha256": "0288177f65b6cbe1c76a759e83b9832f00a450efde3d10257a86390824c3a0bf"
+    },
+    {
+      "anchor": "r04",
+      "bytes": 1376,
+      "sha256": "cb08b6d06692887944f9802b11b8601f1a61b0d4e2723d5cddba73c33aa22135"
+    },
+    {
+      "anchor": "r05",
+      "bytes": 3409,
+      "sha256": "ada70af55802af65f131052a83b37f71fb4aa1657517216f64b756aea86f1744"
+    },
+    {
+      "anchor": "r06",
+      "bytes": 5280,
+      "sha256": "ded3018330540f6a5955d991587bbf2ec8c145ae8f95dd2e8b154b0383621d1f"
+    },
+    {
+      "anchor": "r07",
+      "bytes": 3472,
+      "sha256": "2e282212595d2454467de67ea0f1c295a26689e20eef090037bdb5019eae75dc"
+    },
+    {
+      "anchor": "r08",
+      "bytes": 5103,
+      "sha256": "3fe6543610bc2f58ef44a73d91d873d9692f73fa795777740e2934329f69ceac"
+    },
+    {
+      "anchor": "r09",
+      "bytes": 4855,
+      "sha256": "9acaa6cb8bfffade146591cb52f59994f0868f7ce29888a679f8c947f7a8c516"
+    },
+    {
+      "anchor": "r10",
+      "bytes": 3249,
+      "sha256": "71893eace6e6d995b67169723cb1b6123d3a53c8cbf96dcbf1be4abdc1022562"
+    },
+    {
+      "anchor": "r11",
+      "bytes": 5900,
+      "sha256": "cb959f907319603984cbe90dfa6ddbd3627a060c19f4c4a621c6659b849a6455"
+    },
+    {
+      "anchor": "runtime-blind-brief",
+      "bytes": 727,
+      "sha256": "9249486d399f9d0b09a7e28637814ad5e02c5209508b0898a906e1a3e4f41fd8"
+    }
+  ],
+  "original_reference_files": [
+    {
+      "path": "references/00-contract.md",
+      "bytes": 3210,
+      "sha256": "4b2bb02b4110ef3093b1921a3dee58fdb1da48fa344ef5f0e66248d2eb6526c7"
+    },
+    {
+      "path": "references/01-story.md",
+      "bytes": 5086,
+      "sha256": "a36c4682e24604f8c73a37e91c57ebe4f435a05f7ade4b7965d888fae7a6d960"
+    },
+    {
+      "path": "references/02-opening-causality.md",
+      "bytes": 4136,
+      "sha256": "0de2142f2c433549ee624402b4f57f2e0133d973591311452550ec5fcf0db6c5"
+    },
+    {
+      "path": "references/03-performance.md",
+      "bytes": 4015,
+      "sha256": "0288177f65b6cbe1c76a759e83b9832f00a450efde3d10257a86390824c3a0bf"
+    },
+    {
+      "path": "references/04-adaptation.md",
+      "bytes": 1376,
+      "sha256": "cb08b6d06692887944f9802b11b8601f1a61b0d4e2723d5cddba73c33aa22135"
+    },
+    {
+      "path": "references/05-space-assets.md",
+      "bytes": 3409,
+      "sha256": "ada70af55802af65f131052a83b37f71fb4aa1657517216f64b756aea86f1744"
+    },
+    {
+      "path": "references/06-storyboard-prompts.md",
+      "bytes": 5280,
+      "sha256": "ded3018330540f6a5955d991587bbf2ec8c145ae8f95dd2e8b154b0383621d1f"
+    },
+    {
+      "path": "references/07-animatic-audio.md",
+      "bytes": 3472,
+      "sha256": "2e282212595d2454467de67ea0f1c295a26689e20eef090037bdb5019eae75dc"
+    },
+    {
+      "path": "references/08-editing.md",
+      "bytes": 5103,
+      "sha256": "3fe6543610bc2f58ef44a73d91d873d9692f73fa795777740e2934329f69ceac"
+    },
+    {
+      "path": "references/09-review-repair.md",
+      "bytes": 4855,
+      "sha256": "9acaa6cb8bfffade146591cb52f59994f0868f7ce29888a679f8c947f7a8c516"
+    },
+    {
+      "path": "references/10-execution.md",
+      "bytes": 3249,
+      "sha256": "71893eace6e6d995b67169723cb1b6123d3a53c8cbf96dcbf1be4abdc1022562"
+    },
+    {
+      "path": "references/11-handoff.md",
+      "bytes": 5900,
+      "sha256": "cb959f907319603984cbe90dfa6ddbd3627a060c19f4c4a621c6659b849a6455"
+    },
+    {
+      "path": "references/blind-review.md",
+      "bytes": 727,
+      "sha256": "9249486d399f9d0b09a7e28637814ad5e02c5209508b0898a906e1a3e4f41fd8"
+    },
+    {
+      "path": "references/tooling.md",
+      "bytes": 3763,
+      "sha256": "d2d3fbd9bc99087125fc470e6da81dd7554da420595fd315b6692e1e5800b00c"
+    },
+    {
+      "path": "references/usage-guide.md",
+      "bytes": 5180,
+      "sha256": "7394cc514e1a1884f40611b010f8ea866adcaed420b7426cf002a5b6f4928882"
+    }
+  ]
+}

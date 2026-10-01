@@ -1,0 +1,18 @@
+{
+  "schema_version": "1.0",
+  "project_id": null,
+  "upstream_skill": "short-drama-writer",
+  "image_model": null,
+  "video_backend": null,
+  "primary_priority": "场景一致性",
+  "policy": {
+    "default_camera": "fixed_unless_storyboard_requires_change",
+    "preserve_existing_quality_parameters": true,
+    "automatic_retry_limit": 3,
+    "allow_unapproved_reframing": false,
+    "allow_quality_downgrade": false,
+    "unknown_review_blocks": true
+  },
+  "actual_reference_files": [],
+  "storyboard_path": null
+}

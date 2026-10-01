@@ -1,0 +1,65 @@
+{
+  "schema_version": "1.0",
+  "shot_id": "SHOT-001",
+  "contract_sha256": null,
+  "stage": "image",
+  "artifact": {
+    "path": null,
+    "sha256": null
+  },
+  "reviewer": {
+    "kind": "vision_model",
+    "id": null,
+    "version": null
+  },
+  "coverage": {
+    "kind": "image",
+    "basis": "not_reviewed"
+  },
+  "checks": [
+    {
+      "id": "scene_structure",
+      "result": "UNKNOWN",
+      "observation": "尚未读取实际图像。",
+      "evidence": []
+    },
+    {
+      "id": "subject_integrity",
+      "result": "UNKNOWN",
+      "observation": "尚未读取实际图像。",
+      "evidence": []
+    },
+    {
+      "id": "contacts",
+      "result": "UNKNOWN",
+      "observation": "尚未读取实际图像。",
+      "evidence": []
+    },
+    {
+      "id": "composition",
+      "result": "UNKNOWN",
+      "observation": "尚未读取实际图像。",
+      "evidence": []
+    },
+    {
+      "id": "technical",
+      "result": "UNKNOWN",
+      "observation": "尚未读取实际图像。",
+      "evidence": []
+    },
+    {
+      "id": "narrative",
+      "result": "UNKNOWN",
+      "observation": "尚未读取实际图像。",
+      "evidence": []
+    },
+    {
+      "id": "protected_pixels",
+      "result": "UNKNOWN",
+      "observation": "尚未读取实际图像。",
+      "evidence": []
+    }
+  ],
+  "findings": [],
+  "fidelity_review": null
+}

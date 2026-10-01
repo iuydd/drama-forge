@@ -1,0 +1,39 @@
+{
+  "schema_version": "shot-fidelity-1",
+  "status": "DRAFT",
+  "example_only": false,
+  "episode_id": null,
+  "shot_id": null,
+  "scene_id": null,
+  "view_id": null,
+  "revision": null,
+  "risks": {
+    "direction": {
+      "applicable": null,
+      "basis": null
+    },
+    "gaze": {
+      "applicable": null,
+      "basis": null
+    },
+    "action": {
+      "applicable": null,
+      "basis": null
+    },
+    "text": {
+      "applicable": null,
+      "basis": null
+    },
+    "placement": {
+      "applicable": null,
+      "basis": null
+    },
+    "performance": {
+      "applicable": null,
+      "basis": null
+    }
+  },
+  "requirements": [],
+  "note": "创作负责人在生成前冻结六类适用性判断，非强制全部适用；字段由fidelity_contract.validate检查。模板和结构通过均不代表实际媒体已验收。",
+  "policy_version": "4.2.0"
+}

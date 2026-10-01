@@ -1,0 +1,32 @@
+{
+  "schema_version": "edit-review-1",
+  "status": "NOT_REVIEWED",
+  "artifact": {
+    "path": null,
+    "sha256": null
+  },
+  "timeline": {
+    "path": null,
+    "sha256": null
+  },
+  "reviewer": null,
+  "cut_ids": [],
+  "required_event_ids": [],
+  "cut_checks": [],
+  "cut_check_template": {
+    "cut_id": null,
+    "action_spatial": "UNKNOWN",
+    "line_completeness": "UNKNOWN",
+    "evidence_readability": "UNKNOWN",
+    "source_lipsync": "UNKNOWN",
+    "ambience_music": "UNKNOWN",
+    "subtitle_timing": "UNKNOWN",
+    "technical": "UNKNOWN",
+    "observation": null,
+    "evidence": []
+  },
+  "unresolved_cut_ids": [],
+  "unresolved_event_ids": [],
+  "review_calls_used": 0,
+  "note": "复用G3，不每个切点重新调用Agent。技术/语义和实际覆盖分开，不把UNKNOWN当PASS。"
+}

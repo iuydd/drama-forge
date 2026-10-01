@@ -1,0 +1,441 @@
+{
+  "schema_version": "role-reading-map-1",
+  "package_role": "integrated",
+  "package_version": "4.7.6",
+  "content_version": "4.7.6",
+  "workflow_mode": "upfront_self",
+  "default_stage": "startup",
+  "documents": {
+    "10": {
+      "path": "references/10-execution.md",
+      "sha256": "1a1ecc6d569869d4fc715663075453b2a83d78f65bd3eee8a6c2ec280a643597",
+      "kind": "original"
+    },
+    "11": {
+      "path": "references/11-handoff.md",
+      "sha256": "6a42f8c33a08a0fac309ab84fe228fbff4ac1ca8a729369a4027d48a8086718a",
+      "kind": "original"
+    },
+    "00": {
+      "path": "references/00-contract.md",
+      "sha256": "63e779cae892e3bdb6827b86d2feab9400c2b9dd5184ceb1e38ee16f0e3e6a1c",
+      "kind": "original"
+    },
+    "01": {
+      "path": "references/01-story.md",
+      "sha256": "c6476267b09d9ec87859bcca88b75f7813af95dd961adabeeeaa067d1734be1c",
+      "kind": "original"
+    },
+    "02": {
+      "path": "references/02-opening-causality.md",
+      "sha256": "8ed3f05d261b7889b8c3c7256b43514f5d4133e66a20d9c45c925ccdf65d3f1e",
+      "kind": "original"
+    },
+    "03": {
+      "path": "references/03-performance.md",
+      "sha256": "4a51d7ea92cdba35ab93213872c7a22b7e34fc27d297b65feca2b728f54bcb2b",
+      "kind": "original"
+    },
+    "04": {
+      "path": "references/04-adaptation.md",
+      "sha256": "20a7fa7bdf0507af824067c8d82cd7e974a8d558400035e78cc1cd25d336cda4",
+      "kind": "original"
+    },
+    "05": {
+      "path": "references/05-space-assets.md",
+      "sha256": "a7ba3940b28994b4964812c305e5a7596a5cc2100d4116fa49c90d52009d1b54",
+      "kind": "original"
+    },
+    "06": {
+      "path": "references/06-storyboard-prompts.md",
+      "sha256": "318ba23fc4906b0570ee324737377fa9ab9d5beff292efd953c8398769414ccd",
+      "kind": "original"
+    },
+    "07": {
+      "path": "references/07-animatic-audio.md",
+      "sha256": "9fbcd192ddea3bdb911234c5eefee3fe4e870060d9f135d0b7a73dab1061d99b",
+      "kind": "original"
+    },
+    "08": {
+      "path": "references/08-editing.md",
+      "sha256": "57e635c8f04d534bb5840a6b6657a9e33e468956aa01ded19617a9c2b3690843",
+      "kind": "original"
+    },
+    "09": {
+      "path": "references/09-review-repair.md",
+      "sha256": "94d920312aeeb342b36ea163dc11b4bfbf10cffaba48f23957b278148977f372",
+      "kind": "original"
+    },
+    "blind": {
+      "path": "references/blind-review.md",
+      "sha256": "d30cb3c7a15d21898829a2822e7e57736f89d220c6ce135510701211f0fc6794",
+      "kind": "original"
+    },
+    "upfront": {
+      "path": "references/upfront-workflow.md",
+      "sha256": "66452e4164c44b4b65679e4de054aef4eed96355dd40330abf9c65bb6c9661f9",
+      "kind": "transport"
+    },
+    "first_message": {
+      "path": "prompts/agent-to-brain.txt",
+      "sha256": "79e83acd6c6d281b72cfe9d1ed8cffe1183760c2a8edbc7b3b2f012ca41f1e31",
+      "kind": "transport"
+    },
+    "continue_message": {
+      "path": "prompts/agent-to-brain-continue.txt",
+      "sha256": "d17f7b965c8eb01597603283f8b35ad8d0fbe65e4f4fc075295e9e21206fb882",
+      "kind": "transport"
+    },
+    "repair_message": {
+      "path": "prompts/agent-to-brain-format-repair.txt",
+      "sha256": "b0e87d88214f8ba1cdc4d18f91352b4bb1a1380ca861efe6dfea616b37891c19",
+      "kind": "transport"
+    },
+    "record_format": {
+      "path": "prompts/record-format.txt",
+      "sha256": "06c7ddc3c74f0e1a0706334e0cb716101759933f9c7a078e80fd08b4693d3ef4",
+      "kind": "transport"
+    },
+    "brain_payload": {
+      "path": "assets/brain-skill.md",
+      "sha256": "95936774688481d154b331d131dbb8ff9a4b5337a0c74523376046aec75395f4",
+      "kind": "transport_only"
+    },
+    "response_schema": {
+      "path": "schemas/brain-response.schema.json",
+      "sha256": "e50e4cbd623078cff4d522febdf481fb79502b70705f19f28477af9dc5a00a29",
+      "kind": "transport"
+    }
+  },
+  "routes": {
+    "startup": {
+      "actor": "integrated",
+      "mode": "execute",
+      "read": [
+        "00",
+        "10",
+        "11"
+      ],
+      "scope": "读取当前一体流程入口；确认本次范围、产物与现有约束后自行完成前期。"
+    },
+    "request_brain": {
+      "actor": "integrated",
+      "mode": "request_brain",
+      "read": [
+        "00",
+        "upfront",
+        "first_message",
+        "record_format"
+      ],
+      "scope": "LEGACY：只供用户明确选择旧 Brain/Agent 分离流程且 request.legacy_brain_compatibility=true 的项目；默认一体流程不走此路。",
+      "send_only": [
+        "brain_payload",
+        "response_schema"
+      ]
+    },
+    "collect_brain": {
+      "actor": "integrated",
+      "mode": "collect_only",
+      "read": [
+        "00",
+        "upfront",
+        "continue_message",
+        "repair_message",
+        "record_format"
+      ],
+      "scope": "LEGACY：只供用户明确选择旧 Brain/Agent 分离流程且 request.legacy_brain_compatibility=true 的项目；默认一体流程不走此路。",
+      "send_only": [
+        "brain_payload",
+        "response_schema"
+      ]
+    },
+    "assets": {
+      "actor": "integrated",
+      "mode": "execute",
+      "read": [
+        "00",
+        "05",
+        "09"
+      ],
+      "scope": "生成并验收Brain已设计资产"
+    },
+    "start_frames": {
+      "actor": "integrated",
+      "mode": "execute",
+      "read": [
+        "00",
+        "03",
+        "05",
+        "06",
+        "09"
+      ],
+      "scope": "仅供明确选择首帧 I2V 后端的兼容分支；默认 MiniMax-Hailuo 多参考图流程不生成融合首帧。"
+    },
+    "prompt_image": {
+      "actor": "integrated",
+      "mode": "design",
+      "read": [
+        "00",
+        "05",
+        "06"
+      ],
+      "scope": "同一个 agent 根据当前已确认方案设计并绑定提示词；视频默认使用独立参考资产，明确场景动态。"
+    },
+    "prompt_video": {
+      "actor": "integrated",
+      "mode": "design",
+      "read": [
+        "00",
+        "03",
+        "05",
+        "06",
+        "07"
+      ],
+      "scope": "同一个 agent 根据当前已确认方案设计并绑定提示词；视频默认使用独立参考资产，明确场景动态。"
+    },
+    "animatic": {
+      "actor": "integrated",
+      "mode": "execute",
+      "read": [
+        "00",
+        "02",
+        "03",
+        "06",
+        "07",
+        "09"
+      ],
+      "scope": "按Brain设计实际制作预演和理解检查"
+    },
+    "audio": {
+      "actor": "integrated",
+      "mode": "execute",
+      "read": [
+        "00",
+        "03",
+        "07",
+        "09"
+      ],
+      "scope": "实际生成音轨、语气与口型检查，不改词"
+    },
+    "video": {
+      "actor": "integrated",
+      "mode": "execute",
+      "read": [
+        "00",
+        "03",
+        "05",
+        "06",
+        "07",
+        "09"
+      ],
+      "scope": "按冻结方案生成视频并实际检查"
+    },
+    "edit": {
+      "actor": "integrated",
+      "mode": "execute",
+      "read": [
+        "00",
+        "03",
+        "06",
+        "07",
+        "08",
+        "09"
+      ],
+      "scope": "按预定剪辑原则选择实际源范围；不得改变事件"
+    },
+    "review": {
+      "actor": "integrated",
+      "mode": "observe",
+      "read": [
+        "00",
+        "02",
+        "03",
+        "05",
+        "06",
+        "07",
+        "08",
+        "09"
+      ],
+      "scope": "核实际媒体和既定标准，不自由重写创作"
+    },
+    "repair": {
+      "actor": "integrated",
+      "mode": "approved_branch_only",
+      "read": [
+        "00",
+        "03",
+        "05",
+        "06",
+        "07",
+        "08",
+        "09"
+      ],
+      "scope": "仅执行预写且获准完整分支，未覆盖硬失败暂停相关段"
+    },
+    "dispatch": {
+      "actor": "integrated",
+      "mode": "execute",
+      "read": [
+        "00",
+        "10",
+        "11"
+      ],
+      "scope": "通过门禁后提交、调度与对账"
+    },
+    "recover": {
+      "actor": "integrated",
+      "mode": "execute",
+      "read": [
+        "00",
+        "10",
+        "11"
+      ],
+      "scope": "恢复实际已提交任务，未知不重复提交"
+    },
+    "delivery": {
+      "actor": "integrated",
+      "mode": "execute",
+      "read": [
+        "00",
+        "08",
+        "09",
+        "10",
+        "11"
+      ],
+      "scope": "G4与真实成片交付，不自动公开发布"
+    },
+    "blind": {
+      "actor": "blind_reviewer",
+      "mode": "observe_isolated",
+      "read": [
+        "blind"
+      ],
+      "scope": "仅将本路线instruction与实际媒体和允许前情发给独立盲看者"
+    },
+    "story_original": {
+      "actor": "integrated",
+      "mode": "design",
+      "read": [
+        "00",
+        "01",
+        "02",
+        "03",
+        "09"
+      ],
+      "scope": "同一个 agent 按现行章节完成 story_original，先检查吸引力与可执行性，再记录完整方案。"
+    },
+    "story_adapt": {
+      "actor": "integrated",
+      "mode": "design",
+      "read": [
+        "00",
+        "01",
+        "02",
+        "03",
+        "04",
+        "09"
+      ],
+      "scope": "同一个 agent 按现行章节完成 story_adapt，先检查吸引力与可执行性，再记录完整方案。"
+    },
+    "story_review": {
+      "actor": "integrated",
+      "mode": "design",
+      "read": [
+        "00",
+        "01",
+        "02",
+        "03",
+        "09"
+      ],
+      "scope": "同一个 agent 按现行章节完成 story_review，先检查吸引力与可执行性，再记录完整方案。"
+    },
+    "board": {
+      "actor": "integrated",
+      "mode": "design",
+      "read": [
+        "00",
+        "03",
+        "05",
+        "06",
+        "07",
+        "09"
+      ],
+      "scope": "同一个 agent 按现行章节完成 board，先检查吸引力与可执行性，再记录完整方案。"
+    },
+    "asset_design": {
+      "actor": "integrated",
+      "mode": "design",
+      "read": [
+        "00",
+        "05",
+        "06"
+      ],
+      "scope": "同一个 agent 按现行章节完成 asset_design，先检查吸引力与可执行性，再记录完整方案。"
+    },
+    "new_prompt": {
+      "actor": "integrated",
+      "mode": "design",
+      "read": [
+        "00",
+        "03",
+        "05",
+        "06",
+        "07"
+      ],
+      "scope": "同一个 agent 按现行章节完成 new_prompt，先检查吸引力与可执行性，再记录完整方案。"
+    },
+    "sound_design": {
+      "actor": "integrated",
+      "mode": "design",
+      "read": [
+        "00",
+        "03",
+        "07"
+      ],
+      "scope": "同一个 agent 按现行章节完成 sound_design，先检查吸引力与可执行性，再记录完整方案。"
+    },
+    "edit_design": {
+      "actor": "integrated",
+      "mode": "design",
+      "read": [
+        "00",
+        "06",
+        "07",
+        "08"
+      ],
+      "scope": "同一个 agent 按现行章节完成 edit_design，先检查吸引力与可执行性，再记录完整方案。"
+    },
+    "qa_repair_plan": {
+      "actor": "integrated",
+      "mode": "design",
+      "read": [
+        "00",
+        "03",
+        "05",
+        "06",
+        "07",
+        "08",
+        "09"
+      ],
+      "scope": "同一个 agent 按现行章节完成 qa_repair_plan，先检查吸引力与可执行性，再记录完整方案。"
+    },
+    "upfront": {
+      "actor": "integrated",
+      "mode": "design",
+      "read": [
+        "00",
+        "01",
+        "02",
+        "03",
+        "04",
+        "05",
+        "06",
+        "07",
+        "08",
+        "09"
+      ],
+      "scope": "同一个 agent 完成本次范围全部前期，再按现行默认参考图视频流程执行；创作规则见 01–02。"
+    }
+  },
+  "permission_boundary": "Routing and file-integrity check only; not runtime access control, media acceptance or spending authorization."
+}

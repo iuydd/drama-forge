@@ -1,0 +1,45 @@
+{
+  "schema_version": "edit-timeline-1",
+  "status": "DRAFT",
+  "episode_id": null,
+  "revision": null,
+  "fps": "24/1",
+  "sample_rate": 48000,
+  "channels": 2,
+  "width": null,
+  "height": null,
+  "pixel_format": "yuv420p",
+  "color": {
+    "space": "bt709",
+    "primaries": "bt709",
+    "transfer": "bt709",
+    "range": "tv"
+  },
+  "duration_frames": null,
+  "audio_intent": "sound",
+  "sources": [],
+  "video": [],
+  "audio": [],
+  "events": [],
+  "event_orders": [],
+  "sync_links": [],
+  "allowed_dialogue_overlaps": [],
+  "render_policy": {
+    "video_codec": "ffv1",
+    "audio_codec": "pcm_s24le",
+    "container": "mkv"
+  },
+  "note": "待填写模板，不是已锁定时间线。CFR/实际规格、源及范围、台词事件、颜色与音画锚点均须实测。",
+  "presentation": {
+    "schema_version": "presentation-1",
+    "status": "DRAFT",
+    "policy": {
+      "max_subtitle_lead_frames": 0,
+      "max_subtitle_tail_frames": 0
+    },
+    "cues": [],
+    "orders": [],
+    "protected_regions": [],
+    "note": "同一edit-timeline内的后期呈现注释。字幕从实际音频event范围派生；UI按实际event锚点与可读阶段安排。rect为最终画布归一化[x,y,w,h]；保护区可按运动分段。此模板未定位任何素材，不能标成LOCKED。"
+  }
+}

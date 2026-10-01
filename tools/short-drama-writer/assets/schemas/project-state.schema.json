@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Persistent project state",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "project_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "canon_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "total_episodes": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "completed_episodes": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "episode_files": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "draft_episode_files": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "character_states": {
+      "type": "object"
+    },
+    "resource_states": {
+      "type": "object"
+    },
+    "knowledge_state": {
+      "type": "object"
+    },
+    "promises": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1
+          },
+          "opened_episode": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "due_episode": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "open",
+              "partial",
+              "resolved"
+            ]
+          },
+          "resolved_episode": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1
+          },
+          "evidence_scene_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "description",
+          "opened_episode",
+          "due_episode",
+          "status",
+          "resolved_episode",
+          "evidence_scene_id"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "last_episode_summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "next_action": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "required": [
+    "schema_version",
+    "project_id",
+    "version",
+    "canon_version",
+    "total_episodes",
+    "completed_episodes",
+    "episode_files",
+    "draft_episode_files",
+    "character_states",
+    "resource_states",
+    "knowledge_state",
+    "promises",
+    "last_episode_summary",
+    "next_action"
+  ],
+  "additionalProperties": false
+}

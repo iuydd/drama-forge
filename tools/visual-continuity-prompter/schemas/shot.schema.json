@@ -1,0 +1,921 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Shot contract",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "shot_id",
+    "source_scene_id",
+    "scene_id",
+    "scene_version",
+    "scene_state_id",
+    "view_id",
+    "mode",
+    "planning_status",
+    "camera_locked",
+    "output",
+    "references",
+    "change_request",
+    "preserve",
+    "relations",
+    "narrative_must_show",
+    "state_in",
+    "state_out",
+    "qa_required",
+    "repair_budget",
+    "protection"
+  ],
+  "properties": {
+    "shot_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_scene_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scene_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scene_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "scene_state_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "view_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "change_request": {
+      "type": "string",
+      "minLength": 1
+    },
+    "schema_version": {
+      "const": "1.0"
+    },
+    "mode": {
+      "enum": [
+        "edit_same_view",
+        "new_view",
+        "video_i2v",
+        "video_reference"
+      ]
+    },
+    "planning_status": {
+      "enum": [
+        "candidate",
+        "locked"
+      ]
+    },
+    "camera_locked": {
+      "type": "boolean"
+    },
+    "camera_motion": {
+      "enum": [
+        "fixed",
+        "planned_path"
+      ]
+    },
+    "output": {
+      "type": "object",
+      "required": [
+        "width",
+        "height",
+        "media_kind"
+      ],
+      "properties": {
+        "width": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "height": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "media_kind": {
+          "enum": [
+            "image",
+            "video"
+          ]
+        }
+      }
+    },
+    "references": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "required": [
+          "asset_id",
+          "role",
+          "purpose",
+          "upload_index",
+          "status",
+          "path",
+          "sha256"
+        ],
+        "properties": {
+          "asset_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "role": {
+            "enum": [
+              "asset_ref",
+              "scene_base",
+              "identity",
+              "costume",
+              "prop",
+              "previous_end",
+              "start_frame",
+              "layout",
+              "mask"
+            ]
+          },
+          "primary": {
+            "type": "boolean"
+          },
+          "purpose": {
+            "type": "string",
+            "minLength": 1
+          },
+          "upload_index": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "status": {
+            "enum": [
+              "missing",
+              "candidate",
+              "accepted"
+            ]
+          },
+          "path": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "sha256": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        }
+      }
+    },
+    "preserve": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "relations": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "narrative_must_show": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "state_in": {
+      "type": "object"
+    },
+    "state_out": {
+      "type": "object"
+    },
+    "qa_required": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "repair_budget": {
+      "type": "object",
+      "required": [
+        "generation_attempts",
+        "local_repairs"
+      ],
+      "properties": {
+        "generation_attempts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "local_repairs": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "protection": {
+      "type": "object",
+      "required": [
+        "method"
+      ],
+      "properties": {
+        "method": {
+          "enum": [
+            "none",
+            "external_composite"
+          ]
+        },
+        "allowed_mask": {
+          "type": "object",
+          "required": [
+            "path",
+            "sha256"
+          ],
+          "properties": {
+            "path": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "sha256": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "pattern": "^[0-9a-f]{64}$"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "blend_mask": {
+          "anyOf": [
+            {
+              "type": "object",
+              "required": [
+                "path",
+                "sha256"
+              ],
+              "properties": {
+                "path": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "sha256": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^[0-9a-f]{64}$"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              }
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "video": {
+      "type": "object",
+      "required": [
+        "duration_s",
+        "fps",
+        "action_beats",
+        "end_state_description"
+      ],
+      "properties": {
+        "duration_s": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "fps": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "action_beats": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": [
+              "start_s",
+              "end_s",
+              "action"
+            ],
+            "properties": {
+              "start_s": {
+                "type": "number",
+                "minimum": 0
+              },
+              "end_s": {
+                "type": "number",
+                "exclusiveMinimum": 0
+              },
+              "action": {
+                "type": "string",
+                "minLength": 1
+              }
+            }
+          }
+        },
+        "end_state_description": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "style_lock": {
+      "type": "object",
+      "required": [
+        "style_id",
+        "version",
+        "prompt_sentence",
+        "status"
+      ],
+      "properties": {
+        "style_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prompt_sentence": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "enum": [
+            "candidate",
+            "locked"
+          ]
+        }
+      }
+    },
+    "audio_plan": {
+      "type": "object",
+      "required": [
+        "native_spoken_lines",
+        "post_voices"
+      ],
+      "properties": {
+        "native_spoken_lines": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "line_id",
+              "speaker_description",
+              "voice_description",
+              "text_spoken"
+            ],
+            "properties": {
+              "delivery_note": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "description": "Optional delivery direction, NOT spoken text or a vendor API field. Native rendered separately; post-production note stays out of visual prompts."
+              }
+            }
+          }
+        },
+        "post_voices": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "line_id",
+              "source_kind",
+              "speaker_description",
+              "text_spoken"
+            ],
+            "properties": {
+              "delivery_note": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "description": "Optional delivery direction, NOT spoken text or a vendor API field. Native rendered separately; post-production note stays out of visual prompts."
+              }
+            }
+          }
+        }
+      }
+    },
+    "prompt9": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "status",
+        "source_contract_sha256",
+        "dimensions"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "prompt9-1"
+        },
+        "status": {
+          "enum": [
+            "draft",
+            "locked"
+          ]
+        },
+        "source_contract_sha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "dimensions": {
+          "type": "object",
+          "required": [
+            "subject",
+            "camera_motion",
+            "lighting",
+            "choreography",
+            "framing",
+            "space",
+            "style",
+            "sound",
+            "stability"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "subject": {
+              "type": "object",
+              "required": [
+                "state",
+                "source"
+              ],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "locked",
+                    "fillable",
+                    "not_applicable"
+                  ]
+                },
+                "source": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            },
+            "camera_motion": {
+              "type": "object",
+              "required": [
+                "state",
+                "source"
+              ],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "locked",
+                    "fillable",
+                    "not_applicable"
+                  ]
+                },
+                "source": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            },
+            "lighting": {
+              "type": "object",
+              "required": [
+                "state",
+                "source"
+              ],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "locked",
+                    "fillable",
+                    "not_applicable"
+                  ]
+                },
+                "source": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            },
+            "choreography": {
+              "type": "object",
+              "required": [
+                "state",
+                "source"
+              ],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "locked",
+                    "fillable",
+                    "not_applicable"
+                  ]
+                },
+                "source": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            },
+            "framing": {
+              "type": "object",
+              "required": [
+                "state",
+                "source"
+              ],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "locked",
+                    "fillable",
+                    "not_applicable"
+                  ]
+                },
+                "source": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            },
+            "space": {
+              "type": "object",
+              "required": [
+                "state",
+                "source"
+              ],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "locked",
+                    "fillable",
+                    "not_applicable"
+                  ]
+                },
+                "source": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            },
+            "style": {
+              "type": "object",
+              "required": [
+                "state",
+                "source"
+              ],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "locked",
+                    "fillable",
+                    "not_applicable"
+                  ]
+                },
+                "source": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            },
+            "sound": {
+              "type": "object",
+              "required": [
+                "state",
+                "source"
+              ],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "locked",
+                    "fillable",
+                    "not_applicable"
+                  ]
+                },
+                "source": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            },
+            "stability": {
+              "type": "object",
+              "required": [
+                "state",
+                "source"
+              ],
+              "properties": {
+                "state": {
+                  "enum": [
+                    "locked",
+                    "fillable",
+                    "not_applicable"
+                  ]
+                },
+                "source": {
+                  "type": "string"
+                },
+                "text": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                },
+                "reason": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        },
+        "ambient_sound": {
+          "type": "string"
+        }
+      }
+    },
+    "insert_policy": {
+      "type": "object",
+      "required": [
+        "kind",
+        "visible_entity_ids",
+        "offscreen_aliases",
+        "post_audio_separate"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "object_only",
+            "visible_part"
+          ]
+        },
+        "visible_entity_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "offscreen_aliases": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "post_audio_separate": {
+          "const": true
+        }
+      }
+    },
+    "ensemble_required": {
+      "type": "boolean"
+    },
+    "ensemble": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "description": "Frozen ensemble-1 state/visibility bundle, checked by scene_continuity.py. No vision inference."
+    },
+    "policy_version": {
+      "enum": [
+        "4.0.0",
+        "4.1.0",
+        "4.2.0"
+      ]
+    },
+    "episode_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "brain_required": {
+      "type": "boolean"
+    },
+    "fidelity_required": {
+      "type": "boolean"
+    },
+    "brain_binding": {
+      "type": "object"
+    },
+    "fidelity_contract": {
+      "type": "object"
+    },
+    "locked_prompt": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "minLength": 1
+    },
+    "continuity_required": {
+      "type": "boolean"
+    },
+    "continuity_plan": {
+      "type": "object"
+    },
+    "prompt_ir": {
+      "type": "object"
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"mode": {"const": "video_reference"}}, "required": ["mode"]},
+      "then": {
+        "required": ["video_input", "required_asset_ids", "background_motion"],
+        "properties": {
+          "video_input": {"const": "references"},
+          "required_asset_ids": {"type": "array", "minItems": 1, "maxItems": 6, "uniqueItems": true, "items": {"type": "string", "minLength": 1}},
+          "background_motion": {"type": "string", "minLength": 1},
+          "references": {"maxItems": 6, "items": {"properties": {"role": {"const": "asset_ref"}, "primary": {"const": false}}}}
+        }
+      },
+      "else": {"properties": {"references": {"items": {"required": ["primary"]}}}}
+    },
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "video_i2v"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "video"
+        ]
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "policy_version"
+        ],
+        "properties": {
+          "policy_version": {
+            "enum": [
+              "4.0.0",
+              "4.1.0",
+              "4.2.0"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "episode_id",
+          "brain_required",
+          "fidelity_required",
+          "brain_binding",
+          "fidelity_contract"
+        ],
+        "properties": {
+          "brain_required": {
+            "const": true
+          },
+          "fidelity_required": {
+            "const": true
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "policy_version"
+        ],
+        "properties": {
+          "policy_version": {
+            "enum": [
+              "4.1.0",
+              "4.2.0"
+            ]
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "continuity_required",
+          "continuity_plan"
+        ],
+        "properties": {
+          "continuity_required": {
+            "const": true
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "required": [
+          "policy_version"
+        ],
+        "properties": {
+          "policy_version": {
+            "const": "4.2.0"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "prompt_ir",
+          "locked_prompt"
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,36 @@
+{
+  "schema_version": "performance-context-demo-1",
+  "status": "PLANNED_EXAMPLE_NOT_GENERATED",
+  "fictional": true,
+  "project_id": "DEMO-WATCH",
+  "scene_id": "SCENE-SHOP",
+  "actual_media": null,
+  "background_in_actual_dialogue": [
+    "又在修你爸这块表？",
+    "师傅看了两次，都说没法修。收起来吧，别再熬了。"
+  ],
+  "prop_introduction": "开场工作灯旁旧腕表，褐色皮带有浅裂纹，表针停着。",
+  "trigger": "同一只表的指针开始走，陈晏确认后说你听。",
+  "lines": [
+    {
+      "line_id": "L-MOTHER-CONFIRM",
+      "speaker_id": "MOTHER",
+      "voice_id": "PROJECT_BOUND_REQUIRED",
+      "text_spoken": "修好了？",
+      "delivery_note": "轻轻求确认，前半句带疑问；问完等回答，不是惊叫或播报。",
+      "performance_id": "PERF-CONFIRM"
+    }
+  ],
+  "performance": {
+    "start_state": "先望向还在走的表针，不敢先笑",
+    "observable_change": "抬眼向儿子求确认；听到肯定后肩膀与嘴角放松",
+    "listener_response": "儿子等问题结束再肯定回应",
+    "end_state": "母亲相信成果，表仍为同一只并在她手中"
+  },
+  "invariant": "表的来源、设计和两人身份不变；未设定父亲去世，不添加事故闪回或画外声音。",
+  "timing": {
+    "status": "unplanned",
+    "episode_seconds": null
+  },
+  "not_a_native_api_request": true
+}

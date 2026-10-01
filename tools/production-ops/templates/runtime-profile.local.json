@@ -1,0 +1,25 @@
+{
+  "schema_version": "local-runtime-1",
+  "status": "UNVERIFIED",
+  "source": "project_configuration_required",
+  "connection_alias": null,
+  "connection_env": {
+    "base_url": "GENERATION_BASE_URL",
+    "token": "GENERATION_TOKEN"
+  },
+  "env_names_are_examples": true,
+  "connection_values_stored": false,
+  "unattended_permission_preflight": "UNVERIFIED",
+  "interactive_prompts_allowed": false,
+  "allowed_working_roots": [],
+  "approved_command_adapters": [],
+  "hardware_pools": {},
+  "mobile_delivery": {
+    "max_attachment_bytes": null,
+    "target_fraction": 0.9,
+    "preserve_master": true,
+    "actual_channel_verified": false,
+    "permission_to_share_externally": false
+  },
+  "note": "环境变量名仅为示例，按实际项目映射；不保存凭证值。附件上限、资源池与工作目录须核实后填写。"
+}

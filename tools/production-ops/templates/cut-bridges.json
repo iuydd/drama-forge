@@ -1,0 +1,9 @@
+{
+  "schema_version": "cut-bridges-1",
+  "status": "DRAFT",
+  "episode_id": null,
+  "timeline_digest": null,
+  "cuts": [],
+  "character_cues": [],
+  "note": "只在选段后填写；先用cut_bridges.py plan给出真实成片切点与源范围。逐行补relation/category/connection/left_action_state/right_action_state/attention_emotion_link/sound_link/linked_event_ids；刻意跳转还需approved_transition_ref/orientation_cue。context扩到完整关键事件。空模板不是已检查。"
+}

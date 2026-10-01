@@ -1,0 +1,7 @@
+{
+  "kind": "object_only",
+  "visible_entity_ids": [],
+  "offscreen_aliases": [],
+  "post_audio_separate": true,
+  "note": "真实画内白名单和画外别名待填写；别名仅供内部净化，不发送生成器。"
+}

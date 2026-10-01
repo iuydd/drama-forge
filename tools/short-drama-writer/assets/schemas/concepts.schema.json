@@ -1,0 +1,163 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Short drama concept cards v1.0",
+  "type": "array",
+  "items": {
+    "type": "object",
+    "properties": {
+      "id": {
+        "type": "string",
+        "minLength": 1
+      },
+      "title": {
+        "type": "string",
+        "minLength": 1
+      },
+      "logline": {
+        "type": "string",
+        "minLength": 1
+      },
+      "primary_pleasure": {
+        "type": "string",
+        "minLength": 1
+      },
+      "protagonist_goal": {
+        "type": "string",
+        "minLength": 1
+      },
+      "mechanism_summary": {
+        "description": "主角实际依靠的优势，可为常见能力、技艺、信息或关系；不要求超自然或独有机制。",
+        "type": "string",
+        "minLength": 1
+      },
+      "first_payoff": {
+        "type": "string",
+        "minLength": 1
+      },
+      "unique_scene": {
+        "description": "沿用旧字段名，填写本场具体看点；人物较量、关系变化和常见能力的有效运用均可，不是独特奇观配额。",
+        "type": "string",
+        "minLength": 1
+      },
+      "serial_engine": {
+        "type": "string",
+        "minLength": 1
+      },
+      "risk": {
+        "type": "string",
+        "minLength": 1
+      },
+      "fingerprint": {
+        "type": "object",
+        "properties": {
+          "desire": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "advantage": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "operation": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "obstacle": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "relationship": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "reveal": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "reward": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "growth": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          },
+          "arena": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 1
+          }
+        },
+        "required": [
+          "desire",
+          "advantage",
+          "operation",
+          "obstacle",
+          "relationship",
+          "reveal",
+          "reward",
+          "growth",
+          "arena"
+        ],
+        "additionalProperties": false
+      },
+      "variant_of": {
+        "type": [
+          "string",
+          "null"
+        ]
+      }
+    },
+    "required": [
+      "id",
+      "title",
+      "logline",
+      "primary_pleasure",
+      "protagonist_goal",
+      "mechanism_summary",
+      "first_payoff",
+      "unique_scene",
+      "serial_engine",
+      "risk",
+      "fingerprint",
+      "variant_of"
+    ],
+    "additionalProperties": false
+  },
+  "minItems": 1
+}

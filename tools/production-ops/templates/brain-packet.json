@@ -1,0 +1,19 @@
+{
+  "schema_version": "brain-packet-1",
+  "policy_version": "4.2.0",
+  "packet_id": null,
+  "revision": null,
+  "episode_id": null,
+  "phase": "assets",
+  "status": "DRAFT",
+  "decision_owner": "chatgpt_brain",
+  "example_only": false,
+  "approval_evidence": {
+    "path": null,
+    "sha256": null
+  },
+  "reviewed_inputs": [],
+  "blocking_questions": [],
+  "tasks": [],
+  "note": "DRAFT：由当前创作负责人审定完整任务；brain字段兼容保留，不要求另开会话。任务绑定精确request、semantic_review和适用fidelity/continuity；真实提交另绑定native_request_sha256及保护域签名。模板不含批准或密钥。"
+}

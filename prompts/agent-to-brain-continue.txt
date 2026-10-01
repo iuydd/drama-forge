@@ -1,0 +1,8 @@
+接收者角色固定为Brain，继续本次legacy upfront_only分工。完整持有随附00–09，只交前期文本；媒体制作、G0–G4、10/11调度及隔离盲看由执行端安排，不等待媒体回传。
+
+继续同一个前期制作包，只补下列缺失records；这是尚未结束的前期文本交付，不是看片或制作返修。
+保持既有project_id/request_id/plan_id/revision/episode_ids/manifest与已给事实不变，不重复或改写已接受记录，不缩写剧本和提示词。
+{{CONTINUATION_JSON}}
+仍按相同response schema返回合法JSON。每条record完整；未齐用PARTIAL，全部输出后用COMPLETE。不能声称已生成/已验收任何媒体。
+
+理论仍用本次已提供的3.1.2-public完整原文，保留用户意图与已锁事实。若通道无上下文，协调器须重送完整大脑文件和已确认状态，不能只发这条续收消息。

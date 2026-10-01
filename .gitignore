@@ -2,4 +2,9 @@ __pycache__/
 *.pyc
 .DS_Store
 .omc/
-.omc/
+.serena/
+.pytest_cache/
+.venv/
+.env
+.env.*
+!.env.example

@@ -1,0 +1,23 @@
+# 序列连续性｜4.2.0
+
+`sequence-continuity-1`仍是既有scene/ensemble/事件的同源索引，不是新造平行世界。policy_version=4.2.0；初态initial记录稳定fact键值，fixed_keys锁不应变的设计；states按父在前记录有event/cause/approval的before→after，unchanged复用状态ID。明确空手等可在known_empty_keys允许null，未知不假装已知空值；比较保留JSON类型。
+
+scenes按地点/布局登记coordinate_frame、landmarks、views；view含axis_side、plate_asset_id、orientation_basis、screen_landmarks。设计坐标/投影不是脚本从图像实测的3D。固定设计真变时批准新布局/范围，不偷偷解锁旧世界。
+
+shots引用scene/view、state_in/out、relation、transition_basis、state_keys、visible_start/end_keys、screen_start/end、ensemble_bindings、continuity_clause、reference_policy。relation沿opening/camera_only/continuous/return/new_scene/ellipsis/flashback/resume/parallel/intentional。时间/空间跳转有approved basis与观众可得定位；例外不能失败后补写。有变化才有事件，出画/遮挡不销毁事实。
+
+4.2每个screen属性必须指定projection_dependencies：使用哪几个已登记世界事实。相同scene/view/layout/camera_pose和依赖状态，应有相同screen值；未知任意透视不会凭空被解算。声明了数值空间时可用spatial_math投影辅助，但它不恢复3D或判断遮挡。
+
+visible边界必须与当前ensemble独立核对。确实可见的已跟踪事实不能通过清空检查绕过；不可見表面可用boundary_exemptions[boundary][key]={reason,basis_ref}解释，不能声称看见遮挡物。四组观察集合都空时另需empty_observation_scope={reason,basis_ref}；这不替代ensemble核对。旧4.1单独解析器没有独立媒体/ensemble时可能无法判空的真假，4.2完整编译路径明确阻断缺覆盖。
+
+每个绑定按state_keys顺序映射entity_id/path，两个边界值须匹配同源账本。reference_policy沿same_view_plate/adopted_edge/target_view_plate/establish；真实上传含目标plate或有明确谱系的接受帧。continuity_clause是大脑写好的具体可见约束，须进入最终prompt；子串检查只防丢字，不证明语义无矛盾，另由IR约束和大脑语义审读处理。
+
+可选world_constraints用通用not_all/requires/unique_nonempty表达明显跨字段不变量，keys/when/then引用真实facts，带basis_ref；适用才添加，不强制物理仿真。可选camera_path含basis_ref、起/中/终waypoints{id,progress,pose,visibility_basis}，progress严格0→1，首末对应camera_pose。移动镜头不能只交两端，实际G2/G3用trajectory_review绑定实际媒体、waypoint、subject帧locator/event_frame和证据。
+
+## 观察、剪辑与复用
+
+sequence-review-1继续使用stage/subject_sha256/shots。每镜绑定plan/media/reviewer、实际in/out点、values、locator、evidence和full_interval_viewed；首帧仅in。values按world:fact与screen:property比较，允许已批准且有单位/参照系的数值observation_tolerances，不能放宽身份和文本。新政策须配同政策计划，不允许利用旧默认逃过检查。
+
+最终计划绑定实际timeline_digest与每次采用clip ID。不同重复采用有独立occurrence ID；入口/出口观察覆盖实际dst边界，CFR左闭右开。闭区间采样显式转化，VFR/变速先留真实映射。相邻接缝仍用原bridges；expected_revisits归并非相邻同地点/可见物件返回，实际成对查看并引用真实两端证据。
+
+workflow_support.diff_scopes只把有关状态、事件祖先、所用机位/布局/参考用途纳入镜头语义摘要，输出受影响镜头、接缝与回访。全局计划/packet改变仍要新批准；非final观察可附original_plan实际记录，代码核原plan/media与当前语义范围一致才复用原报告。不得改旧hash，final换导出仍看自己的时间线与后期。新增根资产/状态改变则只传播到真实依赖，未知范围不强行复用。

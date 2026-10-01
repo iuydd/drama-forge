@@ -1,0 +1,35 @@
+{
+  "schema_version": "comprehension-1",
+  "episode_id": null,
+  "version": null,
+  "status": "DRAFT",
+  "must_understand": [],
+  "deliberately_unrevealed": [],
+  "must_understand_template": {
+    "fact_id": null,
+    "question_for_evaluator_only": null,
+    "minimum_correct_meaning": null,
+    "on_screen_or_audible_evidence": []
+  },
+  "viewer_input": {
+    "media": {
+      "path": null,
+      "sha256": null
+    },
+    "prior_context_actually_seen_by_audience": null,
+    "has_script": false,
+    "has_answer_key": false,
+    "has_other_review_reports": false
+  },
+  "blind_prompt": "只看所给成片/预演，用自己的话简短复述谁想做什么、发生了什么、为什么局势改变、结尾已经确定什么和仍不知道什么。不要猜创作者意图。看不清或不明就说不明。",
+  "report": {
+    "status": "NOT_REVIEWED",
+    "retelling": null,
+    "blind_context_clean": false,
+    "essential_fact_results": {},
+    "evidence": []
+  },
+  "max_initial_viewings": 1,
+  "max_targeted_rechecks": 1,
+  "do_not_require_predicting_twists": true
+}

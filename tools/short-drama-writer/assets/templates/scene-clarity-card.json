@@ -1,0 +1,60 @@
+{
+  "schema_version": "scene-clarity-1",
+  "status": "DRAFT",
+  "project_id": null,
+  "episode_id": null,
+  "scene_id": null,
+  "canon_version": null,
+  "applicability": "初次场景、活动/目标变化或实际反馈有因果缺口时填写；不为每个反打重复填表。",
+  "entry": {
+    "when_where": null,
+    "who_is_present": [],
+    "current_activity": null,
+    "immediate_goal": null,
+    "relationship_cue": null
+  },
+  "bridge": {
+    "what_character_perceives": null,
+    "evidence_source": null,
+    "choice": null,
+    "visible_action": null,
+    "consequence": null,
+    "response_or_next_goal": null
+  },
+  "known_facts_reused": [],
+  "deliberately_hidden_with_later_payoff": [],
+  "required_story_units": [],
+  "defer_nonessential_events": [],
+  "timing": {
+    "project_duration_seconds": null,
+    "speech_seconds": null,
+    "non_overlap_actions_seconds": null,
+    "reading_response_seconds": null,
+    "status": "estimated",
+    "overlap_basis": null,
+    "policy": "context_first_for_unlocked_new_projects"
+  },
+  "preserve": {
+    "script_locators": [],
+    "shot_ids": [],
+    "dialogue_line_ids": [],
+    "edit_required_events": []
+  },
+  "diagnosis": {
+    "symptom_tags": [],
+    "layer": null,
+    "observed_evidence": [],
+    "suspected_cause": null,
+    "one_change_this_round": null,
+    "do_not_change_power_to_fix_missing_context": true
+  },
+  "review": {
+    "reuse_existing_review_budget": true,
+    "status": "NOT_REVIEWED",
+    "source_hash": null,
+    "readable_does_not_mean_engaging": true,
+    "no_extra_review_chain": true
+  },
+  "first_use_context": [],
+  "emotional_value_and_visible_evidence": null
+}

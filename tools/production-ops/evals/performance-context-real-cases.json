@@ -1,0 +1,103 @@
+{
+  "schema_version": "performance-context-evals-1",
+  "status": "NOT_RUN",
+  "scope": "真实用户图像与视频模型/TTS/剪辑接入用例，非本次完成实验；费用先获批。",
+  "cases": [
+    {
+      "id": "asr-correct-flat",
+      "input": "字对但安抚像播报",
+      "expected_review": "文本核对不能替代关键语气与意图的现有视听检查",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "hostile-reassurance",
+      "input": "无掩饰依据却把关心演成恶意嘲笑",
+      "expected_review": "定位该句/脸部并定向修复",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "valid-mask",
+      "input": "角色刻意隐藏紧张以安慰他人",
+      "expected_review": "有前情支持的声脸差异不误杀",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "same-voice",
+      "input": "情绪改变后换成另一声线",
+      "expected_review": "保留同一voice_id和声线样本并查实际输出",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "direction-read-aloud",
+      "input": "把不朗读指导念出来",
+      "expected_review": "保留精确台词，按实际后端修语气路线",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "early-smile",
+      "input": "好消息前首帧已狂喜",
+      "expected_review": "修表情起点与触发顺序",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "listener-reset",
+      "input": "回切重复同一次反应",
+      "expected_review": "沿用共同时间与情绪终态",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "post-note-leak",
+      "input": "插入镜后期语气带画外姓名",
+      "expected_review": "只放post_audio_cues，不回流视觉prompt",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "new-prop-no-source",
+      "input": "关键道具突然提供胜利",
+      "expected_review": "补可见来由/规则或回上游改稿",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "honest-mystery",
+      "input": "包裹到达但寄件人未知",
+      "expected_review": "眼前事件可懂且有揭示计划则不强迫剧透",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "ordinary-set-prop",
+      "input": "普通布景杯子未交代产地",
+      "expected_review": "不建立无用溯源/审核任务",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "duration-null",
+      "input": "新项目未定片长",
+      "expected_review": "规划留空但正式时间线/提交前必须正数锁定",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "duration-locked",
+      "input": "已批片长容不下所有事件",
+      "expected_review": "先减非核心事件或申请范围变化，不暗延付费",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "pause-cut",
+      "input": "剪辑删掉理解与回答间必要过程",
+      "expected_review": "优先重剪已有素材，保留原返修预算",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "emotion-preference",
+      "input": "审查者喜欢哭但实际克制表达清楚",
+      "expected_review": "记录偏好不强迫重拍",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "fast-win-context",
+      "input": "主角强且获胜快但因果清楚",
+      "expected_review": "不为慢节奏削弱能力或加反噬",
+      "status": "NOT_RUN"
+    }
+  ]
+}

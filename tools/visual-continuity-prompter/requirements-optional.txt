@@ -1,0 +1,3 @@
+# Only for optional pixel tools and schema tests. No automatic installation.
+Pillow
+jsonschema

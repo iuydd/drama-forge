@@ -1,0 +1,23 @@
+{
+  "schema_version": "execution-binding-1",
+  "actor_id": null,
+  "actor_role": "coordinator",
+  "active_episode": null,
+  "target_episode": null,
+  "stage": "dispatch",
+  "task_scope": null,
+  "skill": {
+    "path": null,
+    "sha256": null
+  },
+  "routes": {
+    "path": null,
+    "sha256": null
+  },
+  "reading_receipt": {
+    "path": null,
+    "sha256": null
+  },
+  "note": "由可信宿主绑定角色，不相信子代理自行声明角色。文件须真实存在，读入须由实际执行者确认。",
+  "video_prompt_packages": []
+}

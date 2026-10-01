@@ -1,0 +1,150 @@
+{
+  "schema_version": "1.0",
+  "project_id": "PROJECT-TO-FILL",
+  "canon_version": "1",
+  "assets": [
+    {
+      "asset_id": "CHAR-LIN-ID-v1",
+      "entity_id": "CHAR-LIN",
+      "kind": "character",
+      "version": "1",
+      "view_id": "FRONT-BUST",
+      "state_id": "COSTUME-WORK",
+      "scene_context": null,
+      "format": "single",
+      "status": "planned",
+      "canonical_parent": null,
+      "dependencies": [],
+      "allowed_roles": [
+        "identity"
+      ],
+      "spec": {
+        "subject": "林澈正面定妆身份母版",
+        "view": "FRONT-BUST",
+        "width": 1536,
+        "height": 1536,
+        "requires_transparency": false,
+        "immutable": [
+          "原创成年角色林澈，黑色短发，略窄下颌，右眉尾一道淡疤。",
+          "右眉特征属于人物自身右侧，不镜像。"
+        ],
+        "critical_unknowns": [
+          "替换示例角色设计并取得项目批准；当前并非用户真实资产。"
+        ]
+      },
+      "file": {
+        "path": null,
+        "sha256": null
+      },
+      "review": {
+        "decision": "NOT_REVIEWED",
+        "reviewer": null,
+        "spec_sha256": null,
+        "file_sha256": null,
+        "dependency_snapshots": {},
+        "checks": [],
+        "open_issues": []
+      }
+    },
+    {
+      "asset_id": "SCENE-ROOM-v1-LAYOUT",
+      "entity_id": "SCENE-ROOM",
+      "kind": "layout",
+      "version": "1",
+      "view_id": "LAYOUT",
+      "state_id": "STATE-000",
+      "scene_context": {"scene_id": "SCENE-ROOM", "scene_version": "1", "view_id": "LAYOUT", "state_id": "STATE-000"},
+      "format": "diagram",
+      "status": "planned",
+      "canonical_parent": null,
+      "dependencies": [],
+      "allowed_roles": ["layout"],
+      "spec": {
+        "subject": "待替换的共同空间布局，统一墙面连接、开口、陈设状态和目标机位。",
+        "view": "平面图与必要墙面关系；X向东、Y向北、Z向上，房间X=0..10、Y=0..8。",
+        "width": 1536,
+        "height": 1536,
+        "requires_transparency": false,
+        "immutable": ["示例门在北墙靠东，中心X=8、Y=8；窗在西墙X=0、Y=2..6。各机位由同一空间推导。"],
+        "critical_unknowns": ["示例坐标、开口、陈设、尺寸和机位须按项目替换；补齐未知背面。实际布局与通道可消费的图像或空间输入尚未提供。"]
+      },
+      "file": {"path": null, "sha256": null},
+      "review": {"decision": "NOT_REVIEWED", "reviewer": null, "spec_sha256": null, "file_sha256": null, "dependency_snapshots": {}, "checks": [], "open_issues": []}
+    },
+    {
+      "asset_id": "SCENE-ROOM-v1-ROOT",
+      "entity_id": "SCENE-ROOM",
+      "kind": "scene",
+      "version": "1",
+      "view_id": "ROOT-VIEW",
+      "state_id": "STATE-000",
+      "scene_context": {"scene_id": "SCENE-ROOM", "scene_version": "1", "view_id": "ROOT-VIEW", "state_id": "STATE-000"},
+      "format": "single",
+      "status": "planned",
+      "canonical_parent": null,
+      "dependencies": ["SCENE-ROOM-v1-LAYOUT"],
+      "allowed_roles": ["scene_base"],
+      "spec": {
+        "subject": "同版场景的共同空景母资产；先依据共同布局确定设计，再作为各目标机位的共同图像来源。",
+        "view": "ROOT-VIEW：相机在西南内侧(1,1)，朝东北；按共同布局确定可见结构，不含人物。",
+        "width": 1536,
+        "height": 864,
+        "requires_transparency": false,
+        "immutable": ["沿用SCENE-ROOM-v1-LAYOUT的墙面连接与门窗位置；统一桌椅款式、尺寸、材质和光源，活动摆放取STATE-000。"],
+        "critical_unknowns": ["须替换示例设计、实际规格和完整STATE-000；真实母图及验收尚不存在，不能据此执行派生。"]
+      },
+      "file": {"path": null, "sha256": null},
+      "review": {"decision": "NOT_REVIEWED", "reviewer": null, "spec_sha256": null, "file_sha256": null, "dependency_snapshots": {}, "checks": [], "open_issues": []}
+    },
+    {
+      "asset_id": "MASTER-A-1",
+      "entity_id": "SCENE-ROOM",
+      "kind": "scene",
+      "version": "1",
+      "view_id": "VIEW-A",
+      "state_id": "STATE-000",
+      "scene_context": {"scene_id": "SCENE-ROOM", "scene_version": "1", "view_id": "VIEW-A", "state_id": "STATE-000"},
+      "format": "single",
+      "status": "planned",
+      "canonical_parent": "SCENE-ROOM-v1-ROOT",
+      "dependencies": ["SCENE-ROOM-v1-ROOT", "SCENE-ROOM-v1-LAYOUT"],
+      "allowed_roles": ["scene_base"],
+      "spec": {
+        "subject": "从共同母资产直接派生VIEW-A空景；实际图像请求同时提供母图与该机位可消费的布局依据。",
+        "view": "VIEW-A：南侧(5,1)朝北，门在画右、西墙窗在画左；相机高度与景别由项目补齐。",
+        "width": 1536,
+        "height": 864,
+        "requires_transparency": false,
+        "immutable": ["沿用共同ROOT的同版墙面、开口、家具设计与光源，以及STATE-000的活动摆放；投影与遮挡按VIEW-A推导。"],
+        "critical_unknowns": ["共同母图、布局、目标相机规格与实际验收未就绪；本条只示范依赖，不能替代实际输入或验收。"]
+      },
+      "file": {"path": null, "sha256": null},
+      "review": {"decision": "NOT_REVIEWED", "reviewer": null, "spec_sha256": null, "file_sha256": null, "dependency_snapshots": {}, "checks": [], "open_issues": []}
+    },
+    {
+      "asset_id": "MASTER-B-1",
+      "entity_id": "SCENE-ROOM",
+      "kind": "scene",
+      "version": "1",
+      "view_id": "VIEW-B",
+      "state_id": "STATE-000",
+      "scene_context": {"scene_id": "SCENE-ROOM", "scene_version": "1", "view_id": "VIEW-B", "state_id": "STATE-000"},
+      "format": "single",
+      "status": "planned",
+      "canonical_parent": "SCENE-ROOM-v1-ROOT",
+      "dependencies": ["SCENE-ROOM-v1-ROOT", "SCENE-ROOM-v1-LAYOUT"],
+      "allowed_roles": ["scene_base"],
+      "spec": {
+        "subject": "从共同母资产直接派生VIEW-B空景，不以VIEW-A为唯一来源；实际请求提供共同母图与目标布局依据。",
+        "view": "VIEW-B：东侧(9,4)朝西，西窗在前方、北墙门在画右；遮挡与边界由同一布局推导。",
+        "width": 1536,
+        "height": 864,
+        "requires_transparency": false,
+        "immutable": ["沿用共同ROOT的同版墙面、开口、家具设计与光源，以及STATE-000的活动摆放；投影与遮挡按VIEW-B推导。"],
+        "critical_unknowns": ["共同母图、布局、目标相机规格与实际验收未就绪；视频仅使用验收后的目标空景，不必再次上传上游布局和母图。"]
+      },
+      "file": {"path": null, "sha256": null},
+      "review": {"decision": "NOT_REVIEWED", "reviewer": null, "spec_sha256": null, "file_sha256": null, "dependency_snapshots": {}, "checks": [], "open_issues": []}
+    }
+  ]
+}

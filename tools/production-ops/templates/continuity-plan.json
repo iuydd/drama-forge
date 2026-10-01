@@ -1,0 +1,17 @@
+{
+  "schema_version": "sequence-continuity-1",
+  "status": "DRAFT",
+  "example_only": false,
+  "episode_id": null,
+  "revision": null,
+  "initial": {
+    "state_id": null,
+    "facts": {}
+  },
+  "fixed_keys": [],
+  "states": [],
+  "scenes": {},
+  "shots": [],
+  "note": "从同版world/scene/ensemble/event同源提取当前现场；initial.facts与states记录人物/群体、造型、位置、道具持有和容纳关系、活动阶段屏幕与陈设的真实规划事实，fixed_keys只放实际固定项。换机位不重置现场，变化须有事件依据。未知不填假值；字段见本Skill根目录references/sequence-format.md。工具只核对已登记状态，状态机通过不是视觉通过。",
+  "policy_version": "4.2.0"
+}

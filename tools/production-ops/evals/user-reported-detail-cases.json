@@ -1,0 +1,71 @@
+{
+  "schema_version": "reported-regression-cases-1",
+  "source": "用户本次文字报告",
+  "media_inspected": false,
+  "note": "来自用户报告，不是本次观看原视频得出的测量；工具测试只构造相应记录失败，不能证明模型实际修复率。",
+  "cases": [
+    {
+      "case_id": "D01",
+      "reported_issue": "切镜后黑车车头方向颠倒",
+      "category": "direction",
+      "frozen_evidence": "同一世界车向＋目标机位映射＋真实采用切点",
+      "acceptance": "无合法转向/越轴依据的反转不通过；合法视角变化不能误判"
+    },
+    {
+      "case_id": "D02",
+      "reported_issue": "处理告示纸却头抬起看镜头",
+      "category": "gaze",
+      "frozen_evidence": "身体/头/眼分别绑定当前纸面/手部接触点",
+      "acceptance": "关键操作阶段视线目标错则失败；已写明动机的移开例外"
+    },
+    {
+      "case_id": "D03",
+      "reported_issue": "看似写字但纸面没有笔迹",
+      "category": "action",
+      "frozen_evidence": "precondition/contact/change/result/after_release",
+      "acceptance": "必须观察到笔尖作用、笔划增加、离笔后留存"
+    },
+    {
+      "case_id": "D04",
+      "reported_issue": "与母亲说话时眼睛不看她",
+      "category": "gaze",
+      "frozen_evidence": "听者ID、关键回应视线及触发",
+      "acceptance": "没有预写回避动机的持续错目标不通过"
+    },
+    {
+      "case_id": "D05",
+      "reported_issue": "贴胶带时手只在原地乱动",
+      "category": "action",
+      "frozen_evidence": "真实胶带、目标连接点、按压、手离开后的附着",
+      "acceptance": "空手势/胶带随手走/无固定结果均失败"
+    },
+    {
+      "case_id": "D06",
+      "reported_issue": "早上好与自问句仍是同一种招呼腔",
+      "category": "performance",
+      "frozen_evidence": "before/trigger/after/contrast＋实际连听",
+      "acceptance": "字对和声线对不代替疑惑/自问语气转折"
+    },
+    {
+      "case_id": "D07",
+      "reported_issue": "旧告示取下后写出来是乱码",
+      "category": "text",
+      "frozen_evidence": "锁定字稿、纸ID/面、显字路径、最终可读文字",
+      "acceptance": "错字/乱码/提前整句出现/离笔漂浮均失败"
+    },
+    {
+      "case_id": "D08",
+      "reported_issue": "频繁出现换景/切镜方向错误",
+      "category": "direction",
+      "frozen_evidence": "世界坐标、机位侧、场景地标、入口/运动轴",
+      "acceptance": "不只看单镜是否漂亮；按相邻实际采用片段检查"
+    },
+    {
+      "case_id": "D09",
+      "reported_issue": "海报贴的位置不正确或切镜漂移",
+      "category": "placement",
+      "frozen_evidence": "固定表面ID、局部锚点、尺寸/倾角、接触点",
+      "acceptance": "画面坐标重摆不代表同一物理位置；移位须有事件"
+    }
+  ]
+}

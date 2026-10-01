@@ -1,0 +1,91 @@
+{
+  "status": "DRAFT",
+  "executed": false,
+  "visual_quality_verified": false,
+  "shot_id": "SHOT-001",
+  "contract_sha256": "40f926407e4f25f09f6bcb3b5010c51375aca01ced11d7b821f1982e082a0588",
+  "prompt": "在输入图片1上进行局部编辑。它是当前场景与机位的底图，不是风格示例；不是重新设计一个相似空间。\n图片1的用途：本次场景、机位、透视和家具底图，不是风格样图。\n图片2的用途：仅提供人物脸、发型、服装，不带入其背景、机位、光线和姿态。\n本次变化：将图片2的人物加入图片1，坐入现有椅子，右手握桌上的杯子但尚未举起，左手放桌面。\n空间与接触：椅背在人物躯干后方，身体面向桌子；右手与杯子实际接触，左手平放桌面；身体不穿过桌椅。\n必须保留：原门窗位置；原桌椅设计、位置和朝向；原楼梯结构和连接关系；同一机位与画幅。\n保持该镜头已锁定的固定机位、透视和构图；不镜像，不临时改变视角。\n只输出一张本镜起始状态图，不做分格、不同时表现多个连续动作。\n必须清楚可见：人物右手接触同一只杯子。",
+  "prompt_sha256": "075798c3d0c129a60f03c55df6d5e27959100d9e4f1a4eb27ca3114796ca5162",
+  "input_order": [
+    {
+      "asset_id": "MASTER-A-1",
+      "role": "scene_base",
+      "primary": true,
+      "purpose": "本次场景、机位、透视和家具底图，不是风格样图。",
+      "upload_index": 1,
+      "path": null,
+      "sha256": null,
+      "status": "missing",
+      "scene_id": "SCENE-ROOM",
+      "scene_version": "1",
+      "view_id": "VIEW-A",
+      "state_id": "STATE-000"
+    },
+    {
+      "asset_id": "CHAR-001-ID-1",
+      "role": "identity",
+      "primary": false,
+      "purpose": "仅提供人物脸、发型、服装，不带入其背景、机位、光线和姿态。",
+      "upload_index": 2,
+      "path": null,
+      "sha256": null,
+      "status": "missing"
+    }
+  ],
+  "output_spec": {
+    "width": 1536,
+    "height": 2688,
+    "media_kind": "image",
+    "note": "仅示例工作画布，非用户已批准尺寸；接入时显式替换。"
+  },
+  "mode": "edit_same_view",
+  "qa_required": [
+    "scene_structure",
+    "subject_integrity",
+    "contacts",
+    "composition",
+    "technical",
+    "narrative",
+    "protected_pixels"
+  ],
+  "protection": {
+    "method": "external_composite",
+    "allowed_mask": {
+      "path": null,
+      "sha256": null,
+      "status": "missing"
+    },
+    "blend_mask": null
+  },
+  "blockers": [
+    "production: --root required",
+    "production: scene design not accepted",
+    "production: storyboard/camera not locked",
+    "production: backend/model runtime not verified",
+    "runtime verification evidence: actual path missing",
+    "runtime verification evidence: valid sha256 missing",
+    "runtime verification evidence: --root is required to verify files",
+    "allowed_mask: actual path missing",
+    "allowed_mask: valid sha256 missing",
+    "allowed_mask: --root is required to verify files",
+    "production: capability not verified: image_edit",
+    "production: capability not verified: multi_reference",
+    "production: capability not verified: external_composite",
+    "production: reference limit unknown or exceeded",
+    "production: parameter mapping incomplete",
+    "production: source view master not accepted",
+    "view master: actual path missing",
+    "view master: valid sha256 missing",
+    "view master: --root is required to verify files",
+    "production: reference not accepted: MASTER-A-1",
+    "reference MASTER-A-1: actual path missing",
+    "reference MASTER-A-1: valid sha256 missing",
+    "reference MASTER-A-1: --root is required to verify files",
+    "production: reference not accepted: CHAR-001-ID-1",
+    "reference CHAR-001-ID-1: actual path missing",
+    "reference CHAR-001-ID-1: valid sha256 missing",
+    "reference CHAR-001-ID-1: --root is required to verify files",
+    "production: actual prompt rewrite behavior unknown"
+  ],
+  "notice": "Model-independent job package, not a native API request. READY is input readiness only."
+}

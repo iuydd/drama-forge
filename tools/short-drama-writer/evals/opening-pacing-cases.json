@@ -1,0 +1,150 @@
+{
+  "schema_version": "opening-pacing-evals-1",
+  "scope": "真实写作模型/预演/剪辑接入待测，不是此次工程测试通过项",
+  "cases": [
+    {
+      "id": "OP01",
+      "title": "直接觉醒但人物无活动",
+      "setup": "一句绑定成功后直接全球称霸",
+      "expected_behavior": "补当前活动与首次可见效果，不加能力惩罚",
+      "status": "NOT_RUN",
+      "actual_media": null,
+      "actual_model": null
+    },
+    {
+      "id": "OP02",
+      "title": "危机不可懂",
+      "setup": "开头全是逃跑镜头，不知追什么护什么",
+      "expected_behavior": "给出眼前危险/对象/目标，保留主动应对，不添加长背景旁白",
+      "status": "NOT_RUN",
+      "actual_media": null,
+      "actual_model": null
+    },
+    {
+      "id": "OP03",
+      "title": "结果先露的时序",
+      "setup": "先胜利后回到过去但没有任何回归信号",
+      "expected_behavior": "建立真实/展示双顺序与可见切入/回归，回放增加信息",
+      "status": "NOT_RUN",
+      "actual_media": null,
+      "actual_model": null
+    },
+    {
+      "id": "OP04",
+      "title": "插叙吞掉主线",
+      "setup": "当前开门动作被三个层级回忆打断",
+      "expected_behavior": "只保留服务当前选择的过去，恢复当前行动，不强制禁用非线性",
+      "status": "NOT_RUN",
+      "actual_media": null,
+      "actual_model": null
+    },
+    {
+      "id": "OP05",
+      "title": "摘要冒充正文",
+      "setup": "觉醒—获胜—领奖—再升级均用一句概括",
+      "expected_behavior": "把一件事展开成活动/发现/选择/行动/结果/反应，不无限加事件",
+      "status": "NOT_RUN",
+      "actual_media": null,
+      "actual_model": null
+    },
+    {
+      "id": "OP06",
+      "title": "文档标签不算交代",
+      "setup": "脚本场头写考核但实际音画只拍人冷笑",
+      "expected_behavior": "在正文/实际画面交代目标与对象，制作备注不能当证据",
+      "status": "NOT_RUN",
+      "actual_media": null,
+      "actual_model": null
+    },
+    {
+      "id": "OP07",
+      "title": "字幕UI与动作抢信息",
+      "setup": "新术语面板、关键台词、换物同时出现",
+      "expected_behavior": "错开主次，保留真值与关键动作，不靠降低画质",
+      "status": "NOT_RUN",
+      "actual_media": null,
+      "actual_model": null
+    },
+    {
+      "id": "OP08",
+      "title": "误把铺垫当废话",
+      "setup": "剪辑删除唯一发现线索和结果确认",
+      "expected_behavior": "保护相关实际区间，复用原审核，能重剪不重拍",
+      "status": "NOT_RUN",
+      "actual_media": null,
+      "actual_model": null
+    },
+    {
+      "id": "OP09",
+      "title": "慢放不能补原因",
+      "setup": "全片放慢但主角依旧凭空知道答案",
+      "expected_behavior": "回缺失证据/动机层修，不继续拉长静帧",
+      "status": "NOT_RUN",
+      "actual_media": null,
+      "actual_model": null
+    },
+    {
+      "id": "OP10",
+      "title": "场景完整但不爆炸",
+      "setup": "安静开头已清楚且有异常期待",
+      "expected_behavior": "允许通过，不因没有尖叫/三秒反转强行退回",
+      "status": "NOT_RUN",
+      "actual_media": null,
+      "actual_model": null
+    },
+    {
+      "id": "OP11",
+      "title": "强度被错误削弱",
+      "setup": "为减慢推进加折寿/七天冷却",
+      "expected_behavior": "恢复已锁能力，减少事件量与补行动过程",
+      "status": "NOT_RUN",
+      "actual_media": null,
+      "actual_model": null
+    },
+    {
+      "id": "OP12",
+      "title": "约定75秒但实际90秒",
+      "setup": "只改计划数字或加速台词来装进75秒",
+      "expected_behavior": "实测并减少非核心事件，必要变更走授权，不谎报片长",
+      "status": "NOT_RUN",
+      "actual_media": null,
+      "actual_model": null
+    },
+    {
+      "id": "OP13",
+      "title": "试写乘法膨胀",
+      "setup": "42章三小样再加三套开头再让九个代理评价",
+      "expected_behavior": "复用A样段；同题默认两个入口，现有STORY/预演一次合并",
+      "status": "NOT_RUN",
+      "actual_media": null,
+      "actual_model": null
+    },
+    {
+      "id": "OP14",
+      "title": "假前缀盲看",
+      "setup": "先给完整结尾，再让同一代理声称首次看开头",
+      "expected_behavior": "标完整观看后回述；真正前缀评测必须先隔离后半段",
+      "status": "NOT_RUN",
+      "actual_media": null,
+      "actual_model": null
+    },
+    {
+      "id": "OP15",
+      "title": "假高潮回放",
+      "setup": "开头取后面全部结局后又原样长放一次",
+      "expected_behavior": "缩为相关问题切片，回到结果时补新信息继续，不假承诺",
+      "status": "NOT_RUN",
+      "actual_media": null,
+      "actual_model": null
+    },
+    {
+      "id": "OP16",
+      "title": "插入镜泄漏画外人",
+      "setup": "为了交代动机把看不见的角色姓名写进证物prompt",
+      "expected_behavior": "内部保留动机，外部只画内实体，声源走既有独立音轨",
+      "status": "NOT_RUN",
+      "actual_media": null,
+      "actual_model": null
+    }
+  ]
+}

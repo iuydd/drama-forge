@@ -1,0 +1,28 @@
+{
+  "schema_version": "prompt-ir-1",
+  "status": "DRAFT",
+  "mode": null,
+  "backend_profile_id": null,
+  "primary_goal": null,
+  "dimensions": {
+    "subject": null,
+    "camera_motion": null,
+    "lighting": null,
+    "choreography": null,
+    "framing": null,
+    "space": null,
+    "style": null,
+    "sound": null,
+    "stability": null
+  },
+  "clauses": [],
+  "priority": {
+    "hard": [],
+    "soft": []
+  },
+  "must_show": [],
+  "invariant_keys": [],
+  "resources": [],
+  "unresolved_conflicts": [],
+  "note": "准确正文/状态先确定；每个条款id/kind/text/required由创作者编写，可带read/write_keys和真实参考职责。使用shot.ensemble时，先由scene_continuity.py --clauses派生context_clauses，作为required=true的context条款并将其ID加入priority.hard，再编译冻结；不以参考图替代这些逐时段可见描述。图片派生加--image。不可直接提交占位模板。"
+}

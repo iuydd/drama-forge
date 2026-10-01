@@ -1,0 +1,42 @@
+{
+  "schema_version": "dialogue-observations-1",
+  "artifact": {
+    "path": null,
+    "sha256": null
+  },
+  "audio_work_copy": {
+    "path": null,
+    "sha256": null
+  },
+  "asr": {
+    "provider": null,
+    "model": null,
+    "config": null,
+    "executed": false,
+    "raw_output": {
+      "path": null,
+      "sha256": null
+    }
+  },
+  "whole_audio_transcribed": false,
+  "speech_segment_ids": [],
+  "lines": [],
+  "line_template": {
+    "line_id": null,
+    "text_observed": null,
+    "start_s": null,
+    "end_s": null,
+    "segment_ids": [],
+    "speaker_id": null,
+    "voice_id": null,
+    "source_kind": null,
+    "speaker_verified": false,
+    "source_verified": false,
+    "mouth_review": "UNKNOWN",
+    "inner_mouth_not_speaking": null,
+    "targeted_listening_evidence": [],
+    "asr_correction_reason": null
+  },
+  "unexpected_speech": [],
+  "review_status": "NOT_REVIEWED"
+}

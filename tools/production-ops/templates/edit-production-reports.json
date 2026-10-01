@@ -1,0 +1,43 @@
+[
+  {
+    "check_id": "edit_timeline",
+    "status": "UNKNOWN",
+    "snapshot_sha256": null,
+    "subject_sha256": null,
+    "observation": null,
+    "evidence": [],
+    "details": {
+      "timeline_sha256": null,
+      "cut_ids": [],
+      "required_event_ids": [],
+      "unresolved_cut_ids": [],
+      "unresolved_event_ids": [],
+      "av_cut_review": "UNKNOWN"
+    }
+  },
+  {
+    "check_id": "edit_cut_review",
+    "status": "UNKNOWN",
+    "snapshot_sha256": null,
+    "subject_sha256": null,
+    "observation": null,
+    "evidence": [],
+    "details": {
+      "timeline_sha256": null,
+      "cut_ids": [],
+      "required_event_ids": [],
+      "unresolved_cut_ids": [],
+      "unresolved_event_ids": [],
+      "av_cut_review": "UNKNOWN",
+      "presentation_review": {
+        "subject_sha256": null,
+        "presentation_sha256": null,
+        "renderer_consumed_resolved_cues": false,
+        "render_inputs": [],
+        "cue_checks": [],
+        "event_checks": [],
+        "unresolved_ids": []
+      }
+    }
+  }
+]

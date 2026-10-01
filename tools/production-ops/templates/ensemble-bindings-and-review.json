@@ -1,0 +1,59 @@
+{
+  "schema_version": "ensemble-binding-1",
+  "note": "填入 production-gate-spec。默认 reference pre_video：media 是已绑定请求JSON，asset_registry 是已验收资产表；不填融合首帧。reference_assets 报告记录素材完整性与顺序。下方 ensemble_continuity 报告用于生成后全镜检查；旧 keyframe 路线仍可在首帧阶段使用。previous_state 是权威状态快照。",
+  "ensemble_bindings": [
+    {
+      "shot_id": null,
+      "asset_registry": {
+        "path": null,
+        "sha256": null
+      },
+      "shot_contract": {
+        "path": null,
+        "sha256": null
+      },
+      "media": {
+        "path": null,
+        "sha256": null
+      },
+      "previous_state": {
+        "path": null,
+        "sha256": null
+      },
+      "view_evidence": {
+        "path": null,
+        "sha256": null
+      },
+      "inventory_evidence": {
+        "path": null,
+        "sha256": null
+      }
+    }
+  ],
+  "report_template": {
+    "check_id": "ensemble_continuity",
+    "status": "UNKNOWN",
+    "snapshot_sha256": null,
+    "subject_sha256": null,
+    "observation": "尚未查看真实媒体",
+    "evidence": [],
+    "details": {
+      "shots": [
+        {
+          "shot_id": null,
+          "media_sha256": null,
+          "ensemble_sha256": null,
+          "temporal_basis": null,
+          "windows": [
+            {
+              "window_id": null,
+              "full_frame_result": "UNKNOWN",
+              "unexpected_visible_entities": null,
+              "entities": {}
+            }
+          ]
+        }
+      ]
+    }
+  }
+}

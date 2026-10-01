@@ -1,0 +1,8 @@
+{
+  "schema_version": "sequence-review-1",
+  "stage": "start_frame",
+  "subject_sha256": null,
+  "shots": [],
+  "revisits": [],
+  "note": "实际观看后记录；入口/出口与回访证据复用，禁止从expected伪填观察。终片另需实际timeline_digest。"
+}

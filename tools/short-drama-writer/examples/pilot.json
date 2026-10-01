@@ -1,0 +1,348 @@
+{
+  "schema_version": "1.0",
+  "project_id": "discarded-designs",
+  "episode_id": "EP01",
+  "episode_number": 1,
+  "title": "所有废案，归我所有｜第一集：被划掉的零件",
+  "language": "zh-CN",
+  "status": "draft",
+  "target_duration_seconds": 75,
+  "duration_seconds": 75,
+  "timing_status": "estimated",
+  "timing_evidence": null,
+  "characters": [
+    {
+      "id": "CHAR-001",
+      "name": "沈砚，旧图纸修复员"
+    },
+    {
+      "id": "CHAR-002",
+      "name": "周工，泵站工程师"
+    },
+    {
+      "id": "CHAR-003",
+      "name": "许姨，社区供水联络员"
+    }
+  ],
+  "locations": [
+    {
+      "id": "LOC-001",
+      "name": "老泵房，含门口取水台"
+    }
+  ],
+  "props": [
+    {
+      "id": "PROP-001",
+      "name": "被弃用的旁路芯设计图"
+    },
+    {
+      "id": "PROP-002",
+      "name": "实体旁路芯，两只同型铜环"
+    },
+    {
+      "id": "PROP-003",
+      "name": "泵站主机"
+    },
+    {
+      "id": "PROP-004",
+      "name": "透明水杯"
+    },
+    {
+      "id": "PROP-005",
+      "name": "工程档案钥匙"
+    },
+    {
+      "id": "PROP-006",
+      "name": "旧跨谷输水桥总图"
+    }
+  ],
+  "rules_used": [
+    "RULE-001",
+    "RULE-002"
+  ],
+  "scenes": [
+    {
+      "id": "EP01-S01",
+      "location_id": "LOC-001",
+      "character_ids": [
+        "CHAR-001",
+        "CHAR-002",
+        "CHAR-003"
+      ],
+      "prop_ids": [
+        "PROP-001",
+        "PROP-003",
+        "PROP-004"
+      ],
+      "start_seconds": 0,
+      "end_seconds": 10,
+      "goal": "用缺水愿望和纸面异常让观众进入当前戏",
+      "obstacle": "常规维修缺件，居民等不起三天",
+      "action": "许姨打开取水口，透明杯里只有两滴水。周工把一张旧旁路芯设计图推到桌边。沈砚按住图上的铜环轮廓，指尖下面浮起一圈真实铜边。",
+      "turn": "纸里的铜边已经浮起，主角显然有不同于等货的办法。",
+      "state_out": "观众知道缺水、缺件，并看见异常开始发生。",
+      "non_overlapping_action_seconds": 3,
+      "dialogue": [
+        {
+          "speaker_id": "CHAR-002",
+          "text": "没有现货，至少等三天。",
+          "kind": "spoken"
+        },
+        {
+          "speaker_id": "CHAR-001",
+          "text": "这个呢？",
+          "kind": "spoken"
+        }
+      ],
+      "on_screen_text": []
+    },
+    {
+      "id": "EP01-S02",
+      "location_id": "LOC-001",
+      "character_ids": [
+        "CHAR-001",
+        "CHAR-002",
+        "CHAR-003"
+      ],
+      "prop_ids": [
+        "PROP-001",
+        "PROP-002",
+        "PROP-003"
+      ],
+      "start_seconds": 10,
+      "end_seconds": 30,
+      "goal": "完整展示核心能力与维修行为",
+      "obstacle": "纸面方案尚不是实际零件，观众需要明确的变化证据",
+      "action": "沈砚把铜色旁路芯从纸上完整提起，递给周工。纸上图形还在，他再取一只，放在图边。周工接过第一只，装入已隔离的架空主机检修口，关妥外壳再启动；指针回到工作区。",
+      "turn": "没有新增系统通知，第一次能力用法直接转为可验证的实际零件。",
+      "state_out": "第一只铜环装入主机，第二只作为备件留在图旁，图纸仍然可用。",
+      "non_overlapping_action_seconds": 9,
+      "dialogue": [
+        {
+          "speaker_id": "CHAR-002",
+          "text": "图上的零件……真的出来了？",
+          "kind": "spoken"
+        },
+        {
+          "speaker_id": "CHAR-001",
+          "text": "还有一个。留着备用。",
+          "kind": "spoken"
+        },
+        {
+          "speaker_id": "CHAR-002",
+          "text": "型号对得上。交给我。",
+          "kind": "spoken"
+        }
+      ],
+      "on_screen_text": []
+    },
+    {
+      "id": "EP01-S03",
+      "location_id": "LOC-001",
+      "character_ids": [
+        "CHAR-001",
+        "CHAR-002",
+        "CHAR-003"
+      ],
+      "prop_ids": [
+        "PROP-002",
+        "PROP-003",
+        "PROP-004",
+        "PROP-005"
+      ],
+      "start_seconds": 30,
+      "end_seconds": 55,
+      "goal": "兑现供水、专业认可和新的行动权限",
+      "obstacle": "零件出现不等于维修成功，必须验证结果",
+      "action": "许姨重新打开取水口，清水一下冲满透明杯，溅湿她的手。她笑着把第一杯递给沈砚。沈砚喝了一大口。周工把本准备封存的档案钥匙放在旧图旁。",
+      "turn": "维修成功改变了生活，也让专业者主动开放历史档案。",
+      "state_out": "社区恢复供水；沈砚获得档案室临时协作权限，而非全城凭空知名。",
+      "non_overlapping_action_seconds": 8,
+      "dialogue": [
+        {
+          "speaker_id": "CHAR-003",
+          "text": "满了。真的满了。",
+          "kind": "spoken"
+        },
+        {
+          "speaker_id": "CHAR-002",
+          "text": "先别收工。还有整整一库废图。",
+          "kind": "spoken"
+        }
+      ],
+      "on_screen_text": []
+    },
+    {
+      "id": "EP01-S04",
+      "location_id": "LOC-001",
+      "character_ids": [
+        "CHAR-001",
+        "CHAR-002",
+        "CHAR-003"
+      ],
+      "prop_ids": [
+        "PROP-005",
+        "PROP-006",
+        "PROP-004"
+      ],
+      "start_seconds": 55,
+      "end_seconds": 75,
+      "goal": "从已兑现胜利引出下一步能力应用",
+      "obstacle": "眼前供水恢复，但城北长期未接入供水的目标仍未解决",
+      "action": "周工展开一张跨谷输水桥总图，图上画着一道悬空的桥架，角落附着供水路线示意。沈砚收好钥匙，用指尖划过示意图上绕山的旧线，再沿桥架标出的路线直直划过山谷两侧。桌边备用铜环和装满的水杯仍在。",
+      "turn": "主角看到的不是另一轮维修，而是用整段结构改写供水路线。",
+      "state_out": "供水、备件、图纸与钥匙都保留；下一集要让跨谷直线通路真正成立。",
+      "non_overlapping_action_seconds": 5,
+      "dialogue": [
+        {
+          "speaker_id": "CHAR-002",
+          "text": "这桥当年没建，管线绕了半座山。",
+          "kind": "spoken"
+        },
+        {
+          "speaker_id": "CHAR-001",
+          "text": "那现在，为什么还要绕？",
+          "kind": "spoken"
+        }
+      ],
+      "on_screen_text": [
+        "城北跨谷输水桥｜取消工程"
+      ]
+    }
+  ],
+  "payoffs": [
+    {
+      "id": "PAY-001",
+      "kind": "独占优势与技艺",
+      "scene_id": "EP01-S02",
+      "promise": "设计可以直接变成可用实物，并能重复使用",
+      "visible_evidence": "同一张完整图纸接连取出两只铜环，一只装入主机使指针恢复",
+      "state_change": "从缺件到修好主机并留下备件"
+    },
+    {
+      "id": "PAY-002",
+      "kind": "守护与生活改善",
+      "scene_id": "EP01-S03",
+      "promise": "修好供水，让居民实际拿到水",
+      "visible_evidence": "同一透明杯从两滴水到装满清水",
+      "state_change": "社区恢复供水"
+    },
+    {
+      "id": "PAY-003",
+      "kind": "专业认可与机会",
+      "scene_id": "EP01-S03",
+      "promise": "证明自己的方法值得合作",
+      "visible_evidence": "工程师主动交出档案钥匙并请求继续合作",
+      "state_change": "主角获得整库设计图访问机会"
+    }
+  ],
+  "ending": {
+    "type": "consequence",
+    "question": "沈砚能怎样把废图里的输水桥放进山谷，让管线不再绕山？",
+    "planned_resolution_episode": 2,
+    "cause_scene_id": "EP01-S03",
+    "is_finale": false
+  },
+  "continuity": {
+    "requires": [],
+    "establishes": [
+      {
+        "id": "FACT-001",
+        "text": "沈砚能从设计图里取出非生命实物；图纸保持完整，可以重复使用。",
+        "known_by": [
+          "CHAR-001",
+          "CHAR-002",
+          "CHAR-003"
+        ],
+        "source_scene_id": "EP01-S02"
+      },
+      {
+        "id": "FACT-002",
+        "text": "工程师愿意开放整库废弃设计，与沈砚合作改变供水路线。",
+        "known_by": [
+          "CHAR-001",
+          "CHAR-002",
+          "CHAR-003"
+        ],
+        "source_scene_id": "EP01-S03"
+      }
+    ],
+    "state_changes": [
+      {
+        "entity_id": "CHAR-002",
+        "field": "belief_about_drawings",
+        "before": "废图不能解决眼前缺件",
+        "after": "设计图可以反复变出可用实物",
+        "cause_scene_id": "EP01-S02"
+      },
+      {
+        "entity_id": "PROP-002",
+        "field": "existence",
+        "before": "尚未从原图兑现",
+        "after": "已兑现两只，一只安装在主机内，一只留作备件",
+        "cause_scene_id": "EP01-S02"
+      },
+      {
+        "entity_id": "PROP-003",
+        "field": "operating_state",
+        "before": "停机缺件",
+        "after": "稳定供水",
+        "cause_scene_id": "EP01-S03"
+      },
+      {
+        "entity_id": "PROP-005",
+        "field": "holder",
+        "before": "CHAR-002",
+        "after": "CHAR-001",
+        "cause_scene_id": "EP01-S04"
+      }
+    ],
+    "promises": [
+      {
+        "id": "PROM-001",
+        "description": "下集兑现一段跨谷输水桥，让新的直线通路真正成立；本集供水和备件不撤销",
+        "opened_episode": 1,
+        "due_episode": 2,
+        "status": "open",
+        "resolved_episode": null,
+        "evidence_scene_id": null
+      }
+    ]
+  },
+  "production_handoff": {
+    "critical_visuals": [
+      {
+        "scene_id": "EP01-S01",
+        "must_show": "同一只杯只接到两滴水；沈砚指下的铜边开始从图纸抬起"
+      },
+      {
+        "scene_id": "EP01-S02",
+        "must_show": "同一张完整图接连取出两只铜环，一只装入主机、一只留在纸旁"
+      },
+      {
+        "scene_id": "EP01-S03",
+        "must_show": "同一杯的前后对比和工程师主动交出钥匙"
+      }
+    ],
+    "continuity_locks": [
+      "旁路芯为两只同型铜色有缺口环形件；安装后的第一只不再出现在手里，第二只留在图旁",
+      "图纸取物后仍完整，不能变成一次性资源或突然失灵",
+      "钥匙在 EP01-S03 放在图旁，EP01-S04 才被主角收好",
+      "输水桥的现场落点与连接由下一集实际行动交代，不把新任务改成漫长资格审核"
+    ],
+    "complexity_risks": [
+      "纸面线条实体化需要专门镜头设计；可用明确前态、一次过渡和匹配后态",
+      "精确印章与图纸文字建议后期叠加",
+      "架空泵站不呈现现实危险设备操作教程"
+    ],
+    "camera_status": "not_planned"
+  },
+  "review": {
+    "status": "not_reviewed",
+    "hard_failures": [],
+    "blind_read": null,
+    "open_issues": [
+      "未经过真实观众试读、TTS 时长测量或视频生成；75 秒为编排估计"
+    ]
+  }
+}

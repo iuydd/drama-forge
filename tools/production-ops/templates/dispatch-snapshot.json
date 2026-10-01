@@ -1,0 +1,30 @@
+{
+  "schema_version": "dispatch-1",
+  "active_episode": null,
+  "pools": {},
+  "occupied_outputs": [],
+  "tasks": [],
+  "task_template": {
+    "job_id": null,
+    "episode_id": null,
+    "actor_role": "coordinator",
+    "state": "WAITING",
+    "priority": 0,
+    "queue_order": 0,
+    "resources": {},
+    "output_key": null,
+    "dependencies_accepted": false,
+    "gates_passed": false,
+    "reading_acknowledged": false,
+    "authorization_verified": false,
+    "permission_preflight_passed": false,
+    "rate_token_available": false
+  },
+  "pool_template": {
+    "capacity": null,
+    "occupied": null,
+    "verified": false,
+    "snapshot_reconciled": false
+  },
+  "note": "未填模板不能派发。active_episode仅限定本次调用范围；pools.capacity填写本次获准并发预算，不等于全部硬件容量。未知提交仍计占位，共享硬件与账户池合并统计。"
+}

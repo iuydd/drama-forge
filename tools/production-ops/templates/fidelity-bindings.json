@@ -1,0 +1,20 @@
+[
+  {
+    "shot_id": null,
+    "contract": {
+      "path": null,
+      "sha256": null
+    },
+    "media": {
+      "path": null,
+      "sha256": null
+    },
+    "brain_binding": {
+      "packet": {
+        "path": null,
+        "sha256": null
+      },
+      "task_id": null
+    }
+  }
+]

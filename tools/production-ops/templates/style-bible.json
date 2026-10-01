@@ -1,0 +1,22 @@
+{
+  "schema_version": "style-1",
+  "status": "DRAFT",
+  "style_id": null,
+  "version": null,
+  "prompt_sentence": null,
+  "references": [],
+  "fixed_design": {
+    "rendering_medium": null,
+    "character_proportions": null,
+    "materials": null,
+    "palette": null,
+    "lighting_logic": null,
+    "camera_language": null,
+    "postprocess": null
+  },
+  "allowed_scene_state_variation": [],
+  "prohibited_style_drift": [],
+  "approval_evidence": null,
+  "exact_sentence_in_every_shot": true,
+  "note": "同一句风格句是约束，不是效果证明。已锁底图仍优先，不因此重绘房间。"
+}

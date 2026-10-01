@@ -1,0 +1,58 @@
+{
+  "schema_version": "cut-bridges-1",
+  "status": "DRAFT",
+  "episode_id": "EP-TEST",
+  "timeline_digest": "fc5fa2cf9a58d42a10e2f231bf6fb93b81da04fd0cac4fad12f37e0ca5b33d21",
+  "cuts": [
+    {
+      "cut_id": "V1__V2",
+      "cut_frame": 24,
+      "left": {
+        "id": "V1",
+        "source_id": "S1",
+        "src_in": 6,
+        "src_out": 30,
+        "dst_in": 0,
+        "source_sha256": null,
+        "edge_frame": 29
+      },
+      "right": {
+        "id": "V2",
+        "source_id": "S2",
+        "src_in": 12,
+        "src_out": 36,
+        "dst_in": 24,
+        "source_sha256": null,
+        "edge_frame": 12
+      },
+      "context": [
+        6,
+        42
+      ],
+      "relation": "continuous",
+      "category": "reaction",
+      "connection": "The listener receives the preceding event.",
+      "left_action_state": "Gesture completed; same world state.",
+      "right_action_state": "Listener continues listening, then reacts.",
+      "attention_emotion_link": "Neutral interest becomes cautious attention.",
+      "sound_link": "The preceding line ends over the listener.",
+      "linked_event_ids": [
+        "EV1",
+        "EV2"
+      ]
+    }
+  ],
+  "character_cues": [
+    {
+      "cue_id": "C1",
+      "character_id": "CHAR1",
+      "choice": "Ask before accepting.",
+      "observable_behavior": "Pauses the reaching hand.",
+      "protect": true,
+      "event_ids": [
+        "EV1"
+      ]
+    }
+  ],
+  "note": "虚构结构示范；timeline_digest对应随包edit-timeline.planned.json，源文件不存在。LOCKED只冻结结构、不代表验收；正式生产必须换为实际数据。"
+}

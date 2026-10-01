@@ -1,0 +1,10 @@
+{
+  "schema_version": "edit-source-review-1",
+  "status": "NOT_REVIEWED",
+  "kind": null,
+  "source_sha256": null,
+  "reviewer": null,
+  "accepted_ranges": [],
+  "evidence": [],
+  "note": "范围左闭右开：视频帧、音频样本。引用真实上游审核证据；不能自己凭文件存在写PASS。"
+}

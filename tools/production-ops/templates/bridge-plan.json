@@ -1,0 +1,29 @@
+{
+  "schema_version": "bridge-plan-1",
+  "status": "DRAFT",
+  "episode_id": null,
+  "revision": null,
+  "continuity_unit_id": null,
+  "pairs": [],
+  "pair_fields": [
+    "planned_pair_id",
+    "prev_shot_id",
+    "next_shot_id",
+    "cut_reason",
+    "time_relation",
+    "action_id",
+    "prev_phase",
+    "next_phase",
+    "world_state_refs",
+    "target_view_refs",
+    "gaze_target",
+    "emotion_trigger",
+    "emotion_in",
+    "emotion_out",
+    "audio_link",
+    "generation_dependency",
+    "allowed_handles",
+    "approval_ref"
+  ],
+  "note": "生成前分镜计划，不含伪造的实际帧位置。actions/states映射现有action_beats/ensemble。正式选段后另作cut-bridges，不能把planned当observed；每对没有事件变化时可以直接承接，不硬加反应镜。"
+}

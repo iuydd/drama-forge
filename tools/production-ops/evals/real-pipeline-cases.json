@@ -1,0 +1,113 @@
+{
+  "status": "NOT_RUN",
+  "cases": [
+    {
+      "id": "OPS-E01",
+      "scenario": "原著章节缺失仍试图声称读完全书必须阻塞完整改编声明",
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "OPS-E02",
+      "scenario": "台词漏句、错否定词、错数字由全文对齐检出",
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "OPS-E03",
+      "scenario": "ASR同音误字定向听证后纠正而不重复付费重拍",
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "OPS-E04",
+      "scenario": "正确文字但错误角色声线被独立角色核对检出",
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "OPS-E05",
+      "scenario": "心声被演成开口说话、无听心能力人物反应被检出",
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "OPS-E06",
+      "scenario": "临时台词静帧预演先暴露动机/因果不明",
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "OPS-E07",
+      "scenario": "盲看者没有剧本且不因未揭示悬念而判失败",
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "OPS-E08",
+      "scenario": "提交被服务端接受后客户端掉线：只对账不重发",
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "OPS-E09",
+      "scenario": "下载中断或进程被杀：取回原任务而不是新生成",
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "OPS-E10",
+      "scenario": "同任务并发恢复、晚到结果不覆盖正式文件",
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "OPS-E11",
+      "scenario": "新增付费修复批次没有用户确认被阻塞",
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "OPS-E12",
+      "scenario": "免费额度耗尽时不静默转计费通道",
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "OPS-E13",
+      "scenario": "最终文件响度合格但台词被配乐遮蔽仍不通过",
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "OPS-E14",
+      "scenario": "意外烧字局部修复不删除合法AI标识或证物",
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "OPS-E15",
+      "scenario": "480P超分后检查人脸、细字、台阶与视频闪烁",
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "OPS-E16",
+      "scenario": "画风句一致但输出风格偏移仍被视觉检查检出",
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "OPS-E17",
+      "scenario": "改动配音后只复查声音/口型及受影响切点",
+      "status": "NOT_RUN",
+      "evidence": []
+    },
+    {
+      "id": "OPS-E18",
+      "scenario": "视频模型原配置小样容量回写分镜，未测项保持未知",
+      "status": "NOT_RUN",
+      "evidence": []
+    }
+  ]
+}

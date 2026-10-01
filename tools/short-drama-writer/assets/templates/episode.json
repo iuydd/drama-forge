@@ -1,0 +1,44 @@
+{
+  "schema_version": "1.0",
+  "project_id": "待填写",
+  "episode_id": "EP01",
+  "episode_number": 1,
+  "title": "待填写",
+  "language": "zh-CN",
+  "status": "draft",
+  "target_duration_seconds": 75,
+  "duration_seconds": 75,
+  "timing_status": "estimated",
+  "timing_evidence": null,
+  "characters": [],
+  "locations": [],
+  "props": [],
+  "rules_used": [],
+  "scenes": [],
+  "payoffs": [],
+  "ending": {
+    "type": "consequence",
+    "question": "待填写",
+    "planned_resolution_episode": 2,
+    "cause_scene_id": "待填写",
+    "is_finale": false
+  },
+  "continuity": {
+    "requires": [],
+    "establishes": [],
+    "state_changes": [],
+    "promises": []
+  },
+  "production_handoff": {
+    "critical_visuals": [],
+    "continuity_locks": [],
+    "complexity_risks": [],
+    "camera_status": "not_planned"
+  },
+  "review": {
+    "status": "not_reviewed",
+    "hard_failures": [],
+    "blind_read": null,
+    "open_issues": []
+  }
+}

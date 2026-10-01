@@ -1,0 +1,32 @@
+{
+  "schema_version": "batch-proposal-1",
+  "status": "AWAITING_USER_CONFIRMATION",
+  "batch_id": null,
+  "mode": "metered",
+  "currency": null,
+  "cap_minor": null,
+  "expires_at": null,
+  "quote_source": null,
+  "items": [],
+  "item_template": {
+    "logical_id": null,
+    "attempt": 1,
+    "ceiling_minor": null,
+    "request": {
+      "provider": null,
+      "account_scope": null,
+      "model_id": null,
+      "project_id": null,
+      "shot_id": null,
+      "stage": null,
+      "parameters": {},
+      "input_hashes": [],
+      "prompt_sha256": null
+    }
+  },
+  "scope_sha256": null,
+  "authorization": null,
+  "confirmed_free_channels": [],
+  "unreconciled_previous_attempts": [],
+  "note": "原始报价/确切范围先冻结，再读取真实用户确认。null费用不是免费。不得将模板批准为真实授权。"
+}

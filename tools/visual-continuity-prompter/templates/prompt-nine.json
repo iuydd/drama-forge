@@ -1,0 +1,53 @@
+{
+  "schema_version": "prompt9-1",
+  "status": "draft",
+  "source_contract_sha256": null,
+  "dimensions": {
+    "subject": {
+      "state": "locked",
+      "source": "locked_storyboard.subject",
+      "text": null
+    },
+    "camera_motion": {
+      "state": "locked",
+      "source": "camera_motion",
+      "text": null
+    },
+    "lighting": {
+      "state": "locked",
+      "source": "locked_storyboard.lighting",
+      "text": null
+    },
+    "choreography": {
+      "state": "locked",
+      "source": "video.action_beats",
+      "text": null
+    },
+    "framing": {
+      "state": "locked",
+      "source": "locked_storyboard.framing",
+      "text": null
+    },
+    "space": {
+      "state": "locked",
+      "source": "locked_storyboard.space",
+      "text": null
+    },
+    "style": {
+      "state": "locked",
+      "source": "style_lock.prompt_sentence",
+      "text": null
+    },
+    "sound": {
+      "state": "locked",
+      "source": "audio_plan",
+      "text": null
+    },
+    "stability": {
+      "state": "locked",
+      "source": "locked_storyboard.stability",
+      "text": null
+    }
+  },
+  "ambient_sound": ""
+}

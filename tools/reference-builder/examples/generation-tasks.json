@@ -1,0 +1,207 @@
+{
+  "schema_version": "1.0",
+  "project_id": "DEMO-KEY-ROOM",
+  "executed": false,
+  "tasks": [
+    {
+      "task_id": "GEN-CHAR-LIN-ID-v1",
+      "asset_id": "CHAR-LIN-ID-v1",
+      "status": "PLANNED",
+      "executed": false,
+      "method": "text_to_image",
+      "input_asset_ids": [],
+      "input_paths_resolved": false,
+      "prompt_file": "examples/prompts/CHAR-LIN-ID-v1.txt",
+      "planned_output": "preproduction/candidates/CHAR-LIN-ID-v1.png",
+      "output_spec": {
+        "width": 1536,
+        "height": 1536
+      },
+      "budget": {
+        "root_candidates": 3,
+        "repair_attempts": 2
+      },
+      "blockers": [
+        "示例设计尚非用户项目批准版本",
+        "用户实际生成工作流未提供"
+      ]
+    },
+    {
+      "task_id": "GEN-CHAR-LIN-FULL-v1",
+      "asset_id": "CHAR-LIN-FULL-v1",
+      "status": "PLANNED",
+      "executed": false,
+      "method": "image_edit",
+      "input_asset_ids": [
+        "CHAR-LIN-ID-v1"
+      ],
+      "input_paths_resolved": false,
+      "prompt_file": "examples/prompts/CHAR-LIN-FULL-v1.txt",
+      "planned_output": "preproduction/candidates/CHAR-LIN-FULL-v1.png",
+      "output_spec": {
+        "width": 1536,
+        "height": 2688
+      },
+      "budget": {
+        "root_candidates": 1,
+        "repair_attempts": 2
+      },
+      "blockers": [
+        "示例设计尚非用户项目批准版本",
+        "用户实际生成工作流未提供",
+        "父素材实际图片尚未生成"
+      ]
+    },
+    {
+      "task_id": "GEN-CHAR-LIN-RIGHT-v1",
+      "asset_id": "CHAR-LIN-RIGHT-v1",
+      "status": "PLANNED",
+      "executed": false,
+      "method": "image_edit",
+      "input_asset_ids": [
+        "CHAR-LIN-ID-v1",
+        "CHAR-LIN-FULL-v1"
+      ],
+      "input_paths_resolved": false,
+      "prompt_file": "examples/prompts/CHAR-LIN-RIGHT-v1.txt",
+      "planned_output": "preproduction/candidates/CHAR-LIN-RIGHT-v1.png",
+      "output_spec": {
+        "width": 1536,
+        "height": 1536
+      },
+      "budget": {
+        "root_candidates": 1,
+        "repair_attempts": 2
+      },
+      "blockers": [
+        "示例设计尚非用户项目批准版本",
+        "用户实际生成工作流未提供",
+        "父素材实际图片尚未生成"
+      ]
+    },
+    {
+      "task_id": "GEN-PROP-KEY-v1",
+      "asset_id": "PROP-KEY-v1",
+      "status": "PLANNED",
+      "executed": false,
+      "method": "text_to_image",
+      "input_asset_ids": [],
+      "input_paths_resolved": false,
+      "prompt_file": "examples/prompts/PROP-KEY-v1.txt",
+      "planned_output": "preproduction/candidates/PROP-KEY-v1.png",
+      "output_spec": {
+        "width": 1536,
+        "height": 1536
+      },
+      "budget": {
+        "root_candidates": 3,
+        "repair_attempts": 2
+      },
+      "blockers": [
+        "示例设计尚非用户项目批准版本",
+        "用户实际生成工作流未提供"
+      ]
+    },
+    {
+      "task_id": "GEN-PROP-KEY-DETAIL-v1",
+      "asset_id": "PROP-KEY-DETAIL-v1",
+      "status": "PLANNED",
+      "executed": false,
+      "method": "crop",
+      "input_asset_ids": [
+        "PROP-KEY-v1"
+      ],
+      "input_paths_resolved": false,
+      "prompt_file": "examples/prompts/PROP-KEY-DETAIL-v1.txt",
+      "planned_output": "preproduction/candidates/PROP-KEY-DETAIL-v1.png",
+      "output_spec": {
+        "width": 768,
+        "height": 768
+      },
+      "budget": {
+        "root_candidates": 1,
+        "repair_attempts": 2
+      },
+      "blockers": [
+        "示例设计尚非用户项目批准版本",
+        "用户实际生成工作流未提供",
+        "父素材实际图片尚未生成"
+      ]
+    },
+    {
+      "task_id": "GEN-ROOM-A-v1-VIEW-N-DAY",
+      "asset_id": "ROOM-A-v1-VIEW-N-DAY",
+      "status": "PLANNED",
+      "executed": false,
+      "method": "text_to_image",
+      "input_asset_ids": [],
+      "input_paths_resolved": false,
+      "prompt_file": "examples/prompts/ROOM-A-v1-VIEW-N-DAY.txt",
+      "planned_output": "preproduction/candidates/ROOM-A-v1-VIEW-N-DAY.png",
+      "output_spec": {
+        "width": 1536,
+        "height": 2688
+      },
+      "budget": {
+        "root_candidates": 3,
+        "repair_attempts": 2
+      },
+      "blockers": [
+        "示例设计尚非用户项目批准版本",
+        "用户实际生成工作流未提供"
+      ]
+    },
+    {
+      "task_id": "GEN-ROOM-A-v1-VIEW-S-DAY",
+      "asset_id": "ROOM-A-v1-VIEW-S-DAY",
+      "status": "PLANNED",
+      "executed": false,
+      "method": "image_edit",
+      "input_asset_ids": [
+        "ROOM-A-v1-VIEW-N-DAY"
+      ],
+      "input_paths_resolved": false,
+      "prompt_file": "examples/prompts/ROOM-A-v1-VIEW-S-DAY.txt",
+      "planned_output": "preproduction/candidates/ROOM-A-v1-VIEW-S-DAY.png",
+      "output_spec": {
+        "width": 1536,
+        "height": 2688
+      },
+      "budget": {
+        "root_candidates": 1,
+        "repair_attempts": 2
+      },
+      "blockers": [
+        "示例设计尚非用户项目批准版本",
+        "用户实际生成工作流未提供",
+        "父素材实际图片尚未生成"
+      ]
+    },
+    {
+      "task_id": "GEN-ROOM-A-v1-VIEW-N-NIGHT",
+      "asset_id": "ROOM-A-v1-VIEW-N-NIGHT",
+      "status": "PLANNED",
+      "executed": false,
+      "method": "image_edit",
+      "input_asset_ids": [
+        "ROOM-A-v1-VIEW-N-DAY"
+      ],
+      "input_paths_resolved": false,
+      "prompt_file": "examples/prompts/ROOM-A-v1-VIEW-N-NIGHT.txt",
+      "planned_output": "preproduction/candidates/ROOM-A-v1-VIEW-N-NIGHT.png",
+      "output_spec": {
+        "width": 1536,
+        "height": 2688
+      },
+      "budget": {
+        "root_candidates": 1,
+        "repair_attempts": 2
+      },
+      "blockers": [
+        "示例设计尚非用户项目批准版本",
+        "用户实际生成工作流未提供",
+        "父素材实际图片尚未生成"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,691 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Short drama episode v1.0",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "1.0",
+      "type": "string"
+    },
+    "project_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "episode_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "episode_number": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "language": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "draft",
+        "accepted"
+      ]
+    },
+    "target_duration_seconds": {
+      "type": "number",
+      "minimum": 1
+    },
+    "duration_seconds": {
+      "type": "number",
+      "minimum": 1
+    },
+    "timing_status": {
+      "type": "string",
+      "enum": [
+        "estimated",
+        "measured"
+      ]
+    },
+    "timing_evidence": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "characters": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "locations": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "props": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 0
+    },
+    "rules_used": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "scenes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "location_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "character_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "prop_ids": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "start_seconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "end_seconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "goal": {
+            "type": "string",
+            "minLength": 1
+          },
+          "obstacle": {
+            "type": "string",
+            "minLength": 1
+          },
+          "action": {
+            "type": "string",
+            "minLength": 1
+          },
+          "turn": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state_out": {
+            "type": "string",
+            "minLength": 1
+          },
+          "non_overlapping_action_seconds": {
+            "type": "number",
+            "minimum": 0
+          },
+          "dialogue": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "speaker_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "text": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "spoken",
+                    "voiceover",
+                    "inner",
+                    "system"
+                  ]
+                }
+              },
+              "required": [
+                "speaker_id",
+                "text",
+                "kind"
+              ],
+              "additionalProperties": false
+            },
+            "minItems": 0
+          },
+          "on_screen_text": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "minItems": 0
+          },
+          "measured_audio_seconds": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "location_id",
+          "character_ids",
+          "prop_ids",
+          "start_seconds",
+          "end_seconds",
+          "goal",
+          "obstacle",
+          "action",
+          "turn",
+          "state_out",
+          "non_overlapping_action_seconds",
+          "dialogue",
+          "on_screen_text"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "payoffs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scene_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "promise": {
+            "type": "string",
+            "minLength": 1
+          },
+          "visible_evidence": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state_change": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "scene_id",
+          "promise",
+          "visible_evidence",
+          "state_change"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "ending": {
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "consequence",
+            "reward",
+            "mystery",
+            "choice",
+            "relationship",
+            "invitation",
+            "open_ending",
+            "closure"
+          ]
+        },
+        "question": {
+          "type": "string"
+        },
+        "planned_resolution_episode": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "cause_scene_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "is_finale": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "type",
+        "question",
+        "planned_resolution_episode",
+        "cause_scene_id",
+        "is_finale"
+      ],
+      "additionalProperties": false
+    },
+    "continuity": {
+      "type": "object",
+      "properties": {
+        "requires": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "establishes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "text": {
+                "type": "string",
+                "minLength": 1
+              },
+              "known_by": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 0
+              },
+              "source_scene_id": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "id",
+              "text",
+              "known_by",
+              "source_scene_id"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
+        },
+        "state_changes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "entity_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "field": {
+                "type": "string",
+                "minLength": 1
+              },
+              "before": {
+                "type": "string",
+                "minLength": 1
+              },
+              "after": {
+                "type": "string",
+                "minLength": 1
+              },
+              "cause_scene_id": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "entity_id",
+              "field",
+              "before",
+              "after",
+              "cause_scene_id"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
+        },
+        "promises": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "description": {
+                "type": "string",
+                "minLength": 1
+              },
+              "opened_episode": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "due_episode": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "status": {
+                "type": "string",
+                "enum": [
+                  "open",
+                  "partial",
+                  "resolved"
+                ]
+              },
+              "resolved_episode": {
+                "type": [
+                  "integer",
+                  "null"
+                ],
+                "minimum": 1
+              },
+              "evidence_scene_id": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "description",
+              "opened_episode",
+              "due_episode",
+              "status",
+              "resolved_episode",
+              "evidence_scene_id"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "requires",
+        "establishes",
+        "state_changes",
+        "promises"
+      ],
+      "additionalProperties": false
+    },
+    "production_handoff": {
+      "type": "object",
+      "properties": {
+        "critical_visuals": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "scene_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "must_show": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "scene_id",
+              "must_show"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 1
+        },
+        "continuity_locks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "complexity_risks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "camera_status": {
+          "type": "string",
+          "enum": [
+            "not_planned",
+            "proposed",
+            "locked"
+          ]
+        }
+      },
+      "required": [
+        "critical_visuals",
+        "continuity_locks",
+        "complexity_risks",
+        "camera_status"
+      ],
+      "additionalProperties": false
+    },
+    "review": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "not_reviewed",
+            "revise",
+            "accepted"
+          ]
+        },
+        "hard_failures": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        },
+        "scores": {
+          "type": "array",
+          "description": "Legacy optional data only. Scores do not authorize acceptance.",
+          "items": {
+            "type": "object",
+            "properties": {
+              "criterion": {
+                "type": "string",
+                "enum": [
+                  "promise",
+                  "novelty",
+                  "payoff",
+                  "agency",
+                  "causality",
+                  "serial",
+                  "scene",
+                  "dialogue",
+                  "filmability",
+                  "emotion"
+                ]
+              },
+              "score": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 5
+              },
+              "evidence_scene_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "minItems": 1
+              },
+              "reason": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": [
+              "criterion",
+              "score",
+              "evidence_scene_ids",
+              "reason"
+            ],
+            "additionalProperties": false
+          },
+          "minItems": 0
+        },
+        "blind_read": {
+          "type": ["object", "null"],
+          "description": "Actual independent screenplay reading; null until performed. Metadata cannot prove independence or audience appeal.",
+          "properties": {
+            "reader_id": { "type": "string", "minLength": 1 },
+            "independent": { "type": "boolean" },
+            "input_scope": { "type": "string", "enum": ["screenplay_only"] },
+            "verdict": { "type": "string", "enum": ["continue", "revise", "closure_satisfied"] },
+            "understood_goal": { "type": "string", "minLength": 1 },
+            "keep_watching_reason": { "type": "string", "minLength": 1 },
+            "next_expectation": { "type": "string" },
+            "first_drop_point": { "type": ["string", "null"], "minLength": 1 },
+            "evidence": {
+              "type": "array",
+              "minItems": 1,
+              "items": {
+                "type": "object",
+                "properties": {
+                  "scene_id": { "type": "string", "minLength": 1 },
+                  "quote": { "type": "string", "minLength": 1 },
+                  "observation": { "type": "string", "minLength": 1 }
+                },
+                "required": ["scene_id", "quote", "observation"],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": ["reader_id", "independent", "input_scope", "verdict", "understood_goal", "keep_watching_reason", "next_expectation", "first_drop_point", "evidence"],
+          "additionalProperties": false
+        },
+        "open_issues": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "minItems": 0
+        }
+      },
+      "required": [
+        "status",
+        "hard_failures",
+        "open_issues"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "project_id",
+    "episode_id",
+    "episode_number",
+    "title",
+    "language",
+    "status",
+    "target_duration_seconds",
+    "duration_seconds",
+    "timing_status",
+    "characters",
+    "locations",
+    "props",
+    "rules_used",
+    "scenes",
+    "payoffs",
+    "ending",
+    "continuity",
+    "production_handoff",
+    "review"
+  ],
+  "additionalProperties": false
+}

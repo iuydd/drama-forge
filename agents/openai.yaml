@@ -1,4 +1,4 @@
 interface:
-  display_name: "爆剧引擎 / DramaForge"
-  short_description: "从点子到成片的全自动 AI 短剧制作 / Autonomous AI short-drama production"
-  default_prompt: "使用 $drama-forge 从这个点子全自动做一部短剧，中途不要问我，做完汇报。"
+  display_name: "AI短剧制作"
+  short_description: "先写有吸引力的剧本，再用独立资产参考图制作 H3 视频、剪辑与实片审核"
+  default_prompt: "使用 $ai-drama-production，按 SKILL.md 完成本次短剧任务；先写好剧本，制作时把人物、道具、场景资产直接作为 MiniMax H3 参考图。"

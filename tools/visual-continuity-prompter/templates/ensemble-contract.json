@@ -1,0 +1,41 @@
+{
+  "schema_version": "ensemble-1",
+  "status": "planned",
+  "example_only": false,
+  "scope": {
+    "project_id": null,
+    "episode_id": null,
+    "scene_id": null,
+    "scene_version": null,
+    "continuity_unit_id": null,
+    "shot_id": null,
+    "view_id": null
+  },
+  "duration_s": null,
+  "focus_ids": [],
+  "previous_state": {
+    "snapshot_id": null,
+    "entities": {}
+  },
+  "start_state": {
+    "snapshot_id": null,
+    "entities": {}
+  },
+  "end_state": {
+    "snapshot_id": null,
+    "entities": {}
+  },
+  "cut": {
+    "kind": "camera_only",
+    "events": []
+  },
+  "events": [],
+  "view_plan": {
+    "status": "planned",
+    "camera_spec_ref": null,
+    "basis_ref": null,
+    "inventory_basis_ref": null,
+    "windows": []
+  },
+  "notice": "Fill actual canonical states, approved view visibility and sources. Do not mark a plan visually verified."
+}

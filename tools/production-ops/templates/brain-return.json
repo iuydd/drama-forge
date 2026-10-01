@@ -1,0 +1,23 @@
+{
+  "schema_version": "brain-return-2",
+  "return_id": null,
+  "episode_id": null,
+  "phase": null,
+  "base_packet_id": null,
+  "base_packet": {
+    "path": null,
+    "sha256": null
+  },
+  "status": "NEEDS_BRAIN_REVIEW",
+  "outputs": [],
+  "actual_requests": [],
+  "observations": [],
+  "issues": [],
+  "decisions_needed": [],
+  "cost_and_retry_state": {
+    "settled_minor": null,
+    "reserved_minor": null,
+    "unknown_job_ids": []
+  },
+  "note": "真实输出仅CANDIDATE；actual_requests需task_id/job_id/request/request_sha256/receipt。返回包不会自行接受任何素材。未知费用不填0。"
+}

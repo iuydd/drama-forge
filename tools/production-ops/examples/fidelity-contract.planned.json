@@ -1,0 +1,237 @@
+{
+  "schema_version": "shot-fidelity-1",
+  "status": "DRAFT",
+  "example_only": true,
+  "episode_id": "EP001",
+  "shot_id": "S1",
+  "scene_id": "ROOM",
+  "view_id": "CAM",
+  "revision": "DESIGN_EXAMPLE_ONLY",
+  "risks": {
+    "action": {
+      "applicable": true,
+      "basis": "仅展示字段的虚构计划；真实项目按本镜判定，不要求一镜集齐全部动作。"
+    },
+    "direction": {
+      "applicable": true,
+      "basis": "仅展示字段的虚构计划；真实项目按本镜判定，不要求一镜集齐全部动作。"
+    },
+    "gaze": {
+      "applicable": true,
+      "basis": "仅展示字段的虚构计划；真实项目按本镜判定，不要求一镜集齐全部动作。"
+    },
+    "performance": {
+      "applicable": true,
+      "basis": "仅展示字段的虚构计划；真实项目按本镜判定，不要求一镜集齐全部动作。"
+    },
+    "placement": {
+      "applicable": true,
+      "basis": "仅展示字段的虚构计划；真实项目按本镜判定，不要求一镜集齐全部动作。"
+    },
+    "text": {
+      "applicable": true,
+      "basis": "仅展示字段的虚构计划；真实项目按本镜判定，不要求一镜集齐全部动作。"
+    }
+  },
+  "requirements": [
+    {
+      "id": "ACTION",
+      "category": "action",
+      "expected": {
+        "actor_id": "PERSON",
+        "effector": "right hand pen",
+        "target_id": "PAPER",
+        "precondition": "blank",
+        "contact": "tip touches",
+        "change": "ink follows tip",
+        "postcondition": "ink remains",
+        "persistence": "same ink next view",
+        "release_required": true
+      },
+      "points": {
+        "start_frame": [
+          "initial_state"
+        ],
+        "video": [
+          "precondition",
+          "contact",
+          "change",
+          "result",
+          "after_release"
+        ],
+        "final": [
+          "combined_event"
+        ]
+      },
+      "equals": {
+        "video": {
+          "change": {
+            "visible_change": true
+          },
+          "after_release": {
+            "persistent_result": true
+          }
+        }
+      }
+    },
+    {
+      "id": "DIRECTION",
+      "category": "direction",
+      "expected": {
+        "subject_id": "CAR",
+        "world_heading": "+X",
+        "screen_heading": "right",
+        "screen_motion": "stationary",
+        "view_id": "CAM",
+        "axis_side": "A",
+        "transition_basis": "same-side, no turn"
+      },
+      "points": {
+        "start_frame": [
+          "initial_state"
+        ],
+        "video": [
+          "observed_state"
+        ],
+        "final": [
+          "combined_event"
+        ]
+      },
+      "equals": {
+        "video": {
+          "observed_state": {
+            "screen_heading": "right",
+            "world_heading": "+X"
+          }
+        }
+      }
+    },
+    {
+      "id": "GAZE",
+      "category": "gaze",
+      "expected": {
+        "actor_id": "PERSON",
+        "target_id": "PAPER",
+        "trigger": "writing",
+        "body": "toward desk",
+        "head": "down toward paper",
+        "eyes": "pen contact",
+        "permitted_deviation": "natural blink only during key action"
+      },
+      "points": {
+        "start_frame": [
+          "initial_state"
+        ],
+        "video": [
+          "observed_state"
+        ],
+        "final": [
+          "combined_event"
+        ]
+      },
+      "equals": {
+        "video": {
+          "observed_state": {
+            "target_id": "PAPER"
+          }
+        }
+      }
+    },
+    {
+      "id": "PERFORMANCE",
+      "category": "performance",
+      "expected": {
+        "speaker_id": "ELDER",
+        "line_ids": [
+          "L1",
+          "L2"
+        ],
+        "trigger": "realization",
+        "before": "greeting",
+        "after": "doubt",
+        "listener_id": "PERSON",
+        "visible_response": "brows narrow and glance back"
+      },
+      "points": {
+        "video": [
+          "before",
+          "trigger",
+          "after",
+          "contrast"
+        ],
+        "final": [
+          "audible_contrast"
+        ]
+      },
+      "equals": {
+        "video": {
+          "after": {
+            "intent": "doubt"
+          },
+          "contrast": {
+            "audible_change": true
+          }
+        }
+      }
+    },
+    {
+      "id": "PLACEMENT",
+      "category": "placement",
+      "expected": {
+        "prop_id": "POSTER",
+        "surface_id": "WALL_A",
+        "local_anchor": "MARK_A",
+        "reference_landmarks": "left of door seam",
+        "size": "same physical size",
+        "rotation": "upright",
+        "persistence": "unchanged"
+      },
+      "points": {
+        "start_frame": [
+          "initial_state"
+        ],
+        "video": [
+          "observed_state"
+        ],
+        "final": [
+          "combined_event"
+        ]
+      },
+      "equals": {
+        "video": {
+          "observed_state": {
+            "surface_id": "WALL_A",
+            "local_anchor": "MARK_A"
+          }
+        }
+      }
+    },
+    {
+      "id": "TEXT",
+      "category": "text",
+      "expected": {
+        "text_id": "TEXT",
+        "prop_id": "PAPER",
+        "side": "front",
+        "exact_text": "请轻放",
+        "appearance": "handwritten",
+        "method": "tracked_texture",
+        "reveal_rule": "stroke path follows actual tip",
+        "legibility_window": "result"
+      },
+      "points": {
+        "start_frame": [
+          "initial_state"
+        ],
+        "video": [
+          "observed_state"
+        ],
+        "final": [
+          "readable_text"
+        ]
+      },
+      "equals": {}
+    }
+  ],
+  "note": "非用户原片，非实测，非完整单镜导演方案；只展示六类契约格式。所有坐标/朝向是虚构设计值。"
+}

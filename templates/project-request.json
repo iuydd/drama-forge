@@ -1,0 +1,12 @@
+{
+  "project_id": null,
+  "request_id": null,
+  "user_brief": null,
+  "episode_ids": [],
+  "source_texts": [],
+  "existing_assets": [],
+  "media_profiles": {},
+  "quality_limits": {},
+  "authorization": {"brain_calls": null, "production_budget": null, "auto_publish": false},
+  "note": "DRAFT模板，填写真实范围与已核实后端；不继承示例模型/价格。凭证不写入本文件。"
+}

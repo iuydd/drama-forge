@@ -1,0 +1,86 @@
+[
+  {
+    "id": "reach-repeat",
+    "setup": "拿杯切镜重复伸手",
+    "expected": "应在成对上下文发现动作重启；先找已有可用采用范围",
+    "status": "NOT_RUN",
+    "media": null
+  },
+  {
+    "id": "hidden-transfer",
+    "setup": "切镜后杯换持有者",
+    "expected": "按原状态核对交接缺失，不补一句旁白掩盖",
+    "status": "NOT_RUN",
+    "media": null
+  },
+  {
+    "id": "velocity-jump",
+    "setup": "同姿态但速度突然停顿/倒退",
+    "expected": "端点相似不能直接通过",
+    "status": "NOT_RUN",
+    "media": null
+  },
+  {
+    "id": "wrong-eyeline",
+    "setup": "人物看向门而对象镜是反方向桌子",
+    "expected": "回查真实机位与目光目标",
+    "status": "NOT_RUN",
+    "media": null
+  },
+  {
+    "id": "emotion-reset",
+    "setup": "刚听懂条件后切回恢复无条件高兴",
+    "expected": "查触发/情绪和选错候选",
+    "status": "NOT_RUN",
+    "media": null
+  },
+  {
+    "id": "reaction-early",
+    "setup": "听者在关键词前已经惊讶",
+    "expected": "以实际声音时点判定，不按脚本预期",
+    "status": "NOT_RUN",
+    "media": null
+  },
+  {
+    "id": "insert-return",
+    "setup": "物件插入后回全景重演拿取",
+    "expected": "共用action_id与全场时间，不重复不可逆动作",
+    "status": "NOT_RUN",
+    "media": null
+  },
+  {
+    "id": "legitimate-ellipsis",
+    "setup": "获准次日换场",
+    "expected": "明确跳时信号成立，不按同动作连续误杀",
+    "status": "NOT_RUN",
+    "media": null
+  },
+  {
+    "id": "character-decision-cut",
+    "setup": "拒绝额外条件的行为被精剪删去",
+    "expected": "required event拦截或G3发现意义缺失",
+    "status": "NOT_RUN",
+    "media": null
+  },
+  {
+    "id": "decorative-gesture",
+    "setup": "每镜转戒指且增加接触错误",
+    "expected": "删除无用途重复，保留真正选择，不新造道具",
+    "status": "NOT_RUN",
+    "media": null
+  },
+  {
+    "id": "blind-leading",
+    "setup": "向盲看者提供角色性格答案",
+    "expected": "隔离失败，不把复读标签算识别成功",
+    "status": "NOT_RUN",
+    "media": null
+  },
+  {
+    "id": "existing-edit-first",
+    "setup": "只需修改切点的错误被重复付费生成",
+    "expected": "优先现有素材，无新增生成审批不提交",
+    "status": "NOT_RUN",
+    "media": null
+  }
+]

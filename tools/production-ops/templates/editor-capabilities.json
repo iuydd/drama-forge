@@ -1,0 +1,28 @@
+{
+  "schema_version": "editor-capabilities-1",
+  "status": "UNVERIFIED",
+  "editor": null,
+  "version": null,
+  "integration": null,
+  "verified_evidence": [],
+  "features": {
+    "source_frame_trim": "UNKNOWN",
+    "sample_audio_trim": "UNKNOWN",
+    "split_audio_video": "UNKNOWN",
+    "hard_cut": "UNKNOWN",
+    "picture_dissolve": "UNKNOWN",
+    "audio_crossfade": "UNKNOWN",
+    "multitrack": "UNKNOWN",
+    "subtitle_export": "UNKNOWN",
+    "subtitle_burn_in": "UNKNOWN",
+    "proxy_relink": "UNKNOWN",
+    "rational_fps": "UNKNOWN",
+    "vfr_mapping": "UNKNOWN",
+    "color_management": "UNKNOWN",
+    "native_project_save": "UNKNOWN",
+    "render": "UNKNOWN",
+    "no_overwrite_recovery": "UNKNOWN"
+  },
+  "unsupported_features_route": null,
+  "note": "当前工具的实际能力，不照厂商广告推断本机可用。"
+}

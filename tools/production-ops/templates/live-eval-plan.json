@@ -1,0 +1,211 @@
+{
+  "schema_version": "drama-live-eval-1",
+  "status": "NOT_RUN",
+  "authorized_generation": false,
+  "runtime_config": null,
+  "budget_authorization": null,
+  "reviewer_profile": null,
+  "audience_quality_criteria": null,
+  "paired_variants": [
+    "v4.1_baseline",
+    "v4.2_candidate"
+  ],
+  "generation_seeds_or_trial_ids": [],
+  "randomized_blind_order": [],
+  "sample_size_and_stopping_rule": null,
+  "cases": [
+    {
+      "id": "world_direction",
+      "feature": "固定机位同状态返回",
+      "defect_case": "同机位车/行人/箱子朝向无事件反转",
+      "legal_near_miss": "合法换到另一侧投影改变",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "location_return",
+      "feature": "甲地→乙地→甲地",
+      "defect_case": "家具恢复最初布置、物体消失",
+      "legal_near_miss": "期间有批准移动事件",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "ownership",
+      "feature": "跨镜持物/交接",
+      "defect_case": "换手换人或一物同时两处",
+      "legal_near_miss": "已拍到明确交接",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "occlusion",
+      "feature": "遮挡再出现",
+      "defect_case": "遮挡后物体重置/替换",
+      "legal_near_miss": "画外不可见但状态延续",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "new_entities",
+      "feature": "全画面独立盘点",
+      "defect_case": "未登记显眼背景物变位",
+      "legal_near_miss": "普通动态纹理变化",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "gaze",
+      "feature": "操作/关键对话",
+      "defect_case": "看镜头、看错人/作用区",
+      "legal_near_miss": "有触发的短暂移开",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "contact_result",
+      "feature": "新操作：抽屉、扣子、钥匙",
+      "defect_case": "空挥手无接触或结果",
+      "legal_near_miss": "自然合并操作且结果清楚",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "exclusive_hand",
+      "feature": "多物手部动作",
+      "defect_case": "一手同时无关排他操作",
+      "legal_near_miss": "有依据的联合握持",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "exact_text",
+      "feature": "最终字稿",
+      "defect_case": "错字、乱码、漂浮",
+      "legal_near_miss": "透视缩放但原字正确",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "writing",
+      "feature": "随笔尖显字",
+      "defect_case": "空白或整句突然出现",
+      "legal_near_miss": "同笔划路径逐步显露",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "surface_anchor",
+      "feature": "换机位物体表面位置",
+      "defect_case": "海报/标牌逐镜挪位",
+      "legal_near_miss": "同物体局部锚点正确投影",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "emotion",
+      "feature": "前后两句意图变化",
+      "defect_case": "文字正确却同腔或提前反应",
+      "legal_near_miss": "声线相同但语气真实转折",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "speakers",
+      "feature": "多人倾听回应",
+      "defect_case": "错人开口、听者陪说",
+      "legal_near_miss": "画外发声有既定声源",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "camera_path",
+      "feature": "连续运镜中段",
+      "defect_case": "中途背面/遮挡拓扑崩坏",
+      "legal_near_miss": "有真实参考和完整轨迹",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "cuts",
+      "feature": "真实采用切点",
+      "defect_case": "用源末帧代替实际切出",
+      "legal_near_miss": "合法J/L桥且知情时点对",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "clock",
+      "feature": "一帧/末帧/音频锚点",
+      "defect_case": "闭/开区间转换错一帧",
+      "legal_near_miss": "精确转换含末帧",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "references",
+      "feature": "多参考职责",
+      "defect_case": "身份图带入错误房间/衣服",
+      "legal_near_miss": "独立参考职责清晰，内容与当前场景状态一致",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "story",
+      "feature": "完整事件与人物选择",
+      "defect_case": "技术正确但无动机/念稿",
+      "legal_near_miss": "必要省略但观众仍理解",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "blind",
+      "feature": "真实隔离理解",
+      "defect_case": "看过剧本的伪首次观众",
+      "legal_near_miss": "全新上下文只看允许音画",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    },
+    {
+      "id": "quality_ab",
+      "feature": "同配置同预算比较",
+      "defect_case": "只看测试数宣称画质不变",
+      "legal_near_miss": "配对盲评/成本与返工真实报告",
+      "applicability": null,
+      "real_media": [],
+      "result": "NOT_RUN"
+    }
+  ],
+  "metrics": [
+    "false_negative",
+    "false_positive",
+    "unknown",
+    "accepted_seconds",
+    "cost_minor",
+    "repair_attempts",
+    "manual_handoffs",
+    "input_tokens",
+    "output_tokens",
+    "latency_s"
+  ],
+  "note": "先冻结适用任务、实测配置、质量非劣界限与样本停止规则；不自动调用生成，不把合成测试算真实样本。"
+}

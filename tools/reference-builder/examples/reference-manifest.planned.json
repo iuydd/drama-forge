@@ -1,0 +1,371 @@
+{
+  "schema_version": "1.0",
+  "project_id": "DEMO-KEY-ROOM",
+  "canon_version": "1",
+  "assets": [
+    {
+      "asset_id": "CHAR-LIN-ID-v1",
+      "entity_id": "CHAR-LIN",
+      "kind": "character",
+      "version": "1",
+      "view_id": "FRONT-BUST",
+      "state_id": "COSTUME-WORK",
+      "scene_context": null,
+      "format": "single",
+      "status": "planned",
+      "canonical_parent": null,
+      "dependencies": [],
+      "allowed_roles": [
+        "identity"
+      ],
+      "spec": {
+        "subject": "林澈正面定妆身份母版",
+        "view": "FRONT-BUST",
+        "width": 1536,
+        "height": 1536,
+        "requires_transparency": false,
+        "immutable": [
+          "原创成年角色林澈，黑色短发，略窄下颌，右眉尾一道淡疤。",
+          "右眉特征属于人物自身右侧，不镜像。"
+        ],
+        "critical_unknowns": []
+      },
+      "file": {
+        "path": null,
+        "sha256": null
+      },
+      "review": {
+        "decision": "NOT_REVIEWED",
+        "reviewer": null,
+        "spec_sha256": null,
+        "file_sha256": null,
+        "dependency_snapshots": {},
+        "checks": [],
+        "open_issues": []
+      }
+    },
+    {
+      "asset_id": "CHAR-LIN-FULL-v1",
+      "entity_id": "CHAR-LIN",
+      "kind": "character",
+      "version": "1",
+      "view_id": "FRONT-FULL",
+      "state_id": "COSTUME-WORK",
+      "scene_context": null,
+      "format": "single",
+      "status": "planned",
+      "canonical_parent": "CHAR-LIN-ID-v1",
+      "dependencies": [
+        "CHAR-LIN-ID-v1"
+      ],
+      "allowed_roles": [
+        "identity",
+        "costume"
+      ],
+      "spec": {
+        "subject": "同一林澈穿深灰短外套、米色内搭、黑色长裤和深色鞋的全身素材",
+        "view": "FRONT-FULL",
+        "width": 1536,
+        "height": 2688,
+        "requires_transparency": false,
+        "immutable": [
+          "原创成年角色林澈，黑色短发，略窄下颌，右眉尾一道淡疤。",
+          "右眉特征属于人物自身右侧，不镜像。",
+          "外套无徽章无新增挂件。"
+        ],
+        "critical_unknowns": []
+      },
+      "file": {
+        "path": null,
+        "sha256": null
+      },
+      "review": {
+        "decision": "NOT_REVIEWED",
+        "reviewer": null,
+        "spec_sha256": null,
+        "file_sha256": null,
+        "dependency_snapshots": {},
+        "checks": [],
+        "open_issues": []
+      }
+    },
+    {
+      "asset_id": "CHAR-LIN-RIGHT-v1",
+      "entity_id": "CHAR-LIN",
+      "kind": "character",
+      "version": "1",
+      "view_id": "RIGHT-PROFILE",
+      "state_id": "COSTUME-WORK",
+      "scene_context": null,
+      "format": "single",
+      "status": "planned",
+      "canonical_parent": "CHAR-LIN-ID-v1",
+      "dependencies": [
+        "CHAR-LIN-ID-v1",
+        "CHAR-LIN-FULL-v1"
+      ],
+      "allowed_roles": [
+        "identity"
+      ],
+      "spec": {
+        "subject": "同一角色右侧面半身",
+        "view": "RIGHT-PROFILE",
+        "width": 1536,
+        "height": 1536,
+        "requires_transparency": false,
+        "immutable": [
+          "原创成年角色林澈，黑色短发，略窄下颌，右眉尾一道淡疤。",
+          "右眉特征属于人物自身右侧，不镜像。"
+        ],
+        "critical_unknowns": []
+      },
+      "file": {
+        "path": null,
+        "sha256": null
+      },
+      "review": {
+        "decision": "NOT_REVIEWED",
+        "reviewer": null,
+        "spec_sha256": null,
+        "file_sha256": null,
+        "dependency_snapshots": {},
+        "checks": [],
+        "open_issues": []
+      }
+    },
+    {
+      "asset_id": "PROP-KEY-v1",
+      "entity_id": "PROP-KEY",
+      "kind": "prop",
+      "version": "1",
+      "view_id": "THREE-QUARTER",
+      "state_id": "INTACT",
+      "scene_context": null,
+      "format": "single",
+      "status": "planned",
+      "canonical_parent": null,
+      "dependencies": [],
+      "allowed_roles": [
+        "prop"
+      ],
+      "spec": {
+        "subject": "一把旧铜钥匙，圆形柄孔、短直杆、两枚钥匙齿",
+        "view": "THREE-QUARTER",
+        "width": 1536,
+        "height": 1536,
+        "requires_transparency": false,
+        "immutable": [
+          "只有一把钥匙，圆形柄孔，短直杆，两枚钥匙齿。",
+          "物件不带发光特效、铭文、额外挂件。"
+        ],
+        "critical_unknowns": []
+      },
+      "file": {
+        "path": null,
+        "sha256": null
+      },
+      "review": {
+        "decision": "NOT_REVIEWED",
+        "reviewer": null,
+        "spec_sha256": null,
+        "file_sha256": null,
+        "dependency_snapshots": {},
+        "checks": [],
+        "open_issues": []
+      }
+    },
+    {
+      "asset_id": "PROP-KEY-DETAIL-v1",
+      "entity_id": "PROP-KEY",
+      "kind": "prop",
+      "version": "1",
+      "view_id": "DETAIL",
+      "state_id": "INTACT",
+      "scene_context": null,
+      "format": "single",
+      "status": "planned",
+      "canonical_parent": "PROP-KEY-v1",
+      "dependencies": [
+        "PROP-KEY-v1"
+      ],
+      "allowed_roles": [
+        "prop"
+      ],
+      "spec": {
+        "subject": "同一钥匙两枚钥匙齿与杆连接处的特写",
+        "view": "DETAIL",
+        "width": 768,
+        "height": 768,
+        "requires_transparency": false,
+        "immutable": [
+          "保留同一道具齿数、轮廓和材料。"
+        ],
+        "critical_unknowns": []
+      },
+      "file": {
+        "path": null,
+        "sha256": null
+      },
+      "review": {
+        "decision": "NOT_REVIEWED",
+        "reviewer": null,
+        "spec_sha256": null,
+        "file_sha256": null,
+        "dependency_snapshots": {},
+        "checks": [],
+        "open_issues": []
+      }
+    },
+    {
+      "asset_id": "ROOM-A-v1-VIEW-N-DAY",
+      "entity_id": "ROOM-A",
+      "kind": "scene",
+      "version": "1",
+      "view_id": "VIEW-N",
+      "state_id": "DAY",
+      "scene_context": {
+        "scene_id": "ROOM-A",
+        "scene_version": "1",
+        "view_id": "VIEW-N",
+        "state_id": "DAY"
+      },
+      "format": "single",
+      "status": "planned",
+      "canonical_parent": null,
+      "dependencies": [],
+      "allowed_roles": [
+        "scene_base"
+      ],
+      "spec": {
+        "subject": "相机在房间南侧朝北的无人工作间母版",
+        "view": "VIEW-N",
+        "width": 1536,
+        "height": 2688,
+        "requires_transparency": false,
+        "immutable": [
+          "世界坐标X向东、Y向北、Z向上；这是原创设计，不是实景测量。",
+          "北墙偏西一扇木门，东墙一扇窄窗；南墙完整无门，西墙保留朴素灰色墙面。",
+          "一张长方形木桌位于房间中部，一把木椅在桌南侧；椅子座面前缘朝北、椅背在南。",
+          "西墙旁楼梯通向北侧低平台，从地面到上平台三次上升、两个中间踏面；上平台不另加一级。",
+          "桌面初始没有钥匙或其他活动道具；无人且镜面中也无演员。"
+        ],
+        "critical_unknowns": []
+      },
+      "file": {
+        "path": null,
+        "sha256": null
+      },
+      "review": {
+        "decision": "NOT_REVIEWED",
+        "reviewer": null,
+        "spec_sha256": null,
+        "file_sha256": null,
+        "dependency_snapshots": {},
+        "checks": [],
+        "open_issues": []
+      }
+    },
+    {
+      "asset_id": "ROOM-A-v1-VIEW-S-DAY",
+      "entity_id": "ROOM-A",
+      "kind": "scene",
+      "version": "1",
+      "view_id": "VIEW-S",
+      "state_id": "DAY",
+      "scene_context": {
+        "scene_id": "ROOM-A",
+        "scene_version": "1",
+        "view_id": "VIEW-S",
+        "state_id": "DAY"
+      },
+      "format": "single",
+      "status": "planned",
+      "canonical_parent": "ROOM-A-v1-VIEW-N-DAY",
+      "dependencies": [
+        "ROOM-A-v1-VIEW-N-DAY"
+      ],
+      "allowed_roles": [
+        "scene_base"
+      ],
+      "spec": {
+        "subject": "相机在房间北侧朝南的同一无人工作间反打母版",
+        "view": "VIEW-S",
+        "width": 1536,
+        "height": 2688,
+        "requires_transparency": false,
+        "immutable": [
+          "世界坐标X向东、Y向北、Z向上；这是原创设计，不是实景测量。",
+          "北墙偏西一扇木门，东墙一扇窄窗；南墙完整无门，西墙保留朴素灰色墙面。",
+          "一张长方形木桌位于房间中部，一把木椅在桌南侧；椅子座面前缘朝北、椅背在南。",
+          "西墙旁楼梯通向北侧低平台，从地面到上平台三次上升、两个中间踏面；上平台不另加一级。",
+          "桌面初始没有钥匙或其他活动道具；无人且镜面中也无演员。"
+        ],
+        "critical_unknowns": []
+      },
+      "file": {
+        "path": null,
+        "sha256": null
+      },
+      "review": {
+        "decision": "NOT_REVIEWED",
+        "reviewer": null,
+        "spec_sha256": null,
+        "file_sha256": null,
+        "dependency_snapshots": {},
+        "checks": [],
+        "open_issues": []
+      }
+    },
+    {
+      "asset_id": "ROOM-A-v1-VIEW-N-NIGHT",
+      "entity_id": "ROOM-A",
+      "kind": "scene",
+      "version": "1",
+      "view_id": "VIEW-N",
+      "state_id": "NIGHT",
+      "scene_context": {
+        "scene_id": "ROOM-A",
+        "scene_version": "1",
+        "view_id": "VIEW-N",
+        "state_id": "NIGHT"
+      },
+      "format": "single",
+      "status": "planned",
+      "canonical_parent": "ROOM-A-v1-VIEW-N-DAY",
+      "dependencies": [
+        "ROOM-A-v1-VIEW-N-DAY"
+      ],
+      "allowed_roles": [
+        "scene_base"
+      ],
+      "spec": {
+        "subject": "同一VIEW-N机位的夜间状态母版",
+        "view": "VIEW-N",
+        "width": 1536,
+        "height": 2688,
+        "requires_transparency": false,
+        "immutable": [
+          "世界坐标X向东、Y向北、Z向上；这是原创设计，不是实景测量。",
+          "北墙偏西一扇木门，东墙一扇窄窗；南墙完整无门，西墙保留朴素灰色墙面。",
+          "一张长方形木桌位于房间中部，一把木椅在桌南侧；椅子座面前缘朝北、椅背在南。",
+          "西墙旁楼梯通向北侧低平台，从地面到上平台三次上升、两个中间踏面；上平台不另加一级。",
+          "桌面初始没有钥匙或其他活动道具；无人且镜面中也无演员。"
+        ],
+        "critical_unknowns": []
+      },
+      "file": {
+        "path": null,
+        "sha256": null
+      },
+      "review": {
+        "decision": "NOT_REVIEWED",
+        "reviewer": null,
+        "spec_sha256": null,
+        "file_sha256": null,
+        "dependency_snapshots": {},
+        "checks": [],
+        "open_issues": []
+      }
+    }
+  ]
+}

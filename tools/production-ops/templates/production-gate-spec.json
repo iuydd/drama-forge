@@ -1,0 +1,54 @@
+{
+  "schema_version": "production-ops-1",
+  "action": "pre_video",
+  "video_input": "references",
+  "subject": {
+    "path": null,
+    "sha256": null
+  },
+  "contracts": [],
+  "line_ids": [],
+  "shot_ids": [],
+  "comprehension_fact_ids": [],
+  "is_adaptation": false,
+  "uses_upscale": false,
+  "audio_targets": {
+    "integrated_lufs": null,
+    "integrated_tolerance_lu": null,
+    "max_true_peak_dbtp": null
+  },
+  "delivery": {
+    "width": null,
+    "height": null
+  },
+  "note": "DRAFT模板。reference pre_video 用 reference_assets 替代 start_frame_gate；ensemble_bindings[].media 指向本镜真实请求JSON，另带 asset_registry 文件记录。此时核对素材完整性和顺序；空间、动作与背景运动在生成后完整看片。其余既有批准、预算、音频、预演门禁照常执行。",
+  "editing_required": true,
+  "edit_timeline": {
+    "path": null,
+    "sha256": null
+  },
+  "cut_ids": [],
+  "required_event_ids": [],
+  "execution_required": true,
+  "execution_binding": {
+    "path": null,
+    "sha256": null
+  },
+  "episode_id": null,
+  "ensemble_required": true,
+  "ensemble_bindings": [],
+  "bridges_required": true,
+  "cut_bridges": {
+    "path": null,
+    "sha256": null
+  },
+  "presentation_required": true,
+  "presentation_cue_ids": [],
+  "presentation_order_ids": [],
+  "policy_version": "4.2.0",
+  "brain_required": true,
+  "fidelity_required": true,
+  "fidelity_bindings": [],
+  "continuity_required": true,
+  "continuity_bindings": []
+}

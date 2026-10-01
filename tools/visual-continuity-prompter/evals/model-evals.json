@@ -1,0 +1,151 @@
+{
+  "version": "1.0",
+  "status": "not_run",
+  "note": "需要实际图像模型/视频后端与真实视觉检查器；不是工程单元测试。",
+  "tasks": [
+    {
+      "id": "single-reference-drift",
+      "setup": "同一房间仅改变表情，保持机位",
+      "acceptance": "保护区不变且表情正确；检查输出而非提示词",
+      "status": "not_run"
+    },
+    {
+      "id": "added-identity-ratio",
+      "setup": "加入不同宽高比人物图",
+      "acceptance": "实际输出尺寸仍为锁定值，背景母版不替换",
+      "status": "not_run"
+    },
+    {
+      "id": "rewrite-change",
+      "setup": "增强器新增吊灯或窗户",
+      "acceptance": "生成前拦截未经授权的改写",
+      "status": "not_run"
+    },
+    {
+      "id": "order-swap",
+      "setup": "角色图与场景图交换输入顺序",
+      "acceptance": "检测角色/底图映射不符；不可继续调用",
+      "status": "not_run"
+    },
+    {
+      "id": "chair-facing",
+      "setup": "人物坐入朝向桌子的既有椅子",
+      "acceptance": "椅背在身体后方，椅子朝向不变",
+      "status": "not_run"
+    },
+    {
+      "id": "stairs-count",
+      "setup": "正面同机位保留三次上升",
+      "acceptance": "踢面与平台定义一致，不重画楼梯",
+      "status": "not_run"
+    },
+    {
+      "id": "stairs-occluded",
+      "setup": "人物挡住一块踢面",
+      "acceptance": "不把遮挡误判为少一级；核对结构关系",
+      "status": "not_run"
+    },
+    {
+      "id": "reverse-view",
+      "setup": "切到同空间反打",
+      "acceptance": "根据世界关系验收，不强求屏幕左右不变",
+      "status": "not_run"
+    },
+    {
+      "id": "unknown-back",
+      "setup": "只有正面图要求看见背面",
+      "acceptance": "标未知并先补新视角资产，不假称还原",
+      "status": "not_run"
+    },
+    {
+      "id": "mirror-room",
+      "setup": "候选图整体镜像",
+      "acceptance": "拒绝左右关系反转",
+      "status": "not_run"
+    },
+    {
+      "id": "third-hand",
+      "setup": "杯子附近多一只手",
+      "acceptance": "实际视觉检查发现并拒绝",
+      "status": "not_run"
+    },
+    {
+      "id": "hidden-hand",
+      "setup": "一只手被躯干合理遮挡",
+      "acceptance": "不凭可见手数量机械误杀",
+      "status": "not_run"
+    },
+    {
+      "id": "mirror-hands",
+      "setup": "镜子中出现手的反射",
+      "acceptance": "按身体/反射来源归属，检查反射合理性",
+      "status": "not_run"
+    },
+    {
+      "id": "contact",
+      "setup": "人物握杯但杯子悬空",
+      "acceptance": "接触检查拒绝",
+      "status": "not_run"
+    },
+    {
+      "id": "shadow-seam",
+      "setup": "保护背景后阴影被裁断",
+      "acceptance": "合成结果不得只因像素锁通过就放行",
+      "status": "not_run"
+    },
+    {
+      "id": "old-position",
+      "setup": "人物移动后旧轮廓残留",
+      "acceptance": "清除旧位置并依赖已验收空场景",
+      "status": "not_run"
+    },
+    {
+      "id": "video-midframe",
+      "setup": "视频首尾正确但中间多手",
+      "acceptance": "全帧/时序检查发现错误，不只看首尾",
+      "status": "not_run"
+    },
+    {
+      "id": "video-freeze",
+      "setup": "用完全静止视频避免变形",
+      "acceptance": "动作和叙事检查拒绝",
+      "status": "not_run"
+    },
+    {
+      "id": "handoff-hand",
+      "setup": "剪辑后杯子从右手瞬移左手",
+      "acceptance": "跨镜头状态检查拒绝",
+      "status": "not_run"
+    },
+    {
+      "id": "stale-review",
+      "setup": "审核后修改母版或输出图",
+      "acceptance": "旧审核失效，重新检查",
+      "status": "not_run"
+    },
+    {
+      "id": "missing-file",
+      "setup": "参考图路径不存在但prompt写已上传",
+      "acceptance": "输入门禁阻塞",
+      "status": "not_run"
+    },
+    {
+      "id": "unsupported-control",
+      "setup": "未核实后端却请求ControlNet/强度参数",
+      "acceptance": "不编造接口；标unknown并输出草案",
+      "status": "not_run"
+    },
+    {
+      "id": "budget-limit",
+      "setup": "连续失败超过预算",
+      "acceptance": "保持BLOCKED，不降低质量或无限重试",
+      "status": "not_run"
+    },
+    {
+      "id": "narrative-evidence",
+      "setup": "为隐藏手错误而裁掉奖励道具",
+      "acceptance": "关键剧情证据检查拒绝无授权裁切",
+      "status": "not_run"
+    }
+  ]
+}

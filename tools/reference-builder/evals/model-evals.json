@@ -1,0 +1,132 @@
+{
+  "status": "NOT_RUN",
+  "note": "需真实生成器与视觉检查者；不是工程测试结论。",
+  "cases": [
+    {
+      "id": "REF-EVAL-01",
+      "name": "root-no-images",
+      "task": "从零建角色根图，不能引用不存在的图片1",
+      "status": "NOT_RUN",
+      "actual_output": null
+    },
+    {
+      "id": "REF-EVAL-02",
+      "name": "role-derivation",
+      "task": "同一角色正面到右侧面身份一致",
+      "status": "NOT_RUN",
+      "actual_output": null
+    },
+    {
+      "id": "REF-EVAL-03",
+      "name": "asymmetry",
+      "task": "人物右眉疤痕不镜像",
+      "status": "NOT_RUN",
+      "actual_output": null
+    },
+    {
+      "id": "REF-EVAL-04",
+      "name": "costume",
+      "task": "换衣不换脸且旧服装不覆盖新状态",
+      "status": "NOT_RUN",
+      "actual_output": null
+    },
+    {
+      "id": "REF-EVAL-05",
+      "name": "empty-set",
+      "task": "空景无人但仍保留桌椅与其阴影",
+      "status": "NOT_RUN",
+      "actual_output": null
+    },
+    {
+      "id": "REF-EVAL-06",
+      "name": "chair-facing",
+      "task": "椅子前缘朝桌而非转椅迎镜头",
+      "status": "NOT_RUN",
+      "actual_output": null
+    },
+    {
+      "id": "REF-EVAL-07",
+      "name": "stairs",
+      "task": "三次上升与两个中间踏面，上平台不多算",
+      "status": "NOT_RUN",
+      "actual_output": null
+    },
+    {
+      "id": "REF-EVAL-08",
+      "name": "reverse-view",
+      "task": "反打投影变化合理且门不移墙",
+      "status": "NOT_RUN",
+      "actual_output": null
+    },
+    {
+      "id": "REF-EVAL-09",
+      "name": "unknown-back",
+      "task": "看不见的背面标成补设计而非已恢复",
+      "status": "NOT_RUN",
+      "actual_output": null
+    },
+    {
+      "id": "REF-EVAL-10",
+      "name": "crop-not-camera",
+      "task": "裁切不得伪装换机位",
+      "status": "NOT_RUN",
+      "actual_output": null
+    },
+    {
+      "id": "REF-EVAL-11",
+      "name": "alpha",
+      "task": "真alpha而非棋盘格或全不透明RGBA",
+      "status": "NOT_RUN",
+      "actual_output": null
+    },
+    {
+      "id": "REF-EVAL-12",
+      "name": "root-drift",
+      "task": "派生三轮持续对照共同根",
+      "status": "NOT_RUN",
+      "actual_output": null
+    },
+    {
+      "id": "REF-EVAL-13",
+      "name": "reference-conflict",
+      "task": "人物素材的另一房间不混进场景",
+      "status": "NOT_RUN",
+      "actual_output": null
+    },
+    {
+      "id": "REF-EVAL-14",
+      "name": "prop-duplicate",
+      "task": "场景已有同一道具不再新增实例",
+      "status": "NOT_RUN",
+      "actual_output": null
+    },
+    {
+      "id": "REF-EVAL-15",
+      "name": "use-test",
+      "task": "人物坐入现有椅子并持道具无额外肢体",
+      "status": "NOT_RUN",
+      "actual_output": null
+    },
+    {
+      "id": "REF-EVAL-16",
+      "name": "night-state",
+      "task": "夜间改光不改结构且不覆盖白天母版",
+      "status": "NOT_RUN",
+      "actual_output": null
+    },
+    {
+      "id": "REF-EVAL-17",
+      "name": "model-inputs",
+      "task": "实际图像模型输入顺序/尺寸/最终prompt与任务一致",
+      "status": "NOT_RUN",
+      "actual_output": null
+    },
+    {
+      "id": "REF-EVAL-18",
+      "name": "pipeline-stop",
+      "task": "缺素材/过期审核真正阻止正式镜头执行",
+      "status": "NOT_RUN",
+      "actual_output": null
+    }
+  ]
+}

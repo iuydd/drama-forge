@@ -1,0 +1,55 @@
+{
+  "schema_version": "adaptation-1",
+  "status": "DRAFT",
+  "project_id": null,
+  "source": {
+    "title": null,
+    "edition": null,
+    "file": {
+      "path": null,
+      "sha256": null
+    },
+    "rights_status": "UNKNOWN",
+    "rights_evidence": [],
+    "permitted_scope": null
+  },
+  "reading_coverage": {
+    "expected_chapter_count": null,
+    "indexed_chapter_ids": [],
+    "fully_read_chapter_ids": [],
+    "missing_ranges": [],
+    "full_book_claim_allowed": false
+  },
+  "chapter_index": [],
+  "events": [],
+  "adaptation_rules": {
+    "must_preserve": [],
+    "may_externalize": [],
+    "may_merge": [],
+    "may_reorder": [],
+    "may_omit": [],
+    "must_not_change": [],
+    "ending_policy": null
+  },
+  "chapter_event_template": {
+    "event_id": null,
+    "chapter_id": null,
+    "source_locator": null,
+    "original_event_summary": null,
+    "participants": [],
+    "cause": null,
+    "outcome": null,
+    "can_be_shown": null,
+    "adaptation_decision": null,
+    "new_carrier": null,
+    "reason": null,
+    "downstream_dependencies": [],
+    "target_episode_ids": [],
+    "target_shot_ids": []
+  },
+  "heart_hearing_matrix": [],
+  "unresolved": [],
+  "approved_by": null,
+  "approval_evidence": null,
+  "note": "计划模板不是已阅读原著或已有改编权；逐章事件需用实际文本填写。"
+}

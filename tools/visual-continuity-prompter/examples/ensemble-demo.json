@@ -1,0 +1,315 @@
+{
+  "schema_version": "ensemble-1",
+  "status": "locked",
+  "example_only": true,
+  "scope": {
+    "project_id": "DEMO",
+    "episode_id": "EP001",
+    "scene_id": "ROOM1",
+    "scene_version": "1",
+    "continuity_unit_id": "SC01-CONTINUOUS",
+    "shot_id": "S02",
+    "view_id": "CAM_B"
+  },
+  "duration_s": 4,
+  "focus_ids": [
+    "CHAR_A"
+  ],
+  "previous_state": {
+    "snapshot_id": "SC01-BEAT1",
+    "entities": {
+      "CHAR_A": {
+        "kind": "character",
+        "design_id": "CHAR_A-COSTUME1",
+        "aliases": [
+          "主角甲"
+        ],
+        "presence": "present",
+        "state": {
+          "world_anchor": "TABLE-NORTH",
+          "pose": "seated",
+          "holding": "PROP_CUP"
+        }
+      },
+      "CHAR_B": {
+        "kind": "character",
+        "design_id": "CHAR_B-COSTUME1",
+        "aliases": [
+          "门旁乙"
+        ],
+        "presence": "present",
+        "state": {
+          "world_anchor": "DOOR-INSIDE",
+          "pose": "standing",
+          "holding": null
+        }
+      },
+      "PROP_CUP": {
+        "kind": "prop",
+        "design_id": "CUP-BLUE",
+        "aliases": [],
+        "presence": "present",
+        "state": {
+          "world_anchor": "CHAR_A-RIGHT-HAND",
+          "holder": "CHAR_A",
+          "condition": "intact"
+        }
+      },
+      "DOOR": {
+        "kind": "structure",
+        "design_id": "DOOR-WOOD",
+        "aliases": [],
+        "presence": "present",
+        "state": {
+          "world_anchor": "WALL-WEST",
+          "open_state": "open"
+        }
+      },
+      "CHAR_C": {
+        "kind": "character",
+        "design_id": "CHAR_C-COSTUME1",
+        "aliases": [
+          "旁听丙"
+        ],
+        "presence": "present",
+        "state": {
+          "world_anchor": "BEHIND-CAMERA",
+          "pose": "seated",
+          "holding": null
+        }
+      }
+    }
+  },
+  "start_state": {
+    "snapshot_id": "SC01-BEAT1",
+    "entities": {
+      "CHAR_A": {
+        "kind": "character",
+        "design_id": "CHAR_A-COSTUME1",
+        "aliases": [
+          "主角甲"
+        ],
+        "presence": "present",
+        "state": {
+          "world_anchor": "TABLE-NORTH",
+          "pose": "seated",
+          "holding": "PROP_CUP"
+        }
+      },
+      "CHAR_B": {
+        "kind": "character",
+        "design_id": "CHAR_B-COSTUME1",
+        "aliases": [
+          "门旁乙"
+        ],
+        "presence": "present",
+        "state": {
+          "world_anchor": "DOOR-INSIDE",
+          "pose": "standing",
+          "holding": null
+        }
+      },
+      "PROP_CUP": {
+        "kind": "prop",
+        "design_id": "CUP-BLUE",
+        "aliases": [],
+        "presence": "present",
+        "state": {
+          "world_anchor": "CHAR_A-RIGHT-HAND",
+          "holder": "CHAR_A",
+          "condition": "intact"
+        }
+      },
+      "DOOR": {
+        "kind": "structure",
+        "design_id": "DOOR-WOOD",
+        "aliases": [],
+        "presence": "present",
+        "state": {
+          "world_anchor": "WALL-WEST",
+          "open_state": "open"
+        }
+      },
+      "CHAR_C": {
+        "kind": "character",
+        "design_id": "CHAR_C-COSTUME1",
+        "aliases": [
+          "旁听丙"
+        ],
+        "presence": "present",
+        "state": {
+          "world_anchor": "BEHIND-CAMERA",
+          "pose": "seated",
+          "holding": null
+        }
+      }
+    }
+  },
+  "end_state": {
+    "snapshot_id": "SC01-BEAT2",
+    "entities": {
+      "CHAR_A": {
+        "kind": "character",
+        "design_id": "CHAR_A-COSTUME1",
+        "aliases": [
+          "主角甲"
+        ],
+        "presence": "present",
+        "state": {
+          "world_anchor": "TABLE-NORTH",
+          "pose": "seated-cup-at-chest",
+          "holding": "PROP_CUP"
+        }
+      },
+      "CHAR_B": {
+        "kind": "character",
+        "design_id": "CHAR_B-COSTUME1",
+        "aliases": [
+          "门旁乙"
+        ],
+        "presence": "present",
+        "state": {
+          "world_anchor": "DOOR-INSIDE",
+          "pose": "standing",
+          "holding": null
+        }
+      },
+      "PROP_CUP": {
+        "kind": "prop",
+        "design_id": "CUP-BLUE",
+        "aliases": [],
+        "presence": "present",
+        "state": {
+          "world_anchor": "CHAR_A-RIGHT-HAND",
+          "holder": "CHAR_A",
+          "condition": "intact"
+        }
+      },
+      "DOOR": {
+        "kind": "structure",
+        "design_id": "DOOR-WOOD",
+        "aliases": [],
+        "presence": "present",
+        "state": {
+          "world_anchor": "WALL-WEST",
+          "open_state": "open"
+        }
+      },
+      "CHAR_C": {
+        "kind": "character",
+        "design_id": "CHAR_C-COSTUME1",
+        "aliases": [
+          "旁听丙"
+        ],
+        "presence": "present",
+        "state": {
+          "world_anchor": "BEHIND-CAMERA",
+          "pose": "seated",
+          "holding": null
+        }
+      }
+    }
+  },
+  "cut": {
+    "kind": "camera_only",
+    "events": []
+  },
+  "events": [
+    {
+      "event_id": "EV-LIFT",
+      "entity_id": "CHAR_A",
+      "at_s": 3,
+      "cause_ref": "SCRIPT-S02-LIFT",
+      "approval_ref": "DEMO-BOARD-APPROVAL",
+      "before": {
+        "kind": "character",
+        "design_id": "CHAR_A-COSTUME1",
+        "aliases": [
+          "主角甲"
+        ],
+        "presence": "present",
+        "state": {
+          "world_anchor": "TABLE-NORTH",
+          "pose": "seated",
+          "holding": "PROP_CUP"
+        }
+      },
+      "after": {
+        "kind": "character",
+        "design_id": "CHAR_A-COSTUME1",
+        "aliases": [
+          "主角甲"
+        ],
+        "presence": "present",
+        "state": {
+          "world_anchor": "TABLE-NORTH",
+          "pose": "seated-cup-at-chest",
+          "holding": "PROP_CUP"
+        }
+      }
+    }
+  ],
+  "view_plan": {
+    "status": "locked",
+    "camera_spec_ref": "DEMO-PLAN-CAM_B",
+    "basis_ref": "DEMO-APPROVED-BLOCKING",
+    "inventory_basis_ref": "DEMO-SC01-REGISTRY",
+    "windows": [
+      {
+        "window_id": "W01",
+        "start_s": 0,
+        "end_s": 4,
+        "basis_ref": "DEMO-PLAN-CAM_B",
+        "entities": [
+          {
+            "entity_id": "CHAR_A",
+            "visibility": "visible",
+            "reason": "approved multi-view blocking",
+            "visual_clause": "前景桌旁的青衣青年",
+            "still_clause": "坐在原椅上，右手持蓝杯",
+            "behavior_clause": "右手平稳抬杯至胸前"
+          },
+          {
+            "entity_id": "CHAR_B",
+            "visibility": "visible",
+            "reason": "approved multi-view blocking",
+            "visual_clause": "后景门内的灰衣男子",
+            "still_clause": "站在门框内侧，双手自然下垂",
+            "behavior_clause": "保持门内站位，自然呼吸并注视桌旁动作"
+          },
+          {
+            "entity_id": "PROP_CUP",
+            "visibility": "visible",
+            "reason": "approved multi-view blocking",
+            "visual_clause": "青衣青年右手中的唯一蓝杯",
+            "still_clause": "杯口向上，杯身完整",
+            "behavior_clause": "随同一只右手移动，保持完整与直立"
+          },
+          {
+            "entity_id": "DOOR",
+            "visibility": "visible",
+            "reason": "approved multi-view blocking",
+            "visual_clause": "后景原木门",
+            "still_clause": "门扇开启",
+            "behavior_clause": "保持原有开度与门框形状"
+          },
+          {
+            "entity_id": "CHAR_C",
+            "visibility": "out_of_frame",
+            "reason": "approved camera B looks away from this seating position",
+            "visual_clause": "",
+            "still_clause": "",
+            "behavior_clause": ""
+          }
+        ],
+        "expected_visible_ids": [
+          "CHAR_A",
+          "CHAR_B",
+          "PROP_CUP",
+          "DOOR"
+        ]
+      }
+    ]
+  },
+  "notice": "Fictional planned example. No actual asset or staging verification occurred in the user environment."
+}

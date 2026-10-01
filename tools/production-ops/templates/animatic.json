@@ -1,0 +1,29 @@
+{
+  "schema_version": "animatic-1",
+  "status": "PLANNED",
+  "episode_id": null,
+  "fps": 24,
+  "width": 720,
+  "height": 1280,
+  "shots": [],
+  "temp_audio": {
+    "path": null,
+    "sha256": null
+  },
+  "shot_template": {
+    "shot_id": null,
+    "frames": null,
+    "image": {
+      "path": null,
+      "sha256": null
+    }
+  },
+  "timeline_basis": "以实际临时台词时长和已批准动作停留构建；预演尺寸不改变正式生成质量",
+  "blind_version": {
+    "debug_overlays": false,
+    "story_explanation_overlays": false,
+    "only_intended_subtitles": true
+  },
+  "motion_not_proven_by_stills": [],
+  "executed": false
+}

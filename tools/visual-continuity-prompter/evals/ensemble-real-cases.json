@@ -1,0 +1,91 @@
+{
+  "schema_version": "ensemble-evals-1",
+  "status": "NOT_RUN",
+  "note": "Actual user model/media tests; writing this plan does not run them. Paid samples require batch approval.",
+  "cases": [
+    {
+      "id": "visible-support",
+      "setup": "主角动作正确，仍应在门旁的配角消失",
+      "expectation": "拦截并定位首帧/动态/剪辑层",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "offframe-normal",
+      "setup": "换角度后配角真实位于相机后方",
+      "expectation": "不误判缺人，场次记录仍保留",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "partial-normal",
+      "setup": "只见配角肩部",
+      "expectation": "保留局部，不删人不补全身",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "occlusion-return",
+      "setup": "人物被柱遮挡后重现",
+      "expectation": "同一身份/服装/道具，完整事件区间检查",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "prop-transfer",
+      "setup": "杯仍存在但未经交接换人持有",
+      "expectation": "以关系错误拒绝",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "door-state",
+      "setup": "人物齐全但木门自行关闭",
+      "expectation": "状态差量拒绝",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "insert-return",
+      "setup": "特写只见手和杯，切回全场少B",
+      "expectation": "对照权威场次而非仅相邻特写",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "false-object-only",
+      "setup": "标为object_only但构图仍含远景人物",
+      "expectation": "先修标签/可见表，不静默删人",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "mid-entry",
+      "setup": "起点画外的人随后合法走入",
+      "expectation": "未来可见对象保留入画动作，不被净化",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "reference-omission",
+      "setup": "完整可见表有B但起始图无B",
+      "expectation": "阻止视频提交",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "hallucinated-extra",
+      "setup": "本镜多出未规划人物或门",
+      "expectation": "全帧发现注册表之外异常",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "quiet-background",
+      "setup": "静默配角自然呼吸而无位移",
+      "expectation": "正常活动可通过，不冻结成雕塑",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "reflection-normal",
+      "setup": "只见同一人物的镜中反射",
+      "expectation": "不算第二个真人且不补本体",
+      "status": "NOT_RUN"
+    },
+    {
+      "id": "parallel-snapshot",
+      "setup": "同集并行机位引用不同状态版本",
+      "expectation": "检测版本/时刻冲突，不按完工顺序修改canon",
+      "status": "NOT_RUN"
+    }
+  ]
+}

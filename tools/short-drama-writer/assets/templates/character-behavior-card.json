@@ -1,0 +1,28 @@
+{
+  "schema_version": "character-behavior-1",
+  "status": "DRAFT",
+  "character_id": null,
+  "canon_version": null,
+  "core_priority": null,
+  "preferred_tactic": null,
+  "relationship_variations": [],
+  "pressure_response": null,
+  "speech_choices": null,
+  "recurring_detail": null,
+  "growth_or_exception": null,
+  "current_scene_cues": [],
+  "cue_fields": [
+    "cue_id",
+    "trigger_event_or_line_id",
+    "choice",
+    "observable_behavior",
+    "emotion_in",
+    "emotion_out",
+    "action_id",
+    "visible_parts",
+    "state_change_refs",
+    "protect",
+    "event_ids"
+  ],
+  "note": "行为卡是编剧工具，不是人格分类器；从当前活动选有意义细节，不填满所有习惯。protect仅对已锁人物/叙事证据启用。剧情ID沿用既有账本。"
+}

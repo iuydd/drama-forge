@@ -1,0 +1,47 @@
+{
+  "schema_version": "delivery-1",
+  "status": "PROPOSED_NOT_APPROVED",
+  "delivery": {
+    "width": 1080,
+    "height": 1920,
+    "frame_rate": null,
+    "container": null,
+    "video_codec": null,
+    "color_space": null,
+    "sample_rate_hz": 48000
+  },
+  "audio_targets": {
+    "integrated_lufs": -16.0,
+    "integrated_tolerance_lu": 1.0,
+    "max_true_peak_dbtp": -1.0
+  },
+  "target_source": "本Skill可调整工作初值，不是任何平台的统一强制标准",
+  "approval_evidence": null,
+  "upscale": {
+    "enabled": false,
+    "source_width": null,
+    "source_height": null,
+    "target_width": null,
+    "target_height": null,
+    "method": null,
+    "model": null,
+    "new_generation_quality_route_approved": false,
+    "approval_evidence": null,
+    "do_not_claim_native_1080p": true,
+    "frame_interpolation_allowed": false,
+    "face_redraw_allowed": false
+  },
+  "mix_stems": [
+    "dialogue",
+    "inner_voiceover",
+    "music",
+    "sfx",
+    "ambience"
+  ],
+  "mix_review": {
+    "measured_final": false,
+    "listened_final": false
+  },
+  "final_text_after_upscale": true,
+  "keep_ai_disclosures_and_rights_marks": true
+}

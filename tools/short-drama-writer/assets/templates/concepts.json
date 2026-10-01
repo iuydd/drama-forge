@@ -1,0 +1,26 @@
+[
+  {
+    "id": "",
+    "title": "",
+    "logline": "",
+    "primary_pleasure": "",
+    "protagonist_goal": "",
+    "mechanism_summary": "",
+    "first_payoff": "",
+    "unique_scene": "",
+    "serial_engine": "",
+    "risk": "",
+    "fingerprint": {
+      "desire": [],
+      "advantage": [],
+      "operation": [],
+      "obstacle": [],
+      "relationship": [],
+      "reveal": [],
+      "reward": [],
+      "growth": [],
+      "arena": []
+    },
+    "variant_of": null
+  }
+]

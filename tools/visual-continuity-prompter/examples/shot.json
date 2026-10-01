@@ -1,0 +1,95 @@
+{
+  "schema_version": "1.0",
+  "shot_id": "SHOT-001",
+  "source_scene_id": "EP01-SC01",
+  "scene_id": "SCENE-ROOM",
+  "scene_version": "1",
+  "scene_state_id": "STATE-000",
+  "view_id": "VIEW-A",
+  "mode": "edit_same_view",
+  "planning_status": "candidate",
+  "camera_locked": false,
+  "camera_motion": "fixed",
+  "output": {
+    "width": 1536,
+    "height": 2688,
+    "media_kind": "image",
+    "note": "仅示例工作画布，非用户已批准尺寸；接入时显式替换。"
+  },
+  "references": [
+    {
+      "asset_id": "MASTER-A-1",
+      "role": "scene_base",
+      "primary": true,
+      "purpose": "本次场景、机位、透视和家具底图，不是风格样图。",
+      "upload_index": 1,
+      "path": null,
+      "sha256": null,
+      "status": "missing",
+      "scene_id": "SCENE-ROOM",
+      "scene_version": "1",
+      "view_id": "VIEW-A",
+      "state_id": "STATE-000"
+    },
+    {
+      "asset_id": "CHAR-001-ID-1",
+      "role": "identity",
+      "primary": false,
+      "purpose": "仅提供人物脸、发型、服装，不带入其背景、机位、光线和姿态。",
+      "upload_index": 2,
+      "path": null,
+      "sha256": null,
+      "status": "missing"
+    }
+  ],
+  "change_request": "将图片2的人物加入图片1，坐入现有椅子，右手握桌上的杯子但尚未举起，左手放桌面。",
+  "preserve": [
+    "原门窗位置",
+    "原桌椅设计、位置和朝向",
+    "原楼梯结构和连接关系",
+    "同一机位与画幅"
+  ],
+  "relations": [
+    "椅背在人物躯干后方，身体面向桌子",
+    "右手与杯子实际接触，左手平放桌面",
+    "身体不穿过桌椅"
+  ],
+  "narrative_must_show": [
+    "人物右手接触同一只杯子"
+  ],
+  "state_in": {
+    "cup_holder": null,
+    "chair_front_target": "TABLE-001"
+  },
+  "state_out": {
+    "cup_holder": "CHAR-001:right_hand",
+    "cup_on_table": true,
+    "chair_front_target": "TABLE-001"
+  },
+  "qa_required": [
+    "scene_structure",
+    "subject_integrity",
+    "contacts",
+    "composition",
+    "technical",
+    "narrative",
+    "protected_pixels"
+  ],
+  "repair_budget": {
+    "generation_attempts": 3,
+    "local_repairs": 2
+  },
+  "protection": {
+    "method": "external_composite",
+    "allowed_mask": {
+      "path": null,
+      "sha256": null,
+      "status": "missing"
+    },
+    "blend_mask": null
+  },
+  "transition": {
+    "kind": "establish",
+    "previous_shot_id": null
+  }
+}

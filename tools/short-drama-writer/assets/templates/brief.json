@@ -1,0 +1,41 @@
+{
+  "schema_version": "1.0",
+  "project_id": "new-drama",
+  "title": "待定",
+  "language": "zh-CN",
+  "mode": "auto",
+  "format": "serial",
+  "total_episodes": 1,
+  "episode_seconds": null,
+  "primary_pleasure": [],
+  "secondary_pleasure": [],
+  "power_mode": "auto",
+  "must_include": [],
+  "must_avoid": [],
+  "production_complexity": "auto",
+  "assumptions": [
+    "单集是本模板的最小范围；季长、人物能力、制作规模和结局按实际任务填写，模板不代表个人偏好。",
+    "从当前请求与已有上下文记录题材、主要满足感和排斥项，复用must_include/must_avoid及assumptions。无依据的偏好标未知；澄清或自选按Skill的references/01-story.md。",
+    "模块01负责故事选择、人物冲突、能力收益与新意判断；有原稿或点子就开发它，字段不要求另造能力。",
+    "模块02负责开头、因果知情与片长；从正文提取当前活动、愿望、阻碍和有效依据。",
+    "模块03负责对白与表演；关键段才补卡，text_spoken与delivery_note分离。",
+    "先正文后提取机器字段。STORY按references/09-review-repair.md做独立正文盲读，复用review.blind_read记录；字段完整或自评分不能批准accepted。",
+    "episode_seconds=null仅供规划；按模块02估排，在数值时间线、预演、生成或付费前锁定正数及相应范围/费用，不默认75秒。"
+  ],
+  "delivery": {
+    "concepts": 3,
+    "shortlist": 1,
+    "develop": 1,
+    "full_episodes": 1
+  },
+  "max_revision_rounds": 2,
+  "audience_emotional_goal": "填写用户希望获得的观感；无依据时标未知，不用新颖程度代替口味。",
+  "ending_preference": "按题材与任务确定",
+  "timing_policy": {
+    "mode": "context_first",
+    "status": "unplanned",
+    "lock_positive_seconds_before_production": true,
+    "do_not_accelerate_dialogue_to_fit": true,
+    "paid_duration_change_requires_batch_approval": true
+  }
+}

@@ -1,0 +1,24 @@
+{
+  "schema_version": "episode-completion-1",
+  "episode_id": null,
+  "status": "IN_PROGRESS",
+  "final_artifact": {
+    "path": null,
+    "sha256": null
+  },
+  "final_review": {
+    "path": null,
+    "sha256": null
+  },
+  "final_gate_accepted": false,
+  "state_archived": false,
+  "lessons_recorded": false,
+  "costs_reconciled": false,
+  "unknown_submission_ids": [],
+  "costs_pending_settlement": [],
+  "mobile_required": false,
+  "mobile_max_bytes": null,
+  "mobile_artifact": null,
+  "mobile_review_passed": false,
+  "note": "按任务确定是否需要手机副本，启用时填入已核实字节上限。可交付不等于公开发布；待结账单如实记录，未知提交先对账。"
+}

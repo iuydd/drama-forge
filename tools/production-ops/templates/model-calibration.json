@@ -1,0 +1,37 @@
+{
+  "schema_version": "model-calibration-1",
+  "status": "NOT_RUN",
+  "actual_runtime": {
+    "provider": null,
+    "model_id": null,
+    "revision": null,
+    "hardware": null,
+    "parameters": {},
+    "audio_native": null,
+    "configuration_digest": null
+  },
+  "reused_existing_sample_ids": [],
+  "cases": [],
+  "case_template": {
+    "case_id": null,
+    "feature": null,
+    "spoken_character_count": null,
+    "speech_seconds": null,
+    "dialogue_rate_char_per_s": null,
+    "hand_contact_type": null,
+    "duration_s": null,
+    "attempt_count": 0,
+    "passed_count": 0,
+    "failure_types": [],
+    "actual_cost": null,
+    "actual_latency_s": null,
+    "evidence": []
+  },
+  "storyboard_constraints": {
+    "max_tested_safe_dialogue_length": null,
+    "preferred_speech_seconds": null,
+    "unvalidated_actions": []
+  },
+  "approval_for_paid_tests": null,
+  "do_not_extrapolate_tiny_sample_to_true_success_rate": true
+}

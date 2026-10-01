@@ -1,0 +1,401 @@
+{
+  "schema_version": "sequence-continuity-1",
+  "status": "DRAFT",
+  "example_only": true,
+  "episode_id": "EP001",
+  "revision": "1",
+  "initial": {
+    "state_id": "T0",
+    "facts": {
+      "CAR.heading": "A_to_B",
+      "CAR.location": "STREET",
+      "NOTICE.anchor": "WALL_A/seam2",
+      "NOTICE.face": "front",
+      "NOTICE.state": "attached_old",
+      "PEN.hand": "right",
+      "DOOR.layout": "WEST_WALL"
+    }
+  },
+  "fixed_keys": [
+    "DOOR.layout"
+  ],
+  "states": [
+    {
+      "state_id": "T1",
+      "parent_state_id": "T0",
+      "changes": [
+        {
+          "key": "NOTICE.state",
+          "before": "attached_old",
+          "after": "detached_old",
+          "event_id": "REMOVE",
+          "cause_ref": "SYNTHETIC-SCRIPT",
+          "approval_ref": "SYNTHETIC-APPROVAL",
+          "mode": "on_screen"
+        }
+      ]
+    }
+  ],
+  "scenes": {
+    "STREET": {
+      "layout_revision": "1",
+      "coordinate_frame": "A_to_B = +X; up = +Z",
+      "landmarks": [
+        "A",
+        "B"
+      ],
+      "views": {
+        "V1": {
+          "axis_side": "SIDE_A",
+          "plate_asset_id": "PLATE-A",
+          "orientation_basis": "Synthetic camera north of action axis.",
+          "screen_landmarks": [
+            "A",
+            "B"
+          ]
+        },
+        "V2": {
+          "axis_side": "SIDE_B",
+          "plate_asset_id": "PLATE-A-B",
+          "orientation_basis": "Synthetic opposite-side camera.",
+          "screen_landmarks": [
+            "B",
+            "A"
+          ]
+        }
+      }
+    },
+    "ROOM": {
+      "layout_revision": "1",
+      "coordinate_frame": "A_to_B = +X; up = +Z",
+      "landmarks": [
+        "A",
+        "B"
+      ],
+      "views": {
+        "V1": {
+          "axis_side": "SIDE_A",
+          "plate_asset_id": "PLATE-B",
+          "orientation_basis": "Synthetic camera north of action axis.",
+          "screen_landmarks": [
+            "A",
+            "B"
+          ]
+        },
+        "V2": {
+          "axis_side": "SIDE_B",
+          "plate_asset_id": "PLATE-B-B",
+          "orientation_basis": "Synthetic opposite-side camera.",
+          "screen_landmarks": [
+            "B",
+            "A"
+          ]
+        }
+      }
+    }
+  },
+  "shots": [
+    {
+      "shot_id": "S1",
+      "scene_id": "STREET",
+      "view_id": "V1",
+      "state_in": "T0",
+      "state_out": "T1",
+      "relation": "opening",
+      "transition_basis": "Synthetic authored transition.",
+      "approval_ref": "SYNTHETIC-APPROVAL",
+      "orientation_cue": "Recognisable established location.",
+      "state_keys": [
+        "CAR.heading",
+        "CAR.location",
+        "NOTICE.anchor",
+        "NOTICE.face",
+        "NOTICE.state",
+        "PEN.hand",
+        "DOOR.layout"
+      ],
+      "visible_start_keys": [
+        "CAR.heading",
+        "CAR.location",
+        "NOTICE.anchor",
+        "NOTICE.face",
+        "NOTICE.state",
+        "PEN.hand",
+        "DOOR.layout"
+      ],
+      "visible_end_keys": [
+        "CAR.heading",
+        "CAR.location",
+        "NOTICE.anchor",
+        "NOTICE.face",
+        "NOTICE.state",
+        "PEN.hand",
+        "DOOR.layout"
+      ],
+      "screen_start": {
+        "car_heading": "right"
+      },
+      "screen_end": {
+        "car_heading": "right"
+      },
+      "ensemble_bindings": [
+        {
+          "key": "CAR.heading",
+          "entity_id": "CAR",
+          "path": [
+            "state",
+            "heading"
+          ]
+        },
+        {
+          "key": "CAR.location",
+          "entity_id": "CAR",
+          "path": [
+            "state",
+            "location"
+          ]
+        },
+        {
+          "key": "NOTICE.anchor",
+          "entity_id": "NOTICE",
+          "path": [
+            "state",
+            "anchor"
+          ]
+        },
+        {
+          "key": "NOTICE.face",
+          "entity_id": "NOTICE",
+          "path": [
+            "state",
+            "face"
+          ]
+        },
+        {
+          "key": "NOTICE.state",
+          "entity_id": "NOTICE",
+          "path": [
+            "state",
+            "state"
+          ]
+        },
+        {
+          "key": "PEN.hand",
+          "entity_id": "PEN",
+          "path": [
+            "state",
+            "hand"
+          ]
+        },
+        {
+          "key": "DOOR.layout",
+          "entity_id": "DOOR",
+          "path": [
+            "state",
+            "layout"
+          ]
+        }
+      ],
+      "reference_policy": "same_view_plate",
+      "continuity_clause": "SYNTHETIC LOCK: keep the authored world, not a generation request.",
+      "adopted_clip_ids": [
+        "S1-clip"
+      ]
+    },
+    {
+      "shot_id": "S2",
+      "scene_id": "ROOM",
+      "view_id": "V1",
+      "state_in": "T1",
+      "state_out": "T1",
+      "relation": "new_scene",
+      "transition_basis": "Synthetic authored transition.",
+      "approval_ref": "SYNTHETIC-APPROVAL",
+      "orientation_cue": "Recognisable established location.",
+      "state_keys": [
+        "CAR.heading",
+        "CAR.location",
+        "NOTICE.anchor",
+        "NOTICE.face",
+        "NOTICE.state",
+        "PEN.hand",
+        "DOOR.layout"
+      ],
+      "visible_start_keys": [],
+      "visible_end_keys": [],
+      "screen_start": {},
+      "screen_end": {},
+      "ensemble_bindings": [
+        {
+          "key": "CAR.heading",
+          "entity_id": "CAR",
+          "path": [
+            "state",
+            "heading"
+          ]
+        },
+        {
+          "key": "CAR.location",
+          "entity_id": "CAR",
+          "path": [
+            "state",
+            "location"
+          ]
+        },
+        {
+          "key": "NOTICE.anchor",
+          "entity_id": "NOTICE",
+          "path": [
+            "state",
+            "anchor"
+          ]
+        },
+        {
+          "key": "NOTICE.face",
+          "entity_id": "NOTICE",
+          "path": [
+            "state",
+            "face"
+          ]
+        },
+        {
+          "key": "NOTICE.state",
+          "entity_id": "NOTICE",
+          "path": [
+            "state",
+            "state"
+          ]
+        },
+        {
+          "key": "PEN.hand",
+          "entity_id": "PEN",
+          "path": [
+            "state",
+            "hand"
+          ]
+        },
+        {
+          "key": "DOOR.layout",
+          "entity_id": "DOOR",
+          "path": [
+            "state",
+            "layout"
+          ]
+        }
+      ],
+      "reference_policy": "same_view_plate",
+      "continuity_clause": "SYNTHETIC LOCK: keep the authored world, not a generation request.",
+      "adopted_clip_ids": [
+        "S2-clip"
+      ]
+    },
+    {
+      "shot_id": "S3",
+      "scene_id": "STREET",
+      "view_id": "V1",
+      "state_in": "T1",
+      "state_out": "T1",
+      "relation": "return",
+      "transition_basis": "Synthetic authored transition.",
+      "approval_ref": "SYNTHETIC-APPROVAL",
+      "orientation_cue": "Recognisable established location.",
+      "state_keys": [
+        "CAR.heading",
+        "CAR.location",
+        "NOTICE.anchor",
+        "NOTICE.face",
+        "NOTICE.state",
+        "PEN.hand",
+        "DOOR.layout"
+      ],
+      "visible_start_keys": [
+        "CAR.heading",
+        "CAR.location",
+        "NOTICE.anchor",
+        "NOTICE.face",
+        "NOTICE.state",
+        "PEN.hand",
+        "DOOR.layout"
+      ],
+      "visible_end_keys": [
+        "CAR.heading",
+        "CAR.location",
+        "NOTICE.anchor",
+        "NOTICE.face",
+        "NOTICE.state",
+        "PEN.hand",
+        "DOOR.layout"
+      ],
+      "screen_start": {
+        "car_heading": "right"
+      },
+      "screen_end": {
+        "car_heading": "right"
+      },
+      "ensemble_bindings": [
+        {
+          "key": "CAR.heading",
+          "entity_id": "CAR",
+          "path": [
+            "state",
+            "heading"
+          ]
+        },
+        {
+          "key": "CAR.location",
+          "entity_id": "CAR",
+          "path": [
+            "state",
+            "location"
+          ]
+        },
+        {
+          "key": "NOTICE.anchor",
+          "entity_id": "NOTICE",
+          "path": [
+            "state",
+            "anchor"
+          ]
+        },
+        {
+          "key": "NOTICE.face",
+          "entity_id": "NOTICE",
+          "path": [
+            "state",
+            "face"
+          ]
+        },
+        {
+          "key": "NOTICE.state",
+          "entity_id": "NOTICE",
+          "path": [
+            "state",
+            "state"
+          ]
+        },
+        {
+          "key": "PEN.hand",
+          "entity_id": "PEN",
+          "path": [
+            "state",
+            "hand"
+          ]
+        },
+        {
+          "key": "DOOR.layout",
+          "entity_id": "DOOR",
+          "path": [
+            "state",
+            "layout"
+          ]
+        }
+      ],
+      "reference_policy": "same_view_plate",
+      "continuity_clause": "SYNTHETIC LOCK: keep the authored world, not a generation request.",
+      "adopted_clip_ids": [
+        "S3-clip"
+      ]
+    }
+  ],
+  "note": "结构示例，不是用户已有画面、真实审批或审核通过；展示甲地撕告示→乙地→甲地时继承已撕状态。不得原样提交生产。"
+}

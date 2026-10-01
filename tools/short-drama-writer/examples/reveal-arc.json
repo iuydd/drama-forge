@@ -1,0 +1,467 @@
+{
+  "schema_version": "1.0",
+  "arc_id": "REVEAL-001",
+  "title": "零伤害首通",
+  "mode": "known_truth",
+  "status": "planned",
+  "start_episode": 1,
+  "due_episode": 2,
+  "setback_budget": 2,
+  "core_truth": "主角已按公布规则完成非杀伤首通；后续质疑不得撤销该事实。",
+  "audience_anchor": {
+    "scene_id": "EP01-S01",
+    "visible_evidence": "观众目睹营地转移敌意、守卫放下武器、通关音与净水奖励使用。"
+  },
+  "protagonist_goal": "获得并经营散人队伍的稳定补给点。",
+  "why_not_reveal_immediately": "她没有必要争头衔；完整操作回放与现场试验比口头争论更能验证已获胜事实和开放条件。",
+  "actors": [
+    {
+      "id": "CHAR-001",
+      "role": "protagonist",
+      "initial_belief": "确实按规则完成首通",
+      "initial_stance": "先建设补给点",
+      "incentive": "让散人队伍得到稳定补给"
+    },
+    {
+      "id": "CHAR-002",
+      "role": "opponent",
+      "initial_belief": "辅助职业不可能完成首通",
+      "initial_stance": "不承认主角",
+      "incentive": "维护唯一攻略与精英队声望"
+    },
+    {
+      "id": "CHAR-003",
+      "role": "crowd",
+      "initial_belief": "主角还没有建营资格",
+      "initial_stance": "暂不提供场地",
+      "incentive": "把场地给能长期经营的人"
+    },
+    {
+      "id": "CHAR-004",
+      "role": "crowd",
+      "initial_belief": "自己的伤害攻略是唯一方法",
+      "initial_stance": "售卖独家教程",
+      "incentive": "维护生意又不愿错过新方法"
+    },
+    {
+      "id": "CHAR-005",
+      "role": "authority",
+      "initial_belief": "需要按公布规则核验",
+      "initial_stance": "等待回放",
+      "incentive": "确认通关并确保开放条件满足"
+    }
+  ],
+  "facts": [
+    {
+      "id": "FACT-001",
+      "text": "入口规则规定敌意归零即通关，奖励即时发放、榜单另行核验；入场教学示范过封存环。",
+      "introduced_at_beat": "B01"
+    },
+    {
+      "id": "FACT-002",
+      "text": "林枝在自建营地将守卫敌意转入种箱，完成挑战。",
+      "introduced_at_beat": "B01"
+    },
+    {
+      "id": "FACT-003",
+      "text": "通关奖励已经接通并流出净水。",
+      "introduced_at_beat": "B01"
+    },
+    {
+      "id": "FACT-004",
+      "text": "榜单出现首通候选并标记待核验。",
+      "introduced_at_beat": "B02"
+    },
+    {
+      "id": "FACT-005",
+      "text": "公开统计记录林枝造成零伤害。",
+      "introduced_at_beat": "B03"
+    },
+    {
+      "id": "FACT-006",
+      "text": "严骁主动选择公开回放，林枝同意。",
+      "introduced_at_beat": "B03"
+    },
+    {
+      "id": "FACT-007",
+      "text": "回放证实规则与完成过程，复核员正式确认通关。",
+      "introduced_at_beat": "B04"
+    },
+    {
+      "id": "FACT-008",
+      "text": "开放营地还需检查离营种箱状态；此项不影响已经确认的通关。",
+      "introduced_at_beat": "B05"
+    },
+    {
+      "id": "FACT-009",
+      "text": "封存环扣好后种箱被移出边界，监测保持绿色。",
+      "introduced_at_beat": "B06"
+    },
+    {
+      "id": "FACT-010",
+      "text": "场地交付、营地开放，守卫主动提供下一层路线。",
+      "introduced_at_beat": "B06"
+    }
+  ],
+  "beats": [
+    {
+      "id": "B01",
+      "episode_number": 1,
+      "scene_id": "EP01-S01",
+      "kind": "anchor",
+      "disputed_question": "外界是否承认非常规首通？",
+      "audience_expectation": "想看其他人发现主角已获胜",
+      "new_information": "观众目睹规则应用与实际通关。",
+      "evidence_fact_ids": [
+        "FACT-001",
+        "FACT-002",
+        "FACT-003"
+      ],
+      "protagonist_action": "完成敌意转移并将净水奖励交给新手使用。",
+      "belief_updates": [],
+      "public_moves": [],
+      "earned_payoffs": [
+        {
+          "id": "PAY-001",
+          "description": "通关完成",
+          "visible_evidence": "守卫放下武器、通关音响起。"
+        },
+        {
+          "id": "PAY-002",
+          "description": "可用的补给奖励到手",
+          "visible_evidence": "净水流入新手的水桶。"
+        }
+      ],
+      "carry_forward_payoff_ids": [],
+      "setback_reason": null
+    },
+    {
+      "id": "B02",
+      "episode_number": 1,
+      "scene_id": "EP01-S02",
+      "kind": "signal",
+      "disputed_question": "首通候选能否获得正式认可？",
+      "audience_expectation": "群众开始让路，好像马上要认证",
+      "new_information": "排行榜出现候选记录。",
+      "evidence_fact_ids": [
+        "FACT-004"
+      ],
+      "protagonist_action": "把净水设备留在补给台，走向可选场地。",
+      "belief_updates": [
+        {
+          "actor_id": "CHAR-003",
+          "before": "主角还没有建营资格",
+          "after": "主角可能已获得资格",
+          "basis_fact_ids": [
+            "FACT-004"
+          ]
+        },
+        {
+          "actor_id": "CHAR-004",
+          "before": "自己的伤害攻略是唯一方法",
+          "after": "主角可能有新方法",
+          "basis_fact_ids": [
+            "FACT-004"
+          ]
+        }
+      ],
+      "public_moves": [
+        {
+          "actor_id": "CHAR-003",
+          "before": "暂不提供场地",
+          "after": "准备商谈场地",
+          "reason": "看到首通候选记录",
+          "basis_fact_ids": [
+            "FACT-004"
+          ]
+        },
+        {
+          "actor_id": "CHAR-004",
+          "before": "售卖独家教程",
+          "after": "暂时翻下教程牌",
+          "reason": "担心旧判断错了",
+          "basis_fact_ids": [
+            "FACT-004"
+          ]
+        }
+      ],
+      "earned_payoffs": [],
+      "carry_forward_payoff_ids": [
+        "PAY-001",
+        "PAY-002"
+      ],
+      "setback_reason": null
+    },
+    {
+      "id": "B03",
+      "episode_number": 1,
+      "scene_id": "EP01-S03",
+      "kind": "countermove",
+      "disputed_question": "零伤害是否意味着未完成？",
+      "audience_expectation": "希望尽快证明零伤害依然有效",
+      "new_information": "严骁展示零伤害统计并主动选择公开回放。",
+      "evidence_fact_ids": [
+        "FACT-005",
+        "FACT-006"
+      ],
+      "protagonist_action": "保留净水奖励，主动同意公开核验。",
+      "belief_updates": [
+        {
+          "actor_id": "CHAR-003",
+          "before": "主角可能已获得资格",
+          "after": "是否获得资格还需核验",
+          "basis_fact_ids": [
+            "FACT-005"
+          ]
+        },
+        {
+          "actor_id": "CHAR-004",
+          "before": "主角可能有新方法",
+          "after": "有疑点但不能排除新方法",
+          "basis_fact_ids": [
+            "FACT-005"
+          ]
+        }
+      ],
+      "public_moves": [
+        {
+          "actor_id": "CHAR-003",
+          "before": "准备商谈场地",
+          "after": "暂停递交座标",
+          "reason": "不确定候选是否正式成立",
+          "basis_fact_ids": [
+            "FACT-005"
+          ]
+        },
+        {
+          "actor_id": "CHAR-004",
+          "before": "暂时翻下教程牌",
+          "after": "立回牌子但挡住唯一字样",
+          "reason": "对反证也只部分相信",
+          "basis_fact_ids": [
+            "FACT-005"
+          ]
+        }
+      ],
+      "earned_payoffs": [
+        {
+          "id": "PAY-003",
+          "description": "获得公开展示方法的机会",
+          "visible_evidence": "对手发起公开回放，主角已同意。"
+        }
+      ],
+      "carry_forward_payoff_ids": [
+        "PAY-001",
+        "PAY-002"
+      ],
+      "setback_reason": "局部统计是真的，对手将伤害错当成唯一完成标准。"
+    },
+    {
+      "id": "B04",
+      "episode_number": 2,
+      "scene_id": "EP02-S01",
+      "kind": "payoff",
+      "disputed_question": "已解决：零伤害不影响首通；后续如何开放营地？",
+      "audience_expectation": "看到通关正式承认，接下来期待场地交付",
+      "new_information": "完整回放证实守卫敌意归零。",
+      "evidence_fact_ids": [
+        "FACT-001",
+        "FACT-002",
+        "FACT-007"
+      ],
+      "protagonist_action": "让完整操作回放展示方法，不中断关键验证。",
+      "belief_updates": [
+        {
+          "actor_id": "CHAR-002",
+          "before": "辅助职业不可能完成首通",
+          "after": "主角确实完成首通",
+          "basis_fact_ids": [
+            "FACT-007"
+          ]
+        },
+        {
+          "actor_id": "CHAR-003",
+          "before": "是否获得资格还需核验",
+          "after": "主角确实完成首通",
+          "basis_fact_ids": [
+            "FACT-007"
+          ]
+        },
+        {
+          "actor_id": "CHAR-004",
+          "before": "有疑点但不能排除新方法",
+          "after": "主角创造了不同完成方法",
+          "basis_fact_ids": [
+            "FACT-007"
+          ]
+        },
+        {
+          "actor_id": "CHAR-005",
+          "before": "需要按公布规则核验",
+          "after": "主角满足已公布通关条件",
+          "basis_fact_ids": [
+            "FACT-007"
+          ]
+        }
+      ],
+      "public_moves": [
+        {
+          "actor_id": "CHAR-003",
+          "before": "暂停递交座标",
+          "after": "再次准备交付",
+          "reason": "通关认证已确认",
+          "basis_fact_ids": [
+            "FACT-007"
+          ]
+        },
+        {
+          "actor_id": "CHAR-004",
+          "before": "立回牌子但挡住唯一字样",
+          "after": "彻底放下旧教程牌",
+          "reason": "旧教程不是唯一有效方法",
+          "basis_fact_ids": [
+            "FACT-007"
+          ]
+        },
+        {
+          "actor_id": "CHAR-005",
+          "before": "等待回放",
+          "after": "正式确认通关",
+          "reason": "回放证明规则条件满足",
+          "basis_fact_ids": [
+            "FACT-007"
+          ]
+        }
+      ],
+      "earned_payoffs": [
+        {
+          "id": "PAY-004",
+          "description": "公开通关认证",
+          "visible_evidence": "复核员明确宣布完成条件已满足。"
+        }
+      ],
+      "carry_forward_payoff_ids": [
+        "PAY-001",
+        "PAY-002",
+        "PAY-003"
+      ],
+      "setback_reason": null
+    },
+    {
+      "id": "B05",
+      "episode_number": 2,
+      "scene_id": "EP02-S02",
+      "kind": "countermove",
+      "disputed_question": "已通关，但离营种箱能否安全封存？",
+      "audience_expectation": "以为就要拿到场地，却出现新的开放条件",
+      "new_information": "严骁转而质疑种箱离营状态，复核员保留通关认证。",
+      "evidence_fact_ids": [
+        "FACT-008"
+      ],
+      "protagonist_action": "拿出入场教学中展示的封存环，准备边界测试。",
+      "belief_updates": [],
+      "public_moves": [
+        {
+          "actor_id": "CHAR-002",
+          "before": "不承认主角",
+          "after": "质疑营地开放条件",
+          "reason": "已知通关真实，改争执行条件以保住声望",
+          "basis_fact_ids": [
+            "FACT-007",
+            "FACT-008"
+          ]
+        },
+        {
+          "actor_id": "CHAR-003",
+          "before": "再次准备交付",
+          "after": "座标留桌等待开放检查",
+          "reason": "认可通关，但要确认长期经营条件",
+          "basis_fact_ids": [
+            "FACT-008"
+          ]
+        }
+      ],
+      "earned_payoffs": [],
+      "carry_forward_payoff_ids": [
+        "PAY-001",
+        "PAY-002",
+        "PAY-003",
+        "PAY-004"
+      ],
+      "setback_reason": "疑点改为营地开放条件，不推翻刚才认证；新阻碍要求另一项实际测试。"
+    },
+    {
+      "id": "B06",
+      "episode_number": 2,
+      "scene_id": "EP02-S03",
+      "kind": "payoff",
+      "disputed_question": "已解决：场地开放并交付；下一层如何探索？",
+      "audience_expectation": "既有胜利保留，等待的权限与认可真正到账",
+      "new_information": "封存环测试通过，场地交付，下一层路线出现。",
+      "evidence_fact_ids": [
+        "FACT-001",
+        "FACT-009",
+        "FACT-010"
+      ],
+      "protagonist_action": "当场完成边界测试，接收座标，向新手开放净水与讲解。",
+      "belief_updates": [],
+      "public_moves": [
+        {
+          "actor_id": "CHAR-003",
+          "before": "座标留桌等待开放检查",
+          "after": "场地座标正式转给主角",
+          "reason": "可经营条件验证成功",
+          "basis_fact_ids": [
+            "FACT-009",
+            "FACT-010"
+          ]
+        },
+        {
+          "actor_id": "CHAR-004",
+          "before": "彻底放下旧教程牌",
+          "after": "主动排队向主角学习",
+          "reason": "愿意学习已验证的新方法",
+          "basis_fact_ids": [
+            "FACT-007",
+            "FACT-009"
+          ]
+        },
+        {
+          "actor_id": "CHAR-005",
+          "before": "正式确认通关",
+          "after": "确认营地开放",
+          "reason": "封存测试通过",
+          "basis_fact_ids": [
+            "FACT-009"
+          ]
+        }
+      ],
+      "earned_payoffs": [
+        {
+          "id": "PAY-005",
+          "description": "营地开放与场地权限到手",
+          "visible_evidence": "掌柜转移座标，营地向新手开放。"
+        }
+      ],
+      "carry_forward_payoff_ids": [
+        "PAY-001",
+        "PAY-002",
+        "PAY-003",
+        "PAY-004"
+      ],
+      "setback_reason": null
+    }
+  ],
+  "final_cashout": {
+    "episode_number": 2,
+    "scene_id": "EP02-S03",
+    "evidence_fact_ids": [
+      "FACT-007",
+      "FACT-009",
+      "FACT-010"
+    ],
+    "actual_change": "通关认证与奖励保留，场地座标真正交付，营地开放，旧攻略独占地位结束。",
+    "old_question_closed": true
+  },
+  "next_conflict": "守卫提供第二层路线；由非杀伤胜利派生的新探索，不重新质疑首通。"
+}

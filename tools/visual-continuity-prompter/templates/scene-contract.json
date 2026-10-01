@@ -1,0 +1,57 @@
+{
+  "schema_version": "1.0",
+  "scene_id": "SCENE-ROOM",
+  "scene_version": "1",
+  "status": "candidate",
+  "coordinate_system": "待替换的共同设计示例：X向东，Y向北，Z向上，矩形房间范围X=0..10、Y=0..8。数值是设计单位，不是实测；所有机位引用同一布局SCENE-ROOM-v1-LAYOUT与母资产SCENE-ROOM-v1-ROOT。屏幕坐标另用左上为原点，不写入世界不变量。",
+  "invariants": [
+    {
+      "id": "DOOR-LOCATION",
+      "description": "示例门开口位于北墙靠东，中心X=8、Y=8；连接关系和门设计跨机位不变，开合由STATE-000等事件状态记录。",
+      "kind": "topology"
+    },
+    {
+      "id": "CHAIR-DESIGN",
+      "description": "桌椅款式、尺寸和材质跨机位不变；位置、座面朝向与占用取自同一事件状态，不把VIEW-A画面朝向当世界固定方向。",
+      "kind": "design"
+    },
+    {
+      "id": "WINDOW-LOCATION",
+      "description": "示例窗固定在西墙，X=0、Y=2..6；其开口、窗格设计及日光来源跨机位保持。",
+      "kind": "topology"
+    }
+  ],
+  "views": [
+    {
+      "view_id": "ROOT-VIEW",
+      "description": "共同母资产的示例机位：相机在西南内侧(1,1)，朝房间东北看；用于确定房间设计，不含人物。布局中另标全部墙面连接与未知区域。本模板尚无实际母图或验收证据。",
+      "asset_id": "SCENE-ROOM-v1-ROOT",
+      "state_id": "STATE-000",
+      "path": null,
+      "sha256": null,
+      "status": "candidate"
+    },
+    {
+      "view_id": "VIEW-A",
+      "description": "从共同ROOT-VIEW母资产和LAYOUT派生：相机在南侧(5,1)朝北，门在画右、西墙窗在画左；景别与高度按项目填。仅改变观察，同版设计与STATE-000不变。",
+      "asset_id": "MASTER-A-1",
+      "state_id": "STATE-000",
+      "path": null,
+      "sha256": null,
+      "status": "candidate"
+    },
+    {
+      "view_id": "VIEW-B",
+      "description": "直接从共同ROOT-VIEW母资产和LAYOUT派生，不以VIEW-A为唯一来源：相机在东侧(9,4)朝西，西窗在前方、北墙门在画右；遮挡与边界按布局推导。",
+      "asset_id": "MASTER-B-1",
+      "state_id": "STATE-000",
+      "path": null,
+      "sha256": null,
+      "status": "candidate"
+    }
+  ],
+  "unknown_geometry": [
+    "共同布局、母图和各角度真实文件尚未提供；所有示例坐标、开口、家具与相机规格须按项目替换，不能标为已验收。",
+    "未见背面须先补入共同设计；布局图/空间参数是否可被当前图像通道消费尚未核实。"
+  ]
+}

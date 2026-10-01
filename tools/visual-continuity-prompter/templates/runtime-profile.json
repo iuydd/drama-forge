@@ -1,0 +1,29 @@
+{
+  "schema_version": "1.0",
+  "backend": null,
+  "model_id": null,
+  "runtime_verified": false,
+  "verification_evidence": {
+    "path": null,
+    "sha256": null
+  },
+  "documented_model_capabilities": {},
+  "features": {
+    "image_edit": "unknown",
+    "multi_reference": "unknown",
+    "spatial_reference": "unknown",
+    "external_composite": "unknown",
+    "image_to_video": "unknown"
+  },
+  "max_reference_images": null,
+  "dimension_multiple": null,
+  "prompt_rewrite_policy": "unknown",
+  "parameter_map": {
+    "prompt": null,
+    "images": null,
+    "width": null,
+    "height": null
+  },
+  "locked_parameters": {},
+  "note": "按当前项目选择模型并核实接口；公开文档能力不等于实际接口已验收，探测后填写证据。"
+}

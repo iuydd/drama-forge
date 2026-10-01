@@ -1,0 +1,89 @@
+{
+  "schema_version": "opening-plan-1",
+  "status": "DRAFT",
+  "executed": false,
+  "project_id": null,
+  "episode_id": null,
+  "canon_version": null,
+  "note": "需结构化交接时按Skill的references/02-opening-causality.md从正文提取，不另加审核轮次。first_anomaly_or_tension可填普通冲突或关系压力；未知时长、文件和证据保留null，填表不等于完成剧本。",
+  "task_scope": "current_episode",
+  "source_mode": null,
+  "reuse": {
+    "existing_opening_id": null,
+    "balance_probe_a_id": null,
+    "compare_only_if_new_or_failed": true
+  },
+  "selection": {
+    "default_candidate_count": 2,
+    "max_candidates_without_new_scope": 3,
+    "candidate_ids": [],
+    "chosen_id": null,
+    "choice_reason": null
+  },
+  "opening_engine": null,
+  "time_order": null,
+  "first_visible_activity": {
+    "character_ids": [],
+    "scene_id": null,
+    "action": null,
+    "object_ids": [],
+    "viewer_visible_context": null
+  },
+  "immediate_goal_and_stake": {
+    "goal": null,
+    "why_now": null,
+    "evidence_in_script": []
+  },
+  "first_anomaly_or_tension": {
+    "description": null,
+    "visible_or_audible_proof": null,
+    "expected_question": null
+  },
+  "must_understand_now": [],
+  "deliberately_unknown": [],
+  "first_delivery": {
+    "what_changes": null,
+    "script_locator": null,
+    "evidence": null
+  },
+  "follow_through": {
+    "next_action": null,
+    "why_it_follows": null
+  },
+  "chronology_map": {
+    "required_for_nonlinear": true,
+    "actual_order": [],
+    "screen_order": [],
+    "jump_cues": [],
+    "return_cues": [],
+    "repeated_event_new_information": []
+  },
+  "timing": {
+    "status": "estimated",
+    "project_duration_seconds": null,
+    "opening_duration_seconds": null,
+    "dialogue_measured_seconds": null,
+    "non_overlap_actions_seconds": null,
+    "necessary_reading_and_response_seconds": null
+  },
+  "preserve_in_edit": [],
+  "handoff": {
+    "shot_ids": [],
+    "line_ids": [],
+    "must_show_or_hear": [],
+    "requires_motion_validation": []
+  },
+  "review": {
+    "integrate_into": [
+      "STORY",
+      "ANIMATIC",
+      "G3",
+      "G4"
+    ],
+    "status": "NOT_REVIEWED",
+    "actual_media_sha256": null,
+    "known_unknowns": [],
+    "do_not_claim_prefix_blind_after_full_view": true
+  },
+  "no_new_paid_generation_authorized": true
+}

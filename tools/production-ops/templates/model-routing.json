@@ -1,0 +1,102 @@
+{
+  "schema_version": "model-routing-1",
+  "roles": {
+    "writer": {
+      "model_id": null,
+      "version": null,
+      "verified": false,
+      "required_modalities": [
+        "text"
+      ],
+      "verified_modalities": [],
+      "context_isolated": false,
+      "tools": [
+        "read_scoped",
+        "write_draft"
+      ],
+      "generation_tools": false,
+      "network_submit": false,
+      "inherit_secrets": false,
+      "unrestricted_shell": false
+    },
+    "director": {
+      "model_id": null,
+      "version": null,
+      "verified": false,
+      "required_modalities": [
+        "text",
+        "image"
+      ],
+      "verified_modalities": [],
+      "context_isolated": false,
+      "tools": [
+        "read_scoped",
+        "write_draft"
+      ],
+      "generation_tools": false,
+      "network_submit": false,
+      "inherit_secrets": false,
+      "unrestricted_shell": false
+    },
+    "prompter": {
+      "model_id": null,
+      "version": null,
+      "verified": false,
+      "required_modalities": [
+        "text",
+        "image"
+      ],
+      "verified_modalities": [],
+      "context_isolated": false,
+      "tools": [
+        "read_scoped",
+        "write_draft"
+      ],
+      "generation_tools": false,
+      "network_submit": false,
+      "inherit_secrets": false,
+      "unrestricted_shell": false
+    },
+    "reviewer": {
+      "model_id": null,
+      "version": null,
+      "verified": false,
+      "required_modalities": [
+        "text",
+        "image",
+        "audio",
+        "video"
+      ],
+      "verified_modalities": [],
+      "context_isolated": false,
+      "tools": [
+        "read_scoped",
+        "write_review"
+      ],
+      "generation_tools": false,
+      "network_submit": false,
+      "inherit_secrets": false,
+      "unrestricted_shell": false
+    },
+    "blind_viewer": {
+      "model_id": null,
+      "version": null,
+      "verified": false,
+      "required_modalities": [
+        "audio",
+        "video"
+      ],
+      "verified_modalities": [],
+      "context_isolated": true,
+      "tools": [
+        "read_assigned_media",
+        "write_retelling"
+      ],
+      "generation_tools": false,
+      "network_submit": false,
+      "inherit_secrets": false,
+      "unrestricted_shell": false
+    }
+  },
+  "note": "角色是职责划分，不要求多个会话。默认同一agent负责前期与生产，reviewer和隔离blind_viewer按所需模态、实际能力与预算绑定；不预设供应商或档位。子代理只交草案/观察，无生成或发布权限。"
+}

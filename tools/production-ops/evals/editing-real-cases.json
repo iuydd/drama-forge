@@ -1,0 +1,66 @@
+{
+  "status": "NOT_RUN",
+  "cases": [
+    {
+      "id": "EDIT-01",
+      "status": "NOT_RUN",
+      "task": "真实视频模型长片段选段后完整台词不被切断，ASR仅复查改动句"
+    },
+    {
+      "id": "EDIT-02",
+      "status": "NOT_RUN",
+      "task": "反应镜不提前于证据；保留允许未知的悬念"
+    },
+    {
+      "id": "EDIT-03",
+      "status": "NOT_RUN",
+      "task": "实际口型在J/L音桥的可见开口区仍正确"
+    },
+    {
+      "id": "EDIT-04",
+      "status": "NOT_RUN",
+      "task": "原生配乐/对白不可拆时不会叠加重复原声"
+    },
+    {
+      "id": "EDIT-05",
+      "status": "NOT_RUN",
+      "task": "同空间换角度不镜像，持物和支撑脚接续"
+    },
+    {
+      "id": "EDIT-06",
+      "status": "NOT_RUN",
+      "task": "代理回套实际高清原文件且字幕/证物不被裁"
+    },
+    {
+      "id": "EDIT-07",
+      "status": "NOT_RUN",
+      "task": "真实VFR来源处理与时间码映射不靠平均fps猜"
+    },
+    {
+      "id": "EDIT-08",
+      "status": "NOT_RUN",
+      "task": "最终混音不遮关键台词，片段移位后字幕重定时"
+    },
+    {
+      "id": "EDIT-09",
+      "status": "NOT_RUN",
+      "task": "已存在输出与进程中断可收回，不覆盖旧版或再次生成视频模型"
+    },
+    {
+      "id": "EDIT-10",
+      "status": "NOT_RUN",
+      "task": "实际编辑器工程导入导出保留采用范围/音轨，不把JSON当原生工程"
+    },
+    {
+      "id": "EDIT-11",
+      "status": "NOT_RUN",
+      "task": "叠化实际余量/重叠长度正确，缺能力不静默删效果"
+    },
+    {
+      "id": "EDIT-12",
+      "status": "NOT_RUN",
+      "task": "一次粗剪/定向精剪后合格即停；新增补拍超出有效授权时先确认"
+    }
+  ],
+  "note": "以上需要真实项目测试；合成帧/测试音的工程测试不能替代。"
+}

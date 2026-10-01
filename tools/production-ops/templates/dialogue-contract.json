@@ -1,0 +1,28 @@
+{
+  "schema_version": "dialogue-1",
+  "episode_id": null,
+  "version": null,
+  "status": "DRAFT",
+  "lines": [],
+  "line_template": {
+    "line_id": null,
+    "shot_id": null,
+    "speaker_id": null,
+    "voice_id": null,
+    "source_kind": "spoken",
+    "text_display": null,
+    "text_spoken": null,
+    "lipsync_required": true,
+    "allowed_window_s": null,
+    "delivery_route": "native",
+    "intended_listeners": [],
+    "narrative_critical": true,
+    "delivery_note": null,
+    "performance_ref": null
+  },
+  "normalization": "NFKC及标点空白；不删除否定词、数字、称谓，不替换同音字或同义句",
+  "native_reshoot_limit_after_initial": 1,
+  "must_share_existing_attempt_budget": true,
+  "paid_retry_requires_batch_confirmation": true,
+  "performance_note": "line_template是待填示例，按实际声源与路由确定口型要求。voice_id须映射真实声音引用或稳定描述；角色音色与说话习惯复用voice-bible，delivery_note只写本句必要变化并按实际通道映射，不朗读。text_spoken保持原文，默认按完整意思连说，allowed_window_s是可用窗口，不要求拖字或加停顿填满。额外停顿须有具体作用与继续条件；字幕换行不决定声音断句。听感、角色差异与自然节奏并入原视听审查，字对不等于表演成立。"
+}

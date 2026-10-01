@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "project_id": "new-drama",
+  "version": 1,
+  "canon_version": "v1-draft",
+  "total_episodes": 24,
+  "completed_episodes": [],
+  "episode_files": {},
+  "draft_episode_files": {},
+  "character_states": {},
+  "resource_states": {},
+  "knowledge_state": {},
+  "promises": [],
+  "last_episode_summary": "尚未生成正文",
+  "next_action": "填写 brief，开发现有原稿或点子；确需选题再写创意卡。空项目不标完成。"
+}

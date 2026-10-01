@@ -1,0 +1,210 @@
+{
+  "schema_version": "edit-timeline-1",
+  "status": "DRAFT",
+  "episode_id": "EP-TEST",
+  "revision": "1",
+  "fps": "24/1",
+  "sample_rate": 48000,
+  "channels": 2,
+  "width": 64,
+  "height": 64,
+  "pixel_format": "yuv420p",
+  "color": {
+    "space": "bt709",
+    "primaries": "bt709",
+    "transfer": "bt709",
+    "range": "tv"
+  },
+  "duration_frames": 48,
+  "audio_intent": "sound",
+  "sources": [
+    {
+      "id": "S1",
+      "kind": "video",
+      "path": "S1.mkv",
+      "sha256": null,
+      "review": {
+        "path": "S1-review.json",
+        "sha256": null
+      },
+      "units": 48,
+      "fps": "24/1",
+      "width": 64,
+      "height": 64,
+      "pixel_format": "yuv420p",
+      "color": {
+        "space": "bt709",
+        "primaries": "bt709",
+        "transfer": "bt709",
+        "range": "tv"
+      }
+    },
+    {
+      "id": "S2",
+      "kind": "video",
+      "path": "S2.mkv",
+      "sha256": null,
+      "review": {
+        "path": "S2-review.json",
+        "sha256": null
+      },
+      "units": 48,
+      "fps": "24/1",
+      "width": 64,
+      "height": 64,
+      "pixel_format": "yuv420p",
+      "color": {
+        "space": "bt709",
+        "primaries": "bt709",
+        "transfer": "bt709",
+        "range": "tv"
+      }
+    },
+    {
+      "id": "SA",
+      "kind": "audio",
+      "path": "SA.wav",
+      "sha256": null,
+      "review": {
+        "path": "SA-review.json",
+        "sha256": null
+      },
+      "units": 96000,
+      "sample_rate": 48000,
+      "channels": 2
+    },
+    {
+      "id": "SB",
+      "kind": "audio",
+      "path": "SB.wav",
+      "sha256": null,
+      "review": {
+        "path": "SB-review.json",
+        "sha256": null
+      },
+      "units": 96000,
+      "sample_rate": 48000,
+      "channels": 2
+    }
+  ],
+  "video": [
+    {
+      "id": "V1",
+      "shot_id": "SHOT1",
+      "source_id": "S1",
+      "src_in": 6,
+      "src_out": 30,
+      "dst_in": 0,
+      "role": "action",
+      "cut_reason": "Show the action before its reaction",
+      "transition": "cut",
+      "speed": "1/1",
+      "visible_dialogue": true
+    },
+    {
+      "id": "V2",
+      "shot_id": "SHOT2",
+      "source_id": "S2",
+      "src_in": 12,
+      "src_out": 36,
+      "dst_in": 24,
+      "role": "reaction",
+      "cut_reason": "The listener reacts to the revealed fact",
+      "transition": "cut",
+      "speed": "1/1",
+      "visible_dialogue": false
+    }
+  ],
+  "audio": [
+    {
+      "id": "A1",
+      "source_id": "SA",
+      "src_in": 12000,
+      "src_out": 60000,
+      "dst_in": 12000,
+      "role": "dialogue",
+      "gain_db": 0,
+      "fade_in_samples": 0,
+      "fade_out_samples": 0,
+      "line_ids": [
+        "L1"
+      ]
+    },
+    {
+      "id": "A2",
+      "source_id": "SB",
+      "src_in": 0,
+      "src_out": 24000,
+      "dst_in": 72000,
+      "role": "dialogue",
+      "gain_db": 0,
+      "fade_in_samples": 0,
+      "fade_out_samples": 0,
+      "line_ids": [
+        "L2"
+      ]
+    }
+  ],
+  "events": [
+    {
+      "event_id": "EV1",
+      "kind": "video",
+      "source_id": "S1",
+      "src_in": 18,
+      "src_out": 24,
+      "required": true,
+      "allow_repeat": false
+    },
+    {
+      "event_id": "EV2",
+      "kind": "video",
+      "source_id": "S2",
+      "src_in": 18,
+      "src_out": 24,
+      "required": true,
+      "allow_repeat": false
+    },
+    {
+      "event_id": "EL1",
+      "kind": "audio",
+      "source_id": "SA",
+      "src_in": 30000,
+      "src_out": 48000,
+      "required": true,
+      "allow_repeat": false,
+      "line_id": "L1"
+    },
+    {
+      "event_id": "EL2",
+      "kind": "audio",
+      "source_id": "SB",
+      "src_in": 0,
+      "src_out": 24000,
+      "required": true,
+      "allow_repeat": false,
+      "line_id": "L2"
+    }
+  ],
+  "event_orders": [
+    {
+      "before": "EV1",
+      "after": "EV2"
+    }
+  ],
+  "sync_links": [
+    {
+      "video_clip": "V1",
+      "audio_clip": "A1",
+      "source_frame": 12,
+      "source_sample": 12000,
+      "tolerance_samples": 0
+    }
+  ],
+  "allowed_dialogue_overlaps": [],
+  "render_policy": {
+    "video_codec": "ffv1",
+    "audio_codec": "pcm_s24le",
+    "container": "mkv"
+  },
+  "note": "只演示帧/采样坐标、L-cut和事件约束；没有真实视频、音轨或审批。必须用真实文件和检查替换。"
+}

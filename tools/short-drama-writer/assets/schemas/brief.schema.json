@@ -1,0 +1,248 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Project brief",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "project_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "language": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "type": "string",
+      "minLength": 1
+    },
+    "format": {
+      "type": "string",
+      "minLength": 1
+    },
+    "power_mode": {
+      "type": "string",
+      "minLength": 1
+    },
+    "production_complexity": {
+      "type": "string",
+      "minLength": 1
+    },
+    "audience_emotional_goal": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ending_preference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "primary_pleasure": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "secondary_pleasure": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "must_include": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "must_avoid": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 0
+    },
+    "total_episodes": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "episode_seconds": {
+      "type": [
+        "number",
+        "null"
+      ],
+      "minimum": 1,
+      "description": "Planning may be null; numerical episode/shot timelines and production require a positive approved estimate or measured duration. No implicit 75-second fallback."
+    },
+    "max_revision_rounds": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "delivery": {
+      "type": "object",
+      "properties": {
+        "concepts": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "shortlist": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "develop": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "full_episodes": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "concepts",
+        "shortlist",
+        "develop",
+        "full_episodes"
+      ],
+      "additionalProperties": false
+    },
+    "narrative_controls": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "reveal_mode": {
+          "type": "string",
+          "enum": [
+            "auto",
+            "off",
+            "known_truth",
+            "partial_truth",
+            "mystery"
+          ]
+        },
+        "reveal_intensity": {
+          "type": "string",
+          "enum": [
+            "light",
+            "balanced",
+            "high"
+          ]
+        },
+        "setback_budget_per_arc": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "payoff_deadline_episode": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "must_preserve_payoffs": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "crowd_scale": {
+          "type": "string",
+          "enum": [
+            "none",
+            "small",
+            "distributed",
+            "mass"
+          ]
+        },
+        "humiliation_level": {
+          "type": "string",
+          "enum": [
+            "none",
+            "low",
+            "medium",
+            "high"
+          ]
+        }
+      }
+    },
+    "timing_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "enum": [
+            "context_first",
+            "user_locked"
+          ]
+        },
+        "status": {
+          "enum": [
+            "unplanned",
+            "estimated",
+            "measured",
+            "locked"
+          ]
+        },
+        "lock_positive_seconds_before_production": {
+          "const": true
+        },
+        "do_not_accelerate_dialogue_to_fit": {
+          "type": "boolean"
+        },
+        "paid_duration_change_requires_batch_approval": {
+          "const": true
+        }
+      },
+      "required": [
+        "mode",
+        "status",
+        "lock_positive_seconds_before_production",
+        "paid_duration_change_requires_batch_approval"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "project_id",
+    "title",
+    "language",
+    "mode",
+    "format",
+    "power_mode",
+    "production_complexity",
+    "audience_emotional_goal",
+    "ending_preference",
+    "primary_pleasure",
+    "secondary_pleasure",
+    "must_include",
+    "must_avoid",
+    "assumptions",
+    "total_episodes",
+    "episode_seconds",
+    "max_revision_rounds",
+    "delivery"
+  ],
+  "additionalProperties": false
+}

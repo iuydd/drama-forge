@@ -1,0 +1,27 @@
+{
+  "schema_version": "edit-selects-1",
+  "status": "DRAFT",
+  "episode_id": null,
+  "script_sha256": null,
+  "animatic_sha256": null,
+  "candidates": [],
+  "candidate_template": {
+    "shot_id": null,
+    "source_id": null,
+    "source_sha256": null,
+    "decision": "unused",
+    "usable_ranges": [],
+    "excluded_ranges": [],
+    "dialogue_ranges": [],
+    "action_ranges": [],
+    "evidence_ranges": [],
+    "reaction_triggers": [],
+    "handles": {
+      "before": null,
+      "after": null
+    },
+    "reason": null,
+    "review": null
+  },
+  "notes": "先复用上游时间点；不得把已知失败范围或未检查头尾混入采用段。"
+}

@@ -1,0 +1,36 @@
+{
+  "task_id": "EP01-S01-VIDEO",
+  "episode_id": "EP01",
+  "shot_id": "S01",
+  "kind": "video",
+  "depends_on": ["CHAR-A-IMAGE", "PROP-KEY-IMAGE", "MASTER-A-1-IMAGE"],
+  "produces": ["EP01-S01-VIDEO-ASSET"],
+  "request_template": {
+    "kind": "video",
+    "shot_id": "S01",
+    "mode": "video_reference",
+    "video_input": "references",
+    "image_mode": "reference",
+    "required_asset_ids": ["CHAR-A", "PROP-KEY", "MASTER-A-1"],
+    "inputs": [
+      {"asset_id": "CHAR-A", "role": "asset_ref", "upload_index": 1, "file": {"$asset": "CHAR-A", "field": "file"}},
+      {"asset_id": "PROP-KEY", "role": "asset_ref", "upload_index": 2, "file": {"$asset": "PROP-KEY", "field": "file"}},
+      {"asset_id": "MASTER-A-1", "role": "asset_ref", "upload_index": 3, "file": {"$asset": "MASTER-A-1", "field": "file"}}
+    ],
+    "background_motion": "人物自然呼吸，衣物随身体轻微起伏；室内光照、墙体、门窗和桌椅结构保持稳定。",
+    "prompt": "用独立参考生成5秒连续镜头，参考图不作起始帧。<Picture 1>提供人物身份和服装；<Picture 2>提供同一把铜钥匙的设计；<Picture 3>提供从房间南侧朝北看的环境，沿用墙面、门窗与家具设计。现场真人只有这一人，前景是空过道与桌沿，画内无其他身体局部或人形反射。固定中景从头顶至腰部，双手可见；人物站在桌左，身体朝向画右的门，窗在画左。开镜人物低头看桌面；门外脚步响起后，人物抬眼，转头看门并停稳观察，结束时仍看着门口。右手在腰际始终握同一把钥匙，左手空着。人物自然呼吸，衣物随身体轻微起伏；室内光照、墙体、门窗和桌椅结构保持稳定。墙、门、玻璃和桌面保持无字，画面无字幕、水印或叠层。声音仅有室内环境音与门外脚步。",
+    "output_spec": {"profile": null, "res": null, "aspect": "16:9", "seconds": 5, "seed": 0}
+  },
+  "requirements": {
+    "direction": "人物站立、身体朝门，听到脚步后再转头；头到腰的中景。",
+    "gaze": "视线从桌面转到门口。",
+    "action": "先听到脚步再转头，不重复拿钥匙。",
+    "text": "没有画内文字与对白。",
+    "placement": "画内只有CHAR-A，人物在桌子左侧，门在画面右侧，窗在画面左侧；钥匙始终由右手握住，左手空着。",
+    "performance": "开镜低头看桌面，脚步触发抬眼与转头，结束时停稳看门；呼吸与衣物细动自然。"
+  },
+  "state": {"in": {"key_holder": "CHAR-A:right_hand", "gaze": "table"}, "out": {"key_holder": "CHAR-A:right_hand", "gaze": "door"}, "allowed_changes": ["gaze", "head_rotation", "breathing", "clothing_motion"], "transition": "同一时间段从听觉刺激继续到转头，无上一镜尾帧输入。"},
+  "acceptance": ["人物、钥匙和房间符合独立资产，必要对象无缺失", "全段只有指定人物，站姿、景别和目光正确，无额外人物或身体部分", "以正常速度和目标尺寸，能看懂脚步触发注意、转头，不靠说明补答案；动作完成，右手钥匙与空左手均可辨", "呼吸和衣物细动自然，光照稳定，场景结构不漂移", "指定空白区域无伪字，完整听音只有室内环境音与脚步声"],
+  "execution_template": null,
+  "note": "这是待替换的单镜示例：单人、方位、无剧情文字、声音和5秒时长均非通用默认。按当前状态重写完整可见范围、动作、屏幕与声音，空场景图不清掉群众或合法局部。MASTER-A-1须是SCENE-ROOM/1、VIEW-A、STATE-000的真实已验收空景，依赖同版共同母资产和布局；本视频按资产ID绑定该机位，不重复上传上游布局或母图。strict shot.references中的scene_id/scene_version/view_id/state_id及实际path/sha256须与该资产、scene.views和镜头状态一致，不新增厂商API字段。替换项目/资产ID与实际规格后纳入前期包；profile/res 为 null 时 export-h3 拒绝导出。验收项是要求，不是已通过记录；本例不含生成或付费授权。"
+}

@@ -1,0 +1,28 @@
+{
+  "schema_version": "1.0",
+  "arc_id": "REVEAL-001",
+  "title": "待填写",
+  "mode": "known_truth",
+  "status": "planned",
+  "start_episode": 1,
+  "due_episode": 3,
+  "setback_budget": 2,
+  "core_truth": "待填写",
+  "audience_anchor": {
+    "scene_id": "待填写",
+    "visible_evidence": "待填写"
+  },
+  "protagonist_goal": "待填写",
+  "why_not_reveal_immediately": "待填写",
+  "actors": [],
+  "facts": [],
+  "beats": [],
+  "final_cashout": {
+    "episode_number": 3,
+    "scene_id": "待填写",
+    "evidence_fact_ids": [],
+    "actual_change": "待填写",
+    "old_question_closed": false
+  },
+  "next_conflict": "待填写"
+}

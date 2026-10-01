@@ -1,0 +1,8 @@
+{
+  "schema_version": "cut-bridges-review-1",
+  "bundle_digest": null,
+  "reviewer_id": null,
+  "cuts": [],
+  "character_cues": [],
+  "note": "放入原edit_cut_review.details.bridge_review，不另开评审。每cut绑定binding_digest、paired_context_viewed、viewed_context、四类checks及真实证据。每项checks为result/observation，不适用另写reason。protected cue逐项给cue_id/result/observation/evidence。未执行保持空，不自填PASS。"
+}

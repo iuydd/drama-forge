@@ -1,0 +1,96 @@
+{
+  "schema_version": "reading-map-1",
+  "stages": {
+    "startup": [
+      "r00",
+      "r10",
+      "r11"
+    ],
+    "story_original": [
+      "r00",
+      "r01",
+      "r02",
+      "r03",
+      "r09"
+    ],
+    "story_adapt": [
+      "r00",
+      "r01",
+      "r02",
+      "r03",
+      "r04",
+      "r09"
+    ],
+    "story_review": [
+      "r00",
+      "r01",
+      "r02",
+      "r03",
+      "r09"
+    ],
+    "board": [
+      "r00",
+      "r02",
+      "r03",
+      "r05",
+      "r06",
+      "r07",
+      "r08"
+    ],
+    "assets": [
+      "r00",
+      "r05",
+      "r09"
+    ],
+    "prompt_image": [
+      "r00",
+      "r05",
+      "r06"
+    ],
+    "prompt_video": [
+      "r00",
+      "r03",
+      "r05",
+      "r06",
+      "r07"
+    ],
+    "dispatch": [
+      "r00",
+      "r10",
+      "r11"
+    ],
+    "recover": [
+      "r00",
+      "r10",
+      "r11"
+    ],
+    "review": [
+      "r00",
+      "r03",
+      "r05",
+      "r06",
+      "r07",
+      "r08",
+      "r09"
+    ],
+    "blind": [
+      "runtime-blind-brief"
+    ],
+    "edit": [
+      "r00",
+      "r03",
+      "r06",
+      "r07",
+      "r08",
+      "r09"
+    ],
+    "delivery": [
+      "r00",
+      "r08",
+      "r09",
+      "r10",
+      "r11"
+    ]
+  },
+  "note": "阶段ID映射当前references章节；assets/source.md是同步全文。blind仅收独立指令和允许媒体。规则变更后重新绑定受影响的阅读凭据。"
+}

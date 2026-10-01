@@ -1,0 +1,33 @@
+{
+  "target_shot_id": "SHOT-DEMO-001",
+  "scene_context": {
+    "scene_id": "ROOM-A",
+    "scene_version": "1",
+    "view_id": "VIEW-N",
+    "state_id": "DAY"
+  },
+  "output": {
+    "width": 1536,
+    "height": 2688
+  },
+  "bindings": [
+    {
+      "asset_id": "ROOM-A-v1-VIEW-N-DAY",
+      "role": "scene_base",
+      "primary": true,
+      "purpose": "图片编辑示例的场景底图，固定房间、家具、机位、透视与白天状态。尺寸与资产须替换为项目事实；本例不是默认视频首帧或生成授权。"
+    },
+    {
+      "asset_id": "CHAR-LIN-FULL-v1",
+      "role": "identity",
+      "primary": false,
+      "purpose": "仅提供示例角色身份、发型、体态与当前服装，不带入背景、光照或姿态；使用前替换为项目角色。"
+    },
+    {
+      "asset_id": "PROP-KEY-v1",
+      "role": "prop",
+      "primary": false,
+      "purpose": "只提供唯一铜钥匙的设计；按镜头要求放入，不添加第二把钥匙。"
+    }
+  ]
+}

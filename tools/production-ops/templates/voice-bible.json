@@ -1,0 +1,37 @@
+{
+  "schema_version": "voice-bible-1",
+  "version": null,
+  "status": "DRAFT",
+  "voice_profiles": [],
+  "profile_template": {
+    "character_id": null,
+    "voice_id": null,
+    "provider": null,
+    "model_id": null,
+    "provider_voice_id": null,
+    "authorization_evidence": null,
+    "reference_clip": {
+      "path": null,
+      "sha256": null
+    },
+    "original_speech_description": null,
+    "inner_voice_id": null,
+    "inner_processing": {
+      "same_identity": true,
+      "effect_chain": []
+    },
+    "reference_matching_status": "UNKNOWN",
+    "acting_baseline": null,
+    "tested_delivery_range": [],
+    "backend_direction_support": "UNKNOWN"
+  },
+  "heart_hearing_matrix": [],
+  "source_types": [
+    "spoken",
+    "inner",
+    "voiceover",
+    "system"
+  ],
+  "temporary_voices_must_not_be_published": true,
+  "no_unapproved_voice_clone": true
+}

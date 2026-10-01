@@ -1,0 +1,6 @@
+{
+  "stage": null,
+  "subject_sha256": null,
+  "shots": [],
+  "note": "仅填写实际观察。每shot有shot_id/contract_sha256/media_sha256和requirements；每证据点有id/result/observation/media_sha256/locator/evidence/modality/values，action视频另有实测event_frame。UNKNOWN不可放行。"
+}

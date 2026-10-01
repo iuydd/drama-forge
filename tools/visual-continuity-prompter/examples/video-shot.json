@@ -1,0 +1,98 @@
+{
+  "schema_version": "1.0",
+  "shot_id": "SHOT-002",
+  "source_scene_id": "EP01-SC01",
+  "scene_id": "SCENE-ROOM",
+  "scene_version": "1",
+  "scene_state_id": "STATE-000",
+  "view_id": "VIEW-A",
+  "mode": "video_i2v",
+  "planning_status": "candidate",
+  "camera_locked": false,
+  "camera_motion": "fixed",
+  "output": {
+    "width": 1536,
+    "height": 2688,
+    "media_kind": "video"
+  },
+  "references": [
+    {
+      "asset_id": "START-SHOT-002",
+      "role": "start_frame",
+      "primary": true,
+      "purpose": "经图像检查的本镜起始帧；未提供实际图时不得执行。",
+      "upload_index": 1,
+      "path": null,
+      "sha256": null,
+      "status": "missing",
+      "scene_id": "SCENE-ROOM",
+      "scene_version": "1",
+      "view_id": "VIEW-A",
+      "state_id": "STATE-000",
+      "scene_anchor_sha256": null
+    }
+  ],
+  "change_request": "右手将已握住的杯子举起一次；左手保持原位，背景静止。",
+  "preserve": [
+    "原门窗位置",
+    "原桌椅设计、位置和朝向",
+    "原楼梯结构和连接关系",
+    "同一机位与画幅"
+  ],
+  "relations": [
+    "椅背在人物躯干后方，身体面向桌子",
+    "右手与杯子实际接触，左手平放桌面",
+    "身体不穿过桌椅"
+  ],
+  "narrative_must_show": [
+    "人物右手接触同一只杯子"
+  ],
+  "state_in": {
+    "cup_holder": "CHAR-001:right_hand",
+    "cup_on_table": true,
+    "chair_front_target": "TABLE-001"
+  },
+  "state_out": {
+    "cup_holder": "CHAR-001:right_hand",
+    "cup_on_table": false,
+    "chair_front_target": "TABLE-001"
+  },
+  "qa_required": [
+    "scene_structure",
+    "subject_integrity",
+    "contacts",
+    "composition",
+    "technical",
+    "narrative",
+    "temporal",
+    "cut_continuity"
+  ],
+  "repair_budget": {
+    "generation_attempts": 3,
+    "local_repairs": 2
+  },
+  "protection": {
+    "method": "none"
+  },
+  "transition": {
+    "kind": "continuous_same_view",
+    "previous_shot_id": "SHOT-001"
+  },
+  "video": {
+    "duration_s": 4,
+    "fps": 24,
+    "action_beats": [
+      {
+        "start_s": 0,
+        "end_s": 2,
+        "action": "右手将杯子从桌面平稳举到胸前一次，左手不动。"
+      },
+      {
+        "start_s": 2,
+        "end_s": 4,
+        "action": "保持杯子在胸前，低头看杯子。"
+      }
+    ],
+    "end_state_description": "右手持杯在胸前，左手在桌上；空间不变。"
+  }
+}

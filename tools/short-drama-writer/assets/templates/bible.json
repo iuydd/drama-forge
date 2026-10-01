@@ -1,0 +1,16 @@
+{
+  "schema_version": "1.0",
+  "project_id": "new-drama",
+  "canon_version": "v1-draft",
+  "status": "draft",
+  "emotional_promise": "待填写",
+  "story_engine": "待填写",
+  "characters": [],
+  "locations": [],
+  "props": [],
+  "rules": [],
+  "initial_fact_ids": [],
+  "locked_canon": [],
+  "ending_direction": "待填写",
+  "world_feedback": []
+}
